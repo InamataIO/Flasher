@@ -4,7 +4,7 @@
 block_cipher = None
 
 
-a = Analysis(['hello.py'],
+a = Analysis(['main.py'],
              pathex=['/home/moritz/Sandbox/ds-flasher'],
              binaries=[],
              datas=[('mainwindow.ui', '.')],
@@ -24,7 +24,7 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='hello',
+          name='ds_flasher',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
