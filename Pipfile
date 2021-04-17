@@ -9,6 +9,7 @@ pyside2 = "*"
 pyinstaller = "~=4.3"
 
 [dev-packages]
+ipdb = "*"
 
 [requires]
 python_version = "3.8"
