@@ -17,6 +17,13 @@ from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication, QMainWindow
 from PySide2.QtCore import QFile, QIODevice
 
+class DSFlasherModel:
+    def login(self):
+        print("Logging in...")
+    
+    def sign_up(self):
+        print("Signing up!")
+
 class DSFlasherUi(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -30,10 +37,22 @@ class DSFlasherUi(QMainWindow):
     def show(self):
         self.ui.show()
 
+class DSFlasherCtrl:
+    def __init__(self, model, view):
+        self._model = model
+        self._view = view
+        self._connectSignals()
+    
+    def _connectSignals(self):
+        self._view.ui.loginButton.clicked.connect(self._model.login)
+        self._view.ui.signUpButton.clicked.connect(self._model.sign_up)
+
 def main():
     ds_flasher = QApplication(sys.argv)
     view = DSFlasherUi()
     view.show()
+    model = DSFlasherModel
+    DSFlasherCtrl(model=model, view=view)
     sys.exit(ds_flasher.exec_())
 
 if __name__ == "__main__":
