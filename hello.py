@@ -1,4 +1,15 @@
+import os
 import sys
+
+# Needed for Wayland applications
+os.environ["QT_QPA_PLATFORM"] = "xcb"
+# Change the current dir to the temporary one created by PyInstaller
+try:
+    os.chdir(sys._MEIPASS)
+    print(sys._MEIPASS)
+except:
+    pass
+
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QApplication
 from PySide2.QtCore import QFile, QIODevice

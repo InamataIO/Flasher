@@ -6,7 +6,7 @@ name = "pypi"
 [packages]
 pyqt5 = "*"
 pyside2 = "*"
-pyinstaller = "*"
+pyinstaller = "~=4.3"
 
 [dev-packages]
 
