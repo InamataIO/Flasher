@@ -1,9 +1,6 @@
 import os
 import sys
 
-### Settings
-ui_file_name = "mainwindow.ui"
-
 # Needed for Wayland applications
 os.environ["QT_QPA_PLATFORM"] = "xcb"
 # Change the current dir to the temporary one created by PyInstaller
@@ -26,7 +23,7 @@ def main():
     # Enable High DPI display with PyQt5
     if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
         ds_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
-    view = DSFlasherUi(ui_file_name=ui_file_name)
+    view = DSFlasherUi()
     view.show()
     model = DSFlasherModel()
     DSFlasherCtrl(model=model, view=view)
