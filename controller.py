@@ -15,3 +15,5 @@ class DSFlasherCtrl:
         )
         self._view.ui.loginButton.clicked.connect(login_callback)
         self._view.ui.signUpButton.clicked.connect(self._model.sign_up)
+        self._view.ui.emailLineEdit.returnPressed.connect(self._view.ui.loginButton.click)
+        self._view.ui.passwordLineEdit.returnPressed.connect(self._view.ui.loginButton.click)
