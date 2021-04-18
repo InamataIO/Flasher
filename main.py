@@ -9,34 +9,24 @@ os.environ["QT_QPA_PLATFORM"] = "xcb"
 # Change the current dir to the temporary one created by PyInstaller
 try:
     os.chdir(sys._MEIPASS)
-    print(sys._MEIPASS)
 except:
     pass
 
-from PySide2.QtUiTools import QUiLoader
-from PySide2.QtWidgets import QApplication, QMainWindow
-from PySide2.QtCore import QFile, QIODevice
+from PySide2.QtWidgets import QApplication
+from PySide2 import QtCore
 
 from model import DSFlasherModel
 from controller import DSFlasherCtrl
-
-class DSFlasherUi(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        ui_file = QFile(ui_file_name)
-        if not ui_file.open(QIODevice.ReadOnly):
-            print(f"Cannot open {ui_file_name}: {ui_file.errorString()}")
-            sys.exit(-1)
-        self.ui = QUiLoader().load(ui_file)
-        ui_file.close()
-    
-    def show(self):
-        self.ui.show()
+from view import DSFlasherUi
 
 
 def main():
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     ds_flasher = QApplication(sys.argv)
-    view = DSFlasherUi()
+    # Enable High DPI display with PyQt5
+    if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+        ds_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+    view = DSFlasherUi(ui_file_name=ui_file_name)
     view.show()
     model = DSFlasherModel()
     DSFlasherCtrl(model=model, view=view)

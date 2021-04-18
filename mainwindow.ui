@@ -26,7 +26,7 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">#centralWidget {
+   <string notr="true">#centralWidget, QMessageBox {
   background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #620890, stop:1 #d33479);
 }
 QLabel {
@@ -49,6 +49,9 @@ QPushButton {
     <string notr="true"/>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
+    <item>
+     <widget class="QWidget" name="notificationWidget" native="true"/>
+    </item>
     <item>
      <spacer name="verticalSpacer_3">
       <property name="orientation">

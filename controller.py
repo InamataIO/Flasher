@@ -5,6 +5,7 @@ class DSFlasherCtrl:
     def __init__(self, model, view):
         self._model = model
         self._view = view
+        model.notify = view.notify
         self._connectSignals()
 
     def _connectSignals(self):
