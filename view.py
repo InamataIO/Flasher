@@ -17,8 +17,9 @@ class DSFlasherUi(QMainWindow):
         LOGIN = ["loginPage", -1]
         WELCOME = ["welcomePage", -1]
         REPLACE = ["replaceControllerPage", -1]
-        ADD = ["addControllerPage", -1]
-        WIFI = ["registerWiFiPage", -1]
+        ADD_CONTROLLER = ["addControllerPage", -1]
+        ADD_WIFI = ["addWiFiPage", -1]
+        MANAGE_WIFI = ["manageWiFiPage", -1]
 
         @classmethod
         def all(cls) -> List:
@@ -32,7 +33,7 @@ class DSFlasherUi(QMainWindow):
             sys.exit(-1)
         self.ui = QUiLoader().load(ui_file)
         ui_file.close()
-        self._setPageIndexes()
+        self._set_page_indexes()
 
     def notify(self, message, title, level="information"):
         if level == "information":
@@ -49,7 +50,7 @@ class DSFlasherUi(QMainWindow):
         print("ho")
         self.ui.stackedWidget.setCurrentIndex(1)
 
-    def changePage(self, page: Union[str, List]):
+    def change_page(self, page: Union[str, List]):
         """Change the stack page to the specified page"""
         if isinstance(page, str):
             # Search for the page widget by name and use the index set during init
@@ -58,7 +59,7 @@ class DSFlasherUi(QMainWindow):
             index = page[1]
         self.ui.stackedWidget.setCurrentIndex(index)
 
-    def _setPageIndexes(self):
+    def _set_page_indexes(self):
         """Find the indexes for the named pages in the stacked widget."""
         for i in self.Pages.all():
             page = self.ui.findChild(QWidget, i[0])

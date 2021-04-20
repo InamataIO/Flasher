@@ -13,7 +13,7 @@ except:
 
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
-import esptool
+# import esptool
 
 from model import DSFlasherModel
 from controller import DSFlasherCtrl
@@ -43,8 +43,8 @@ def main():
     view = DSFlasherUi()
     view.show()
     model = DSFlasherModel()
-    aps = [(False, 'an item'), (False, 'another item')]
-    wifi_model = DSFlasherWiFiModel(aps=aps)
+    # aps = [(False, 'an item'), (False, 'another item')]
+    wifi_model = DSFlasherWiFiModel()
     controller = DSFlasherCtrl(model=model, view=view, wifi_model=wifi_model)
     sys.exit(ds_flasher.exec_())
 

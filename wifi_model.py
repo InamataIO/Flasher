@@ -20,3 +20,6 @@ class DSFlasherWiFiModel(QtCore.QAbstractListModel):
     
     def rowCount(self, index):
         return len(self.aps)
+    
+    def ap_count(self):
+        return len(self.aps)

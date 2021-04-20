@@ -1,8 +1,11 @@
 from functools import partial
-from os import stat
-from wifi_model import DSFlasherWiFiModel
+
+from PySide2.QtCore import QThreadPool
+
 from model import DSFlasherModel
 from view import DSFlasherUi
+from wifi_model import DSFlasherWiFiModel
+from worker import Worker, WorkerInformation, WorkerWarning
 
 
 class DSFlasherCtrl:
@@ -12,17 +15,19 @@ class DSFlasherCtrl:
         self._model = model
         self._view = view
         self._wifi_model = wifi_model
+        self.threadpool = QThreadPool()
         model.notify = view.notify
-        self.to_welcome_page = partial(self._view.changePage, self._view.Pages.WELCOME)
-        self._connectSignals()
-        self._connectModelViews()
-        view.changePage(view.Pages.LOGIN)
+        self.to_welcome_page = partial(self._view.change_page, self._view.Pages.WELCOME)
+        self._connect_signals()
+        self._connect_model_views()
+        self._page_after_add_wifi = None
+        view.change_page(view.Pages.LOGIN)
 
-    def _connectSignals(self):
+    def _connect_signals(self):
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
-        # self._view.ui.signUpButton.clicked.connect(self._model.sign_up)
-        self._view.ui.signUpButton.clicked.connect(self._view.switch)
+        self._view.ui.signUpButton.clicked.connect(self._model.sign_up)
+        # self._view.ui.signUpButton.clicked.connect(self._view.switch)
         self._view.ui.emailLineEdit.setText(self._model.get_saved_user())
         self._view.ui.emailLineEdit.returnPressed.connect(
             self._view.ui.loginButton.click
@@ -33,27 +38,51 @@ class DSFlasherCtrl:
 
         # Welcome Page
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
+        self._view.ui.addControllerPushButton.clicked.connect(self.add_controller)
 
-        # Add Page
+        # Add Controller Page
+        self._view.ui.addBackPushButton.clicked.connect(self.to_welcome_page)
+
+        # Replace Controller Page
         self._view.ui.replaceBackPushButton.clicked.connect(self.to_welcome_page)
 
-        # Replace Page
+        # Register WiFi Page
+        self._view.ui.wifiBackPushButton.clicked.connect(self.to_welcome_page)
 
-        # WiFi Page
-
-    def _connectModelViews(self):
+    def _connect_model_views(self):
         self._view.ui.apListView.setModel(self._wifi_model)
         self._view.ui.addAPListView.setModel(self._wifi_model)
 
     def log_out(self):
         self._model.log_out()
         self._view.ui.passwordLineEdit.clear()
-        self._view.changePage(self._view.Pages.LOGIN)
+        self._view.change_page(self._view.Pages.LOGIN)
 
     def log_in(self):
-        success = self._model.log_in(
-            self._view.ui.emailLineEdit.text(), self._view.ui.passwordLineEdit.text()
-        )
-        if success:
-            self._view.changePage(self._view.Pages.WELCOME)
-            self._view.ui.passwordLineEdit.clear()
+        email = self._view.ui.emailLineEdit.text()
+        password = self._view.ui.passwordLineEdit.text()
+        worker = Worker(self._model.log_in, email, password)
+        worker.signals.result.connect(self.log_in_result)
+        worker.signals.error.connect(self.handle_error)
+        self.threadpool.start(worker)
+    
+    def log_in_result(self, _):
+        email = self._view.ui.emailLineEdit.text()
+        self._view.ui.welcomeUsername.setText(email)
+        self._view.change_page(self._view.Pages.WELCOME)
+        self._view.ui.passwordLineEdit.clear()
+
+    def handle_error(self, error):
+        if isinstance(error, WorkerInformation):
+            self._view.notify(str(error), "", "information")
+        elif isinstance(error, WorkerWarning):
+            self._view.notify(str(error), "", "warning")
+        else:
+            self._view.notify(str(error), "", "critical")
+
+    def add_controller(self):
+        if self._wifi_model.ap_count():
+            self._view.change_page(self._view.Pages.ADD_CONTROLLER)
+        else:
+            self._page_after_add_wifi = self._view.Pages.ADD_CONTROLLER
+            self._view.change_page(self._view.Pages.ADD_WIFI)

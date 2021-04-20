@@ -6,13 +6,13 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>646</width>
+    <width>747</width>
     <height>440</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>600</width>
+    <width>700</width>
     <height>0</height>
    </size>
   </property>
@@ -26,24 +26,34 @@
    <string>MainWindow</string>
   </property>
   <property name="styleSheet">
-   <string notr="true">#centralWidget, QMessageBox {
-  background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #620890, stop:1 #d33479);
+   <string notr="true">* {
+  font-family: Lato;
 }
-#header, #welcomeHeader {
-  margin: 20px;
-}
-QLabel {
-	color: white;
-}
-#loginForm QLabel, #addForm QLabel {
-  padding-right: 8px;
-}
-
 QPushButton {
+  font-size: 16px;
   padding: 8px;
   margin-top: 8px;
 }
-</string>
+QLabel {
+  font-size: 16px;
+  color: white;
+}
+#centralWidget, QMessageBox {
+  background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #620890, stop:1 #d33479);
+}
+#header, #welcomeHeader, #replaceHeader, #addHeader, #addWiFiHeader, #manageWiFiHeader {
+  margin: 20px;
+  font-size: 35px;
+}
+#welcomeSubHeader {
+  font-size: 25px;
+}
+#loginForm QLabel, #addForm QLabel, #addWiFiForm QLabel {
+  padding-right: 8px;
+}
+#welcomeUsername {
+  color: #ccc;
+}</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="autoFillBackground">
@@ -56,7 +66,7 @@ QPushButton {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>4</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -111,7 +121,8 @@ QPushButton {
            <widget class="QLabel" name="header">
             <property name="font">
              <font>
-              <pointsize>35</pointsize>
+              <family>Lato</family>
+              <pointsize>-1</pointsize>
              </font>
             </property>
             <property name="text">
@@ -195,7 +206,8 @@ QPushButton {
                </property>
                <property name="font">
                 <font>
-                 <pointsize>11</pointsize>
+                 <family>Lato</family>
+                 <pointsize>-1</pointsize>
                 </font>
                </property>
                <property name="styleSheet">
@@ -261,7 +273,8 @@ QPushButton {
          <widget class="QLabel" name="welcomeHeader">
           <property name="font">
            <font>
-            <pointsize>35</pointsize>
+            <family>Lato</family>
+            <pointsize>-1</pointsize>
            </font>
           </property>
           <property name="text">
@@ -276,7 +289,8 @@ QPushButton {
          <widget class="QLabel" name="welcomeSubHeader">
           <property name="font">
            <font>
-            <pointsize>20</pointsize>
+            <family>Lato</family>
+            <pointsize>-1</pointsize>
            </font>
           </property>
           <property name="text">
@@ -308,36 +322,6 @@ QPushButton {
           <property name="rightMargin">
            <number>40</number>
           </property>
-          <item row="0" column="4">
-           <layout class="QVBoxLayout" name="verticalLayout_8">
-            <item>
-             <widget class="QPushButton" name="pushButton_2">
-              <property name="minimumSize">
-               <size>
-                <width>150</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Register WiFi</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>Add WiFi for the controller to connect to.</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
           <item row="0" column="2">
            <layout class="QVBoxLayout" name="verticalLayout_7">
             <item>
@@ -371,7 +355,7 @@ QPushButton {
           <item row="0" column="0">
            <layout class="QVBoxLayout" name="verticalLayout_9">
             <item>
-             <widget class="QPushButton" name="newControllerPushButton">
+             <widget class="QPushButton" name="addControllerPushButton">
               <property name="minimumSize">
                <size>
                 <width>150</width>
@@ -398,8 +382,38 @@ QPushButton {
             </item>
            </layout>
           </item>
-          <item row="0" column="1">
-           <spacer name="horizontalSpacer_3">
+          <item row="0" column="4">
+           <layout class="QVBoxLayout" name="verticalLayout_8">
+            <item>
+             <widget class="QPushButton" name="pushButton_2">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Manage WiFi</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_7">
+              <property name="text">
+               <string>Add WiFi for the controller to connect to.</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="0" column="3">
+           <spacer name="horizontalSpacer_4">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -411,8 +425,8 @@ QPushButton {
             </property>
            </spacer>
           </item>
-          <item row="0" column="3">
-           <spacer name="horizontalSpacer_4">
+          <item row="0" column="1">
+           <spacer name="horizontalSpacer_3">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -461,6 +475,16 @@ QPushButton {
             </property>
            </spacer>
           </item>
+          <item>
+           <widget class="QLabel" name="welcomeUsername">
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
        </layout>
@@ -481,10 +505,11 @@ QPushButton {
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_8">
+         <widget class="QLabel" name="replaceHeader">
           <property name="font">
            <font>
-            <pointsize>35</pointsize>
+            <family>Lato</family>
+            <pointsize>-1</pointsize>
            </font>
           </property>
           <property name="text">
@@ -550,10 +575,11 @@ QPushButton {
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_6">
+         <widget class="QLabel" name="addHeader">
           <property name="font">
            <font>
-            <pointsize>35</pointsize>
+            <family>Lato</family>
+            <pointsize>-1</pointsize>
            </font>
           </property>
           <property name="text">
@@ -665,7 +691,7 @@ QPushButton {
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="RegisterWiFiPage">
+      <widget class="QWidget" name="addWiFiPage">
        <layout class="QVBoxLayout" name="verticalLayout_6">
         <item>
          <spacer name="verticalSpacer_11">
@@ -681,18 +707,71 @@ QPushButton {
          </spacer>
         </item>
         <item>
-         <widget class="QLabel" name="label_9">
+         <widget class="QLabel" name="addWiFiHeader">
           <property name="font">
            <font>
-            <pointsize>35</pointsize>
+            <family>Lato</family>
+            <pointsize>-1</pointsize>
            </font>
           </property>
           <property name="text">
-           <string>Register WiFi</string>
+           <string>Add WiFi</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignCenter</set>
           </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_16">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QWidget" name="addWiFiForm" native="true">
+          <layout class="QFormLayout" name="addWiFiForm_2">
+           <property name="leftMargin">
+            <number>40</number>
+           </property>
+           <property name="rightMargin">
+            <number>40</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_6">
+             <property name="text">
+              <string>Name (SSID)</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QLineEdit" name="lineEdit_2"/>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_8">
+             <property name="text">
+              <string>Password</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="lineEdit_3"/>
+           </item>
+           <item row="2" column="1">
+            <widget class="QPushButton" name="pushButton_3">
+             <property name="text">
+              <string>Add WiFi connection</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </item>
         <item>
@@ -707,9 +786,6 @@ QPushButton {
            </size>
           </property>
          </spacer>
-        </item>
-        <item>
-         <widget class="QListView" name="apListView"/>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_3">
@@ -727,7 +803,80 @@ QPushButton {
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton_3">
+           <widget class="QPushButton" name="wifiBackPushButton">
+            <property name="text">
+             <string>Back</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="manageWiFiPage">
+       <layout class="QVBoxLayout" name="verticalLayout_10">
+        <item>
+         <spacer name="verticalSpacer_14">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="manageWiFiHeader">
+          <property name="font">
+           <font>
+            <family>Lato</family>
+            <pointsize>-1</pointsize>
+           </font>
+          </property>
+          <property name="text">
+           <string>Manage WiFi</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_15">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QListView" name="apListView"/>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <spacer name="horizontalSpacer_9">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>607</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButton">
             <property name="text">
              <string>Back</string>
             </property>
@@ -747,7 +896,7 @@ QPushButton {
   <tabstop>passwordLineEdit</tabstop>
   <tabstop>loginButton</tabstop>
   <tabstop>signUpButton</tabstop>
-  <tabstop>newControllerPushButton</tabstop>
+  <tabstop>addControllerPushButton</tabstop>
   <tabstop>existingControllernewControllerPushButton</tabstop>
   <tabstop>pushButton_2</tabstop>
   <tabstop>welcomeLogOutPushButton</tabstop>
@@ -756,8 +905,7 @@ QPushButton {
   <tabstop>lineEdit</tabstop>
   <tabstop>addAPListView</tabstop>
   <tabstop>addBackPushButton</tabstop>
-  <tabstop>apListView</tabstop>
-  <tabstop>pushButton_3</tabstop>
+  <tabstop>wifiBackPushButton</tabstop>
  </tabstops>
  <resources/>
  <connections/>

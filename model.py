@@ -1,12 +1,16 @@
 import json
-from json import JSONDecodeError
-import pathlib
 import os
+import pathlib
+from json import JSONDecodeError
 from typing import Any, Callable, Union
-import requests
+
 import keyring
-from keyring.errors import PasswordDeleteError
+import requests
 from appdirs import AppDirs
+from keyring.errors import PasswordDeleteError
+
+from worker import WorkerInformation, WorkerWarning
+
 
 class DSFlasherModel:
     """Used to login to the DS server."""
@@ -28,8 +32,12 @@ class DSFlasherModel:
         self.config_path = os.path.join(self.dirs.user_config_dir, "config.json")
         self.notify = self._notify
 
-
-    def log_in(self, username: Union[str, Callable], password: Union[str, Callable]) -> bool:
+    def log_in(
+        self,
+        username: Union[str, Callable],
+        password: Union[str, Callable],
+        **kwargs,
+    ):
         """Log in to the DeviceStacc server and get an auth token."""
         # Support passing parameters as functions
         if callable(username):
@@ -43,35 +51,36 @@ class DSFlasherModel:
             response.raise_for_status()
             token = json.loads(response.content)["token"]
             self._save_credentials(username, token)
-            return True
-        except requests.exceptions.HTTPError as errh:
-            if errh.response.status_code == 400:
+        except requests.exceptions.HTTPError as err:
+            if err.response.status_code == 400:
                 message = "Login credentials not correct. Please check your e-mail and password."
-                self.notify(message, "Check Credentials", "warning")
+                raise WorkerInformation(message) from err
             else:
-                self.notify(str(errh), "HTTP Error", "warning")
-        except requests.exceptions.ConnectionError as errc:
-            self.notify(str(errc), "Error Connecting", "warning")
-        except requests.exceptions.Timeout as errt:
-            self.notify(str(errt), "Timeout Error", "warning")
+                raise WorkerWarning(str(err)) from err
+        except requests.exceptions.ConnectionError as err:
+            raise WorkerWarning(str(err)) from err
+        except requests.exceptions.Timeout as err:
+            raise WorkerWarning(str(err)) from err
         except requests.exceptions.RequestException as err:
-            self.notify(str(err), "Network Error", "warning")
-        return False
-    
+            raise WorkerWarning(str(err)) from err
+
     def log_out(self):
         self._clear_credentials()
 
+    def fetch_user_details(self):
+        pass
+
     def sign_up(self):
         print("Signing up!")
-    
+
     def get_saved_user(self) -> str:
         return self._get_config().get("username", "")
-    
+
     def _save_credentials(self, username, token):
         """Save the auth token in a keychain."""
-        self._update_config_key("username", username)        
+        self._update_config_key("username", username)
         keyring.set_password("ds_flasher", username, token)
-    
+
     def _clear_credentials(self):
         """Clear the username and auth token"""
         username = self._get_config()["username"]
@@ -80,7 +89,6 @@ class DSFlasherModel:
         except PasswordDeleteError:
             pass
 
-    
     def _get_config(self) -> dict:
         """Gets the stored config."""
         config = {}
@@ -90,7 +98,7 @@ class DSFlasherModel:
         except FileNotFoundError:
             pass
         return config
-    
+
     def _save_config(self, config: dict) -> None:
         """Overwrites the config file."""
         with open(self.config_path, "w") as file:
@@ -105,7 +113,7 @@ class DSFlasherModel:
                 config = {}
             config[key] = value
             json.dump(config, file)
-    
+
     def _clear_config_key(self, key: str) -> None:
         """Remove a key in the config."""
         with open(self.config_path, "w+") as file:
@@ -115,7 +123,7 @@ class DSFlasherModel:
                 return
             config.pop(key, None)
             json.dump(config, file)
-    
+
     @staticmethod
     def _notify(message: str, title: str, level: str):
         print(f"{level}: [{title}] {message}")
