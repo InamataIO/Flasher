@@ -5,6 +5,7 @@ import os
 from typing import Any, Callable, Union
 import requests
 import keyring
+from keyring.errors import PasswordDeleteError
 from appdirs import AppDirs
 
 class DSFlasherModel:
@@ -24,9 +25,11 @@ class DSFlasherModel:
         self.login_url = f"{http_type}{self.ds_domain}/accounts/login/"
         self.token_url = f"{http_type}{self.ds_domain}/api/v1/accounts/auth-token/"
         pathlib.Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
+        self.config_path = os.path.join(self.dirs.user_config_dir, "config.json")
         self.notify = self._notify
 
-    def login(self, username: Union[str, Callable], password: Union[str, Callable]):
+
+    def log_in(self, username: Union[str, Callable], password: Union[str, Callable]) -> bool:
         """Log in to the DeviceStacc server and get an auth token."""
         # Support passing parameters as functions
         if callable(username):
@@ -39,10 +42,9 @@ class DSFlasherModel:
             response = requests.post(self.token_url, data, headers=headers, timeout=10)
             response.raise_for_status()
             token = json.loads(response.content)["token"]
-            print(token)
-            self._save_auth_token(username, token)
+            self._save_credentials(username, token)
+            return True
         except requests.exceptions.HTTPError as errh:
-            import ipdb; ipdb.set_trace()
             if errh.response.status_code == 400:
                 message = "Login credentials not correct. Please check your e-mail and password."
                 self.notify(message, "Check Credentials", "warning")
@@ -54,38 +56,64 @@ class DSFlasherModel:
             self.notify(str(errt), "Timeout Error", "warning")
         except requests.exceptions.RequestException as err:
             self.notify(str(err), "Network Error", "warning")
+        return False
+    
+    def log_out(self):
+        self._clear_credentials()
 
     def sign_up(self):
         print("Signing up!")
     
-    def _save_auth_token(self, username, token):
+    def get_saved_user(self) -> str:
+        return self._get_config().get("username", "")
+    
+    def _save_credentials(self, username, token):
         """Save the auth token in a keychain."""
-        self._update_config("username", username)        
+        self._update_config_key("username", username)        
         keyring.set_password("ds_flasher", username, token)
+    
+    def _clear_credentials(self):
+        """Clear the username and auth token"""
+        username = self._get_config()["username"]
+        try:
+            keyring.delete_password("ds_flasher", username)
+        except PasswordDeleteError:
+            pass
+
     
     def _get_config(self) -> dict:
         """Gets the stored config."""
         config = {}
-        config_path = os.path.join(self.dirs.user_config_dir, "config.json")
-        with open(config_path, "r") as file:
-            config = json.load(file)
+        try:
+            with open(self.config_path, "r") as file:
+                config = json.load(file)
+        except FileNotFoundError:
+            pass
         return config
     
-    def _save_config(self, config) -> None:
+    def _save_config(self, config: dict) -> None:
         """Overwrites the config file."""
-        config_path = os.path.join(self.dirs.user_config_dir, "config.json")
-        with open(config_path, "w") as file:
+        with open(self.config_path, "w") as file:
             json.dump(config, file)
 
-    def _update_config(self, key: str, value: Any) -> None:
+    def _update_config_key(self, key: str, value: Any) -> None:
         """Update a key in the config with the given value. If the config is troubled, it is cleared."""
-        config_path = os.path.join(self.dirs.user_config_dir, "config.json")
-        with open(config_path, "w+") as file:
+        with open(self.config_path, "w+") as file:
             try:
                 config = json.load(file)
             except JSONDecodeError:
                 config = {}
             config[key] = value
+            json.dump(config, file)
+    
+    def _clear_config_key(self, key: str) -> None:
+        """Remove a key in the config."""
+        with open(self.config_path, "w+") as file:
+            try:
+                config = json.load(file)
+            except JSONDecodeError:
+                return
+            config.pop(key, None)
             json.dump(config, file)
     
     @staticmethod

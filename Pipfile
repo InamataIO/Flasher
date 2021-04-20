@@ -9,6 +9,7 @@ pyinstaller = "~=4.3"
 requests = "~=2.25.1"
 keyring = "~=23.0.1"
 appdirs = "~=1.4.4"
+esptool = "~=3.0"
 
 [dev-packages]
 ipdb = "*"
