@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>747</width>
-    <height>440</height>
+    <width>717</width>
+    <height>450</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -48,7 +48,7 @@ QLabel {
 #welcomeSubHeader {
   font-size: 25px;
 }
-#loginForm QLabel, #addForm QLabel, #addWiFiForm QLabel {
+#loginForm QLabel, #addForm QLabel, #replaceForm QLabel, #addWiFiForm QLabel {
   padding-right: 8px;
 }
 #welcomeUsername {
@@ -66,7 +66,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>3</number>
+       <number>5</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -315,47 +315,17 @@ QLabel {
          </spacer>
         </item>
         <item>
-         <layout class="QGridLayout" name="gridLayout">
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
           <property name="leftMargin">
            <number>40</number>
           </property>
           <property name="rightMargin">
            <number>40</number>
           </property>
-          <item row="0" column="2">
-           <layout class="QVBoxLayout" name="verticalLayout_7">
-            <item>
-             <widget class="QPushButton" name="existingControllernewControllerPushButton">
-              <property name="minimumSize">
-               <size>
-                <width>150</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="text">
-               <string>Replace Controller</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_5">
-              <property name="text">
-               <string>Replace an already registered controller</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="0" column="0">
+          <item>
            <layout class="QVBoxLayout" name="verticalLayout_9">
             <item>
-             <widget class="QPushButton" name="addControllerPushButton">
+             <widget class="QPushButton" name="welcomeAddControllerButton">
               <property name="minimumSize">
                <size>
                 <width>150</width>
@@ -382,10 +352,66 @@ QLabel {
             </item>
            </layout>
           </item>
-          <item row="0" column="4">
+          <item>
+           <spacer name="horizontalSpacer_3">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
+            <item>
+             <widget class="QPushButton" name="welcomeReplaceControllerButton">
+              <property name="minimumSize">
+               <size>
+                <width>150</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="text">
+               <string>Replace Controller</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Replace an already registered controller</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_4">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
            <layout class="QVBoxLayout" name="verticalLayout_8">
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="welcomeManageWiFiButton">
               <property name="minimumSize">
                <size>
                 <width>150</width>
@@ -411,32 +437,6 @@ QLabel {
              </widget>
             </item>
            </layout>
-          </item>
-          <item row="0" column="3">
-           <spacer name="horizontalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="0" column="1">
-           <spacer name="horizontalSpacer_3">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
           </item>
          </layout>
         </item>
@@ -534,6 +534,93 @@ QLabel {
          </spacer>
         </item>
         <item>
+         <widget class="QWidget" name="replaceForm" native="true">
+          <layout class="QFormLayout" name="replaceForm_2">
+           <property name="leftMargin">
+            <number>40</number>
+           </property>
+           <property name="rightMargin">
+            <number>40</number>
+           </property>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_11">
+             <property name="text">
+              <string>Select site</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="comboBox_2"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_12">
+             <property name="text">
+              <string>Select controller</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="comboBox_3"/>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_13">
+             <property name="text">
+              <string>Select all required
+access points</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QListView" name="listView">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>100</height>
+              </size>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QComboBox" name="comboBox_4"/>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_14">
+             <property name="text">
+              <string>Select firmware</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QPushButton" name="pushButton">
+             <property name="text">
+              <string>Flash</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QProgressBar" name="progressBar">
+             <property name="value">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_18">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
            <spacer name="horizontalSpacer_7">
@@ -615,7 +702,7 @@ QLabel {
            <item row="0" column="0">
             <widget class="QLabel" name="label_2">
              <property name="text">
-              <string>Select Site</string>
+              <string>Select site</string>
              </property>
             </widget>
            </item>
@@ -625,15 +712,23 @@ QLabel {
            <item row="1" column="0">
             <widget class="QLabel" name="label_3">
              <property name="text">
-              <string>Controller name</string>
+              <string>Name controller</string>
              </property>
             </widget>
            </item>
            <item row="1" column="1">
             <widget class="QLineEdit" name="lineEdit"/>
            </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_10">
+             <property name="text">
+              <string>Select all required
+access points</string>
+             </property>
+            </widget>
+           </item>
            <item row="2" column="1">
-            <widget class="QListView" name="addAPListView">
+            <widget class="QListView" name="addControllerAPListView">
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -642,10 +737,27 @@ QLabel {
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_10">
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_9">
              <property name="text">
-              <string>WiFi APs</string>
+              <string>Select firmware</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="comboBox"/>
+           </item>
+           <item row="5" column="1">
+            <widget class="QProgressBar" name="addControllerProgressBar">
+             <property name="value">
+              <number>24</number>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QPushButton" name="addControllerFlashButton">
+             <property name="text">
+              <string>Flash</string>
              </property>
             </widget>
            </item>
@@ -752,7 +864,7 @@ QLabel {
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QLineEdit" name="lineEdit_2"/>
+            <widget class="QLineEdit" name="addWiFiSSIDLineEdit"/>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="label_8">
@@ -762,10 +874,10 @@ QLabel {
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="lineEdit_3"/>
+            <widget class="QLineEdit" name="addWiFiPasswordLineEdit"/>
            </item>
            <item row="2" column="1">
-            <widget class="QPushButton" name="pushButton_3">
+            <widget class="QPushButton" name="addWiFiSubmitPushButton">
              <property name="text">
               <string>Add WiFi connection</string>
              </property>
@@ -803,7 +915,7 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="wifiBackPushButton">
+           <widget class="QPushButton" name="addWiFiBackPushButton">
             <property name="text">
              <string>Back</string>
             </property>
@@ -858,7 +970,55 @@ QLabel {
          </spacer>
         </item>
         <item>
-         <widget class="QListView" name="apListView"/>
+         <layout class="QVBoxLayout" name="verticalLayout_11">
+          <property name="leftMargin">
+           <number>40</number>
+          </property>
+          <property name="rightMargin">
+           <number>40</number>
+          </property>
+          <item>
+           <widget class="QListView" name="apListView"/>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_8">
+            <item>
+             <widget class="QPushButton" name="manageWiFiAddButton">
+              <property name="text">
+               <string>Add</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="manageWiFiEditButton">
+              <property name="text">
+               <string>Edit</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="manageWiFiRemoveButton">
+              <property name="text">
+               <string>Remove</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <spacer name="verticalSpacer_17">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_7">
@@ -876,7 +1036,7 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="pushButton">
+           <widget class="QPushButton" name="manageWiFiBackButton">
             <property name="text">
              <string>Back</string>
             </property>
@@ -896,16 +1056,16 @@ QLabel {
   <tabstop>passwordLineEdit</tabstop>
   <tabstop>loginButton</tabstop>
   <tabstop>signUpButton</tabstop>
-  <tabstop>addControllerPushButton</tabstop>
-  <tabstop>existingControllernewControllerPushButton</tabstop>
-  <tabstop>pushButton_2</tabstop>
+  <tabstop>welcomeAddControllerButton</tabstop>
+  <tabstop>welcomeReplaceControllerButton</tabstop>
+  <tabstop>welcomeManageWiFiButton</tabstop>
   <tabstop>welcomeLogOutPushButton</tabstop>
   <tabstop>replaceBackPushButton</tabstop>
   <tabstop>existingSiteComboBox</tabstop>
   <tabstop>lineEdit</tabstop>
-  <tabstop>addAPListView</tabstop>
+  <tabstop>addControllerAPListView</tabstop>
   <tabstop>addBackPushButton</tabstop>
-  <tabstop>wifiBackPushButton</tabstop>
+  <tabstop>addWiFiBackPushButton</tabstop>
  </tabstops>
  <resources/>
  <connections/>

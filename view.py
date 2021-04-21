@@ -16,7 +16,7 @@ class DSFlasherUi(QMainWindow):
     class Pages:
         LOGIN = ["loginPage", -1]
         WELCOME = ["welcomePage", -1]
-        REPLACE = ["replaceControllerPage", -1]
+        REPLACE_CONTROLLER = ["replaceControllerPage", -1]
         ADD_CONTROLLER = ["addControllerPage", -1]
         ADD_WIFI = ["addWiFiPage", -1]
         MANAGE_WIFI = ["manageWiFiPage", -1]

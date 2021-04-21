@@ -30,7 +30,6 @@ class DSFlasherModel:
         self.token_url = f"{http_type}{self.ds_domain}/api/v1/accounts/auth-token/"
         pathlib.Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
         self.config_path = os.path.join(self.dirs.user_config_dir, "config.json")
-        self.notify = self._notify
 
     def log_in(
         self,
@@ -67,25 +66,27 @@ class DSFlasherModel:
     def log_out(self):
         self._clear_credentials()
 
-    def fetch_user_details(self):
-        pass
-
     def sign_up(self):
         print("Signing up!")
 
-    def get_saved_user(self) -> str:
+    def get_saved_username(self) -> str:
         return self._get_config().get("username", "")
+
+    def is_authenticated(self) -> bool:
+        username = self.get_saved_username()
+        credential = keyring.get_credential(self.app_name, username)
+        return bool(credential)
 
     def _save_credentials(self, username, token):
         """Save the auth token in a keychain."""
         self._update_config_key("username", username)
-        keyring.set_password("ds_flasher", username, token)
+        keyring.set_password(self.app_name, username, token)
 
     def _clear_credentials(self):
         """Clear the username and auth token"""
         username = self._get_config()["username"]
         try:
-            keyring.delete_password("ds_flasher", username)
+            keyring.delete_password(self.app_name, username)
         except PasswordDeleteError:
             pass
 
@@ -123,7 +124,3 @@ class DSFlasherModel:
                 return
             config.pop(key, None)
             json.dump(config, file)
-
-    @staticmethod
-    def _notify(message: str, title: str, level: str):
-        print(f"{level}: [{title}] {message}")
