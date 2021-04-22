@@ -1,6 +1,8 @@
+from config import DSFlasherConfig
 from functools import partial
 
 from PySide2.QtCore import QThreadPool
+from PySide2.QtGui import QCloseEvent
 
 from model import DSFlasherModel
 from view import DSFlasherUi
@@ -10,27 +12,35 @@ from worker import Worker, WorkerInformation, WorkerWarning
 
 class DSFlasherCtrl:
     def __init__(
-        self, model: DSFlasherModel, view: DSFlasherUi, wifi_model: DSFlasherWiFiModel
+        self,
+        model: DSFlasherModel,
+        view: DSFlasherUi,
+        wifi_model: DSFlasherWiFiModel,
+        config: DSFlasherConfig,
     ):
         self._model = model
         self._view = view
         self._wifi_model = wifi_model
+        self._config = config
 
         self.threadpool = QThreadPool()
         self._connect_signals()
         self._connect_model_views()
         self._page_after_add_wifi = None
+        self._page_before_add_wifi = None
         if model.is_authenticated():
             view.change_page(view.Pages.WELCOME)
         else:
             view.change_page(view.Pages.LOGIN)
 
     def _connect_signals(self):
+        # Main Application
+        self._view.close_callback = self.handle_close
+
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
         self._view.ui.signUpButton.clicked.connect(self._model.sign_up)
-        # self._view.ui.signUpButton.clicked.connect(self._view.switch)
-        self._view.ui.emailLineEdit.setText(self._model.get_saved_username())
+        self._view.ui.emailLineEdit.setText(self._model.get_username())
         self._view.ui.emailLineEdit.returnPressed.connect(
             self._view.ui.loginButton.click
         )
@@ -45,9 +55,10 @@ class DSFlasherCtrl:
         )
         self._view.ui.welcomeManageWiFiButton.clicked.connect(self.manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
-        self._view.ui.welcomeUsername.setText(self._model.get_saved_username())
+        self._view.ui.welcomeUsername.setText(self._model.get_username())
 
         # Add Controller Page
+        self._view.ui.addControllerFlashButton.clicked.connect(self.download_and_flash)
         self._view.ui.addBackPushButton.clicked.connect(self.to_welcome_page)
 
         # Replace Controller Page
@@ -55,11 +66,10 @@ class DSFlasherCtrl:
 
         # Add WiFi Page
         self._view.ui.addWiFiSubmitPushButton.clicked.connect(self.add_wifi_ap)
-        self._view.ui.addWiFiBackPushButton.clicked.connect(self.to_welcome_page)
+        self._view.ui.addWiFiBackPushButton.clicked.connect(self.back_from_add_wifi)
 
         # Manage WiFi Page
-        to_add_wifi_page = partial(self._view.change_page, self._view.Pages.ADD_WIFI)
-        self._view.ui.manageWiFiAddButton.clicked.connect(to_add_wifi_page)
+        self._view.ui.manageWiFiAddButton.clicked.connect(self.manage_wifi_to_add_wifi)
         self._view.ui.manageWiFiRemoveButton.clicked.connect(self.remove_wifi_ap)
         self._view.ui.manageWiFiBackButton.clicked.connect(self.to_welcome_page)
 
@@ -100,14 +110,14 @@ class DSFlasherCtrl:
         else:
             self._page_after_add_wifi = self._view.Pages.ADD_CONTROLLER
             self._view.change_page(self._view.Pages.ADD_WIFI)
-    
+
     def replace_controller(self):
         if self._wifi_model.ap_count():
             self._view.change_page(self._view.Pages.REPLACE_CONTROLLER)
         else:
             self._page_after_add_wifi = self._view.Pages.REPLACE_CONTROLLER
             self._view.change_page(self._view.Pages.ADD_WIFI)
-    
+
     def manage_wifi(self):
         if self._wifi_model.ap_count():
             self._view.change_page(self._view.Pages.MANAGE_WIFI)
@@ -115,17 +125,41 @@ class DSFlasherCtrl:
             self._page_after_add_wifi = self._view.Pages.MANAGE_WIFI
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
+    def download_and_flash(self):
+        self._view.ui.addControllerProgressText.show()
+        self._view.ui.addControllerProgressBar.show()
+
     def add_wifi_ap(self):
+        """Add the WiFi AP according to the user input (SSID, password)."""
         ssid = self._view.ui.addWiFiSSIDLineEdit.text()
         password = self._view.ui.addWiFiPasswordLineEdit.text()
         self._wifi_model.add_ap(ssid, password)
         self._view.change_page(self._page_after_add_wifi)
         self._view.ui.addWiFiSSIDLineEdit.clear()
         self._view.ui.addWiFiPasswordLineEdit.clear()
-    
+
+    def back_from_add_wifi(self):
+        """Go to the previous page"""
+        if self._page_before_add_wifi:
+            self._view.change_page(self._page_before_add_wifi)
+            self._page_before_add_wifi = None
+
+    def manage_wifi_to_add_wifi(self):
+        self._page_before_add_wifi = self._view.Pages.MANAGE_WIFI
+        self._page_after_add_wifi = self._view.Pages.MANAGE_WIFI
+        self._view.change_page(self._view.Pages.ADD_WIFI)
+
     def remove_wifi_ap(self):
+        """Remove the currently selected WiFi AP."""
         if indexes := self._view.ui.apListView.selectedIndexes():
             self._wifi_model.remove_ap(indexes[0].row())
 
     def to_welcome_page(self):
+        """Switch to the welcome page."""
         self._view.change_page(self._view.Pages.WELCOME)
+
+    def handle_close(self, event: QCloseEvent):
+        """Save the config on close."""
+        self._wifi_model.save_to_config()
+        self._config.save_config()
+        event.accept()

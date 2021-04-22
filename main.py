@@ -13,10 +13,12 @@ except:
 
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
+
 # import esptool
 
-from model import DSFlasherModel
+from config import DSFlasherConfig
 from controller import DSFlasherCtrl
+from model import DSFlasherModel
 from view import DSFlasherUi
 from wifi_model import DSFlasherWiFiModel
 
@@ -34,19 +36,24 @@ from wifi_model import DSFlasherWiFiModel
 # print('Got stdout: "{0}"'.format(f.getvalue()))
 # exit()
 
+
 def main():
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     ds_flasher = QApplication(sys.argv)
     # Enable High DPI display with PyQt5
-    if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+    if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
         ds_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
     view = DSFlasherUi()
-    view.show()
-    model = DSFlasherModel()
+    config = DSFlasherConfig()
+    model = DSFlasherModel(config=config)
     # aps = [(False, 'an item'), (False, 'another item')]
-    wifi_model = DSFlasherWiFiModel()
-    controller = DSFlasherCtrl(model=model, view=view, wifi_model=wifi_model)
+    wifi_model = DSFlasherWiFiModel(config=config)
+    controller = DSFlasherCtrl(
+        model=model, view=view, wifi_model=wifi_model, config=config
+    )
+    view.show()
     sys.exit(ds_flasher.exec_())
+
 
 if __name__ == "__main__":
     main()

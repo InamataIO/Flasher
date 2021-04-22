@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>717</width>
-    <height>450</height>
+    <height>454</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -32,8 +32,8 @@
 QPushButton {
   font-size: 16px;
   padding: 8px;
-  margin-top: 8px;
 }
+
 QLabel {
   font-size: 16px;
   color: white;
@@ -51,6 +51,10 @@ QLabel {
 #loginForm QLabel, #addForm QLabel, #replaceForm QLabel, #addWiFiForm QLabel {
   padding-right: 8px;
 }
+#loginForm QPushButton, #addForm QPushButton, #replaceForm QPushButton, #addWiFiForm QPushButton {
+  margin-top: 8px;
+}
+
 #welcomeUsername {
   color: #ccc;
 }</string>
@@ -66,7 +70,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>5</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -251,6 +255,53 @@ QLabel {
            </size>
           </property>
          </spacer>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_10">
+          <item>
+           <spacer name="horizontalSpacer_13">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="loginLoadingText">
+            <property name="text">
+             <string>Logging in</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="loginLoadingBar">
+            <property name="maximum">
+             <number>0</number>
+            </property>
+            <property name="value">
+             <number>-1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_12">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
         </item>
        </layout>
       </widget>
@@ -598,9 +649,16 @@ access points</string>
             </widget>
            </item>
            <item row="6" column="1">
-            <widget class="QProgressBar" name="progressBar">
+            <widget class="QProgressBar" name="replaceControllerProgressBar">
              <property name="value">
-              <number>24</number>
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="replaceControllerProgressText">
+             <property name="text">
+              <string>Current task</string>
              </property>
             </widget>
            </item>
@@ -624,6 +682,36 @@ access points</string>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
           <item>
            <spacer name="horizontalSpacer_7">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="replaceControllerLoadingText">
+            <property name="text">
+             <string>Fetching data</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="replaceControllerLoadingBar">
+            <property name="maximum">
+             <number>0</number>
+            </property>
+            <property name="value">
+             <number>-1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_10">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -750,14 +838,21 @@ access points</string>
            <item row="5" column="1">
             <widget class="QProgressBar" name="addControllerProgressBar">
              <property name="value">
-              <number>24</number>
+              <number>0</number>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="addControllerProgressText">
+             <property name="text">
+              <string>Current task</string>
              </property>
             </widget>
            </item>
            <item row="4" column="1">
             <widget class="QPushButton" name="addControllerFlashButton">
              <property name="text">
-              <string>Flash</string>
+              <string>Download &amp;&amp; Flash</string>
              </property>
             </widget>
            </item>
@@ -781,6 +876,36 @@ access points</string>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
           <item>
            <spacer name="horizontalSpacer_6">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="addControllerLoadingText">
+            <property name="text">
+             <string>Fetching data</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="addControllerLoadingBar">
+            <property name="maximum">
+             <number>0</number>
+            </property>
+            <property name="value">
+             <number>-1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_11">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
