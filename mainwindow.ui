@@ -601,7 +601,7 @@ QLabel {
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QComboBox" name="comboBox_2"/>
+            <widget class="QComboBox" name="replaceControllerSitesComboBox"/>
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="label_12">
@@ -611,7 +611,7 @@ QLabel {
             </widget>
            </item>
            <item row="2" column="1">
-            <widget class="QComboBox" name="comboBox_3"/>
+            <widget class="QComboBox" name="replaceControllerControllersComboBox"/>
            </item>
            <item row="3" column="0">
             <widget class="QLabel" name="label_13">
@@ -622,7 +622,7 @@ access points</string>
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QListView" name="listView">
+            <widget class="QListView" name="replaceControllerAPListView">
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -632,7 +632,7 @@ access points</string>
             </widget>
            </item>
            <item row="4" column="1">
-            <widget class="QComboBox" name="comboBox_4"/>
+            <widget class="QComboBox" name="replaceControllerFirmwaresComboBox"/>
            </item>
            <item row="4" column="0">
             <widget class="QLabel" name="label_14">
@@ -642,9 +642,9 @@ access points</string>
             </widget>
            </item>
            <item row="5" column="1">
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="replaceControllerFlashButton">
              <property name="text">
-              <string>Flash</string>
+              <string>Download &amp;&amp; Flash</string>
              </property>
             </widget>
            </item>
@@ -724,6 +724,13 @@ access points</string>
            </spacer>
           </item>
           <item>
+           <widget class="QPushButton" name="replaceControllerReloadButton">
+            <property name="text">
+             <string>Reload</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QPushButton" name="replaceBackPushButton">
             <property name="text">
              <string>Back</string>
@@ -795,7 +802,7 @@ access points</string>
             </widget>
            </item>
            <item row="0" column="1">
-            <widget class="QComboBox" name="existingSiteComboBox"/>
+            <widget class="QComboBox" name="addControllerSitesComboBox"/>
            </item>
            <item row="1" column="0">
             <widget class="QLabel" name="label_3">
@@ -833,7 +840,7 @@ access points</string>
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QComboBox" name="comboBox"/>
+            <widget class="QComboBox" name="addControllerFirmwaresComboBox"/>
            </item>
            <item row="5" column="1">
             <widget class="QProgressBar" name="addControllerProgressBar">
@@ -916,6 +923,13 @@ access points</string>
              </size>
             </property>
            </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="addControllerReloadButton">
+            <property name="text">
+             <string>Reload</string>
+            </property>
+           </widget>
           </item>
           <item>
            <widget class="QPushButton" name="addBackPushButton">
@@ -1186,7 +1200,7 @@ access points</string>
   <tabstop>welcomeManageWiFiButton</tabstop>
   <tabstop>welcomeLogOutPushButton</tabstop>
   <tabstop>replaceBackPushButton</tabstop>
-  <tabstop>existingSiteComboBox</tabstop>
+  <tabstop>addControllerSitesComboBox</tabstop>
   <tabstop>lineEdit</tabstop>
   <tabstop>addControllerAPListView</tabstop>
   <tabstop>addBackPushButton</tabstop>

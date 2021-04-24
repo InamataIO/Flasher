@@ -15,10 +15,10 @@ class DSFlasherWiFiModel(QAbstractListModel):
         def __str__(self):
             return f"{self.ssid}:{self.password}"
 
-    def __init__(self, config: DSFlasherConfig, aps: List[AP] = None, *args, **kwargs):
+    def __init__(self, config: DSFlasherConfig, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._config = config
-        self.aps: List[self.AP] = aps or []
+        self.aps: List[self.AP] = []
         ap_config = config.config.get("wifi_aps", [])
         new_aps = [self.AP(ssid=i["ssid"], password=i["password"]) for i in ap_config]
         self.aps.extend(new_aps)

@@ -2,6 +2,8 @@ import os
 import sys
 import io
 from contextlib import redirect_stdout
+import logging
+import argparse
 
 # Needed for Wayland applications
 os.environ["QT_QPA_PLATFORM"] = "xcb"
@@ -38,6 +40,17 @@ from wifi_model import DSFlasherWiFiModel
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-v", "--verbose", help="increase output verbosity", action="store_true"
+    )
+    args = parser.parse_args()
+    if args.verbose:
+        logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
+        logging.info("Temp path: %s", sys._MEIPASS)
+    else:
+        logging.basicConfig(format="%(levelname)s: %(message)s")
+
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     ds_flasher = QApplication(sys.argv)
     # Enable High DPI display with PyQt5
@@ -46,7 +59,6 @@ def main():
     view = DSFlasherUi()
     config = DSFlasherConfig()
     model = DSFlasherModel(config=config)
-    # aps = [(False, 'an item'), (False, 'another item')]
     wifi_model = DSFlasherWiFiModel(config=config)
     controller = DSFlasherCtrl(
         model=model, view=view, wifi_model=wifi_model, config=config

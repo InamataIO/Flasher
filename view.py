@@ -66,6 +66,7 @@ class DSFlasherUi(QMainWindow):
             i[1] = index
     
     def _hide_disabled_widgets(self):
+        self.ui.manageWiFiEditButton.hide()
         self.ui.loginLoadingText.hide()
         self.ui.loginLoadingBar.hide()
         self.ui.addControllerLoadingText.hide()

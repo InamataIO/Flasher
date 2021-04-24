@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "1921536275c6948dd6d1c2d101fe96ddc72decdc849afc69ea8777711bf505be"
+            "sha256": "07a1c84c0efe8925610ca202139a0a10034bcb7bdc122fc06a939230ab8e59e4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -133,10 +133,10 @@
         },
         "importlib-metadata": {
             "hashes": [
-                "sha256:19192b88d959336bfa6bdaaaef99aeafec179eca19c47c804e555703ee5f07ef",
-                "sha256:2e881981c9748d7282b374b68e759c87745c25427b67ecf0cc67fb6637a1bff9"
+                "sha256:8c501196e49fb9df5df43833bdb1e4328f64847763ec8a50703148b73784d581",
+                "sha256:d7eb1dea6d6a6086f8be21784cc9e3bcfa55872b52309bc5fad53a8ea444465d"
             ],
-            "version": "==4.0.0"
+            "version": "==4.0.1"
         },
         "jeepney": {
             "hashes": [
@@ -216,6 +216,14 @@
             ],
             "markers": "sys_platform == 'linux'",
             "version": "==3.3.1"
+        },
+        "semantic-version": {
+            "hashes": [
+                "sha256:45e4b32ee9d6d70ba5f440ec8cc5221074c7f4b0e8918bdab748cc37912440a9",
+                "sha256:d2cb2de0558762934679b9a104e82eca7af448c9f4974d1f3eeccff651df8a54"
+            ],
+            "index": "pypi",
+            "version": "==2.8.5"
         },
         "shiboken2": {
             "hashes": [
