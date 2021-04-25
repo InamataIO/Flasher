@@ -23,7 +23,7 @@ class DSFlasherWiFiModel(QAbstractListModel):
         new_aps = [self.AP(ssid=i["ssid"], password=i["password"]) for i in ap_config]
         self.aps.extend(new_aps)
 
-    def data(self, index, role) -> str:
+    def data(self, index: QModelIndex, role) -> str:
         if role == QtCore.Qt.DisplayRole:
             ap = self.aps[index.row()]
             return str(ap)
@@ -46,6 +46,10 @@ class DSFlasherWiFiModel(QAbstractListModel):
         self.beginRemoveRows(QModelIndex(), row, row)
         self.aps.pop(row)
         self.endRemoveRows()
+    
+    def get_ap(self, index: QModelIndex):
+        """Get the AP at the specified index."""
+        return self.aps[index.row()]
 
     def save_to_config(self):
         """Save the current APs to the config file"""

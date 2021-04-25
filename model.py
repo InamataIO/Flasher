@@ -3,7 +3,9 @@ import json
 import logging
 import os
 import time
+from typing import List
 from urllib.parse import urlparse
+from wifi_model import DSFlasherWiFiModel
 
 import keyring
 import requests
@@ -62,6 +64,11 @@ class DSFlasherModel:
                         id, name
                     } }
                 }
+                allControllerComponentTypes(isGlobal: true, name: "ESP32") {
+                    edges { node {
+                        id, name, isGlobal
+                    } }
+                }
             }""",
             "variables": None,
         }
@@ -72,21 +79,22 @@ class DSFlasherModel:
         response = self._server_request(self.graphql_url, data, headers=headers)
         output = json.loads(response.content)
         if errors := output.get("errors"):
-            print(errors)
+            logging.warning(errors)
             raise WorkerWarning("Error while getting site and firmware data.")
         firmware_images = [
             i["node"] for i in output["data"]["allFirmwareImages"]["edges"]
         ]
         firmware_images.sort(key=lambda x: Version(x["version"]), reverse=True)
-        self._config.config["firmware_images"] = firmware_images
+        self._config.config["firmwareImages"] = firmware_images
         sites = [i["node"] for i in output["data"]["allSites"]["edges"]]
         self._config.config["sites"] = sites
+        controller_types = [
+            i["node"] for i in output["data"]["allControllerComponentTypes"]["edges"]
+        ]
+        self._config.config["controllerComponentTypes"] = controller_types
 
     def get_controller_data(self, site_id: str, **kwargs) -> None:
         """Get the available controllers for a given site."""
-        if not site_id:
-            logging.info("get_controller_data called without site")
-            return
         data = {
             "query": f"""
             {{
@@ -107,7 +115,7 @@ class DSFlasherModel:
         response = self._server_request(self.graphql_url, data, headers=headers)
         output = json.loads(response.content)
         if errors := output.get("errors"):
-            print(errors)
+            logging.warning(errors)
             raise WorkerWarning("Error while getting controller data.")
         results = output["data"]["allControllerComponents"]
         if results["pageInfo"]["hasNextPage"]:
@@ -126,13 +134,42 @@ class DSFlasherModel:
             self._config.config["controllers"] = {}
         self._config.config["controllers"].update({site_id: controllers})
 
+    def register_controller(self, name, site_id, controller_type_id, **kwargs):
+        data = {
+            "query": """
+            mutation createControllerComponent($input: CreateControllerComponentInput!) {
+                createControllerComponent(input: $input) {
+                    controllerComponent {
+                        id, siteEntity { name }, authToken { key }
+                    }
+                }
+            }
+            """,
+            "variables": json.dumps(
+                {
+                    "input": {
+                        "name": name,
+                        "site": site_id,
+                        "controllerType": controller_type_id,
+                    }
+                }
+            ),
+        }
+        headers = {
+            **self._default_headers,
+            "Authorization": f"Token {self._auth_token}",
+        }
+        response = self._server_request(self.graphql_url, data, headers=headers)
+        output = json.loads(response.content)
+        raise NotImplementedError("Model.register_controller not implemented yet")
+
     def get_username(self) -> str:
         return self._config.config.get("username", "")
 
     def is_authenticated(self) -> bool:
         return bool(self._auth_token)
 
-    def get_firmware_image_data(self, firmware_image, **kwargs) -> dict:
+    def download_firmware_image(self, firmware_image, **kwargs) -> dict:
         """Download the selected firmware if it is not cached locally."""
         try:
             filename = self._derive_firmware_image_filename(firmware_image)
@@ -140,6 +177,8 @@ class DSFlasherModel:
             # If the file has been downloaded to the cache and has the same hash, return
             if self._is_file_valid(path, firmware_image["hashSha3_512"]):
                 return firmware_image
+            if not self._has_url_expired(firmware_image["file"]):
+                self._refresh_firmware_image_data(firmware_image["id"])
             # Download the file and notify of progress
             os.makedirs(self._config.dirs.user_cache_dir, exist_ok=True)
             with open(path, "wb+") as f:
@@ -172,7 +211,9 @@ class DSFlasherModel:
             raise WorkerWarning(message)
         return firmware_image
 
-    def flash_controller(self, firmware, **kwargs):
+    def flash_controller(
+        self, firmware: dict, wifi_aps: List[DSFlasherWiFiModel.AP], **kwargs
+    ):
         progress_callback = kwargs["progress_callback"]
         for i in range(1, 101):
             time.sleep(0.1)
@@ -194,6 +235,14 @@ class DSFlasherModel:
         except FileNotFoundError:
             file_hash = ""
         return sha3_512_hash == file_hash
+
+    def _has_url_expired(self, url):
+        """Check if the access key of the pre-signed URL is still valid."""
+        raise NotImplementedError("Model._has_url_expired not implemented yet")
+    
+    def _refresh_firmware_image_data(self, firmware_image_id):
+        """Refresh metadata and (expired) URL of a firmware image."""
+        raise NotImplementedError("Model._refresh_firmware_image_data not implemented yet")
 
     def _save_credentials(self, username: str, token: str) -> None:
         """Save the auth token in a keychain."""
@@ -218,11 +267,12 @@ class DSFlasherModel:
             response.raise_for_status()
             return response
         except requests.exceptions.HTTPError as err:
+            import ipdb; ipdb.set_trace()
             if err.response.status_code == 400 and err.request.url == self.token_url:
                 message = "Login credentials not correct. Please check your e-mail and password."
                 raise WorkerInformation(message) from err
             if err.response.status_code == 400 and err.request.url == self.graphql_url:
-                logging.debug()
+                logging.info(f"GraphQL error: {err.response.content}")
                 message = (
                     "An error occured while requesting data from the server API."
                     " Check that you're using an up-to-date version of the DS Flasher tool"

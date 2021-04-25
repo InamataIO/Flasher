@@ -38,6 +38,9 @@ QLabel {
   font-size: 16px;
   color: white;
 }
+#replaceControllerHint, #addControllerHint {
+  color: #ccc;
+}
 #centralWidget, QMessageBox {
   background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #620890, stop:1 #d33479);
 }
@@ -613,14 +616,6 @@ QLabel {
            <item row="2" column="1">
             <widget class="QComboBox" name="replaceControllerControllersComboBox"/>
            </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="label_13">
-             <property name="text">
-              <string>Select all required
-access points</string>
-             </property>
-            </widget>
-           </item>
            <item row="3" column="1">
             <widget class="QListView" name="replaceControllerAPListView">
              <property name="maximumSize">
@@ -629,10 +624,10 @@ access points</string>
                <height>100</height>
               </size>
              </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::ExtendedSelection</enum>
+             </property>
             </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QComboBox" name="replaceControllerFirmwaresComboBox"/>
            </item>
            <item row="4" column="0">
             <widget class="QLabel" name="label_14">
@@ -641,10 +636,20 @@ access points</string>
              </property>
             </widget>
            </item>
+           <item row="4" column="1">
+            <widget class="QComboBox" name="replaceControllerFirmwaresComboBox"/>
+           </item>
            <item row="5" column="1">
             <widget class="QPushButton" name="replaceControllerFlashButton">
              <property name="text">
               <string>Download &amp;&amp; Flash</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="replaceControllerProgressText">
+             <property name="text">
+              <string>Current task</string>
              </property>
             </widget>
            </item>
@@ -655,12 +660,24 @@ access points</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="replaceControllerProgressText">
-             <property name="text">
-              <string>Current task</string>
-             </property>
-            </widget>
+           <item row="3" column="0">
+            <layout class="QVBoxLayout" name="verticalLayout_13">
+             <item>
+              <widget class="QLabel" name="label_13">
+               <property name="text">
+                <string>Select access points</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="replaceControllerHint">
+               <property name="text">
+                <string>Use Ctrl / Shift for
+multi-selection</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>
@@ -814,14 +831,6 @@ access points</string>
            <item row="1" column="1">
             <widget class="QLineEdit" name="addControllerNameLineEdit"/>
            </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_10">
-             <property name="text">
-              <string>Select all required
-access points</string>
-             </property>
-            </widget>
-           </item>
            <item row="2" column="1">
             <widget class="QListView" name="addControllerAPListView">
              <property name="maximumSize">
@@ -829,6 +838,9 @@ access points</string>
                <width>16777215</width>
                <height>100</height>
               </size>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::ExtendedSelection</enum>
              </property>
             </widget>
            </item>
@@ -862,6 +874,31 @@ access points</string>
               <string>Download &amp;&amp; Flash</string>
              </property>
             </widget>
+           </item>
+           <item row="2" column="0">
+            <layout class="QVBoxLayout" name="verticalLayout_14">
+             <item>
+              <widget class="QLabel" name="label_15">
+               <property name="text">
+                <string>Select access points</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="addControllerHint">
+               <property name="text">
+                <string>Use Ctrl / Shift for
+multi-selection</string>
+               </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </widget>

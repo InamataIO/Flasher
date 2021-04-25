@@ -41,4 +41,4 @@ class DSFlasherConfig:
         """Clears cache incl. sites, firmware images and controller data."""
         self.config.pop("sites", None)
         self.config.pop("controllers", None)
-        self.config.pop("firmware_images", None)
+        self.config.pop("firmwareImages", None)

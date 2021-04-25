@@ -223,7 +223,7 @@ class DSFlasherCtrl:
         # Update the firmware combo box and retain the currently selected item
         current_firmware = self._view.ui.addControllerFirmwaresComboBox.currentData()
         self._view.ui.addControllerFirmwaresComboBox.clear()
-        for i in self._config.config.get("firmware_images", []):
+        for i in self._config.config.get("firmwareImages", []):
             self._view.ui.addControllerFirmwaresComboBox.addItem(
                 f"{i['name']} {i['version']}", userData=i["id"]
             )
@@ -250,16 +250,14 @@ class DSFlasherCtrl:
 
     def add_controller_download_and_flash(self):
         """Download the selected firmware image and flash it to the ESP."""
-        self.add_controller_set_widget_disabled_state(True)
-        self._view.ui.addControllerProgressText.setText("Downloading (1/2)")
-        self._view.ui.addControllerProgressText.show()
-        self._view.ui.addControllerProgressBar.setValue(0)
-        self._view.ui.addControllerProgressBar.setRange(0, 100)
-        self._view.ui.addControllerProgressBar.show()
+        self._view.ui.addControllerProgressText.setText("Downloading (1/3)")
+        self.add_controller_set_widgets_for_flashing(True)
+
         firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
-        firmwares = self._config.config.get("firmware_images", [])
+        firmwares = self._config.config.get("firmwareImages", [])
         firmware = next((i for i in firmwares if i["id"] == firmware_id), None)
-        worker = Worker(self._model.get_firmware_image_data, firmware)
+
+        worker = Worker(self._model.download_firmware_image, firmware)
         worker.signals.progress.connect(self.add_controller_download_progress)
         worker.signals.result.connect(self.add_controller_download_result)
         worker.signals.error.connect(self.add_controller_download_error)
@@ -271,27 +269,52 @@ class DSFlasherCtrl:
             self._view.ui.addControllerProgressBar.setValue(-1)
             self._view.ui.addControllerProgressBar.setRange(0, 0)
         else:
-            self._view.ui.addControllerProgressBar.setValue(progress / 2)
+            self._view.ui.addControllerProgressBar.setValue(progress / 3)
 
     def add_controller_download_result(self, firmware: dict):
         """After completing the download, flash the controller."""
-        self._view.ui.addControllerProgressText.setText("Flashing (2/2)")
-        self._view.ui.addControllerProgressBar.setValue(50)
-        worker = Worker(self._model.flash_controller, firmware)
+        self._view.ui.addControllerProgressText.setText("Registering (2/3)")
+        self._view.ui.addControllerProgressBar.setValue(33)
+
+        name = self._view.ui.addControllerNameLineEdit.text()
+        site_id = self._view.ui.addControllerSitesComboBox.currentData()
+        controller_type_id = self._config.config["controllerComponentTypes"][0]["id"]
+
+        worker = Worker(
+            self._model.register_controller, name, site_id, controller_type_id
+        )
+        worker.signals.result.connect(self.add_controller_register_result)
+        worker.signals.error.connect(self.add_controller_register_error)
+        self.threadpool.start(worker)
+
+    def add_controller_download_error(self, error):
+        """Handle errors while downloading the firmware."""
+        self.add_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
+
+    def add_controller_register_result(self, _):
+        """After registering a new controller, start the flashing process."""
+        # Get the firmware image entry specified in the firmware combo box
+        firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
+        firmwares = self._config.config.get("firmwareImages", [])
+        firmware = next((i for i in firmwares if i["id"] == firmware_id), None)
+
+        # Get the WiFi APs selected in the QListView
+        indexes = self._view.ui.addControllerAPListView.selectedIndexes()
+        wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
+
+        # Start a task to flash the controller
+        worker = Worker(self._model.flash_controller, firmware, wifi_aps)
         worker.signals.progress.connect(self.add_controller_flash_progress)
         worker.signals.result.connect(self.add_controller_flash_result)
         worker.signals.error.connect(self.add_controller_flash_error)
         worker.signals.finished.connect(self.add_controller_flash_finished)
         self.threadpool.start(worker)
 
-    def add_controller_download_error(self, error):
-        """Handle errors while downloading the firmware."""
-        self._view.ui.addControllerProgressText.hide()
-        self._view.ui.addControllerProgressBar.hide()
-        self._view.ui.addControllerFlashButton.setDisabled(False)
-        self._view.ui.addControllerReloadButton.setDisabled(False)
+    def add_controller_register_error(self, error):
+        """Handle errors when registering a new controller."""
         self.handle_error(error)
-        self.add_controller_set_widget_disabled_state(False)
+        self.add_controller_set_widgets_for_flashing(False)
 
     def add_controller_flash_progress(self, progress):
         if progress < 0:
@@ -303,29 +326,34 @@ class DSFlasherCtrl:
     def add_controller_flash_result(self, _):
         message = "Successfully flashed the microcontroller."
         self._view.notify(message, "Finished Flashing", "information")
-        self.add_controller_set_widget_disabled_state(False)
 
     def add_controller_flash_error(self, error):
         """Handle errors while flashing the controller."""
-        self._view.ui.addControllerProgressText.hide()
-        self._view.ui.addControllerProgressBar.hide()
+
         self.handle_error(error)
-        self.add_controller_set_widget_disabled_state(False)
 
     def add_controller_flash_finished(self):
         """Handle the end (success or error) of flashing the controller."""
-        self._view.ui.addControllerProgressText.hide()
-        self._view.ui.addControllerProgressBar.hide()
+        self.add_controller_set_widgets_for_flashing(False)
 
-    def add_controller_set_widget_disabled_state(self, state: bool):
+    def add_controller_set_widgets_for_flashing(self, is_flashing: bool):
         """Disable or enable all add controller widgets."""
-        self._view.ui.addControllerSitesComboBox.setDisabled(state)
-        self._view.ui.addControllerNameLineEdit.setDisabled(state)
-        self._view.ui.addControllerAPListView.setDisabled(state)
-        self._view.ui.addControllerFirmwaresComboBox.setDisabled(state)
-        self._view.ui.addControllerFlashButton.setDisabled(state)
-        self._view.ui.addControllerReloadButton.setDisabled(state)
-        self._view.ui.addControllerBackButton.setDisabled(state)
+        if is_flashing:
+            self._view.ui.addControllerProgressText.show()
+            self._view.ui.addControllerProgressBar.setValue(0)
+            self._view.ui.addControllerProgressBar.setRange(0, 100)
+            self._view.ui.addControllerProgressBar.show()
+        else:
+            self._view.ui.addControllerProgressText.hide()
+            self._view.ui.addControllerProgressBar.hide()
+
+        self._view.ui.addControllerSitesComboBox.setDisabled(is_flashing)
+        self._view.ui.addControllerNameLineEdit.setDisabled(is_flashing)
+        self._view.ui.addControllerAPListView.setDisabled(is_flashing)
+        self._view.ui.addControllerFirmwaresComboBox.setDisabled(is_flashing)
+        self._view.ui.addControllerFlashButton.setDisabled(is_flashing)
+        self._view.ui.addControllerReloadButton.setDisabled(is_flashing)
+        self._view.ui.addControllerBackButton.setDisabled(is_flashing)
 
     ##############################
     # Replace controller functionality
@@ -368,7 +396,7 @@ class DSFlasherCtrl:
             self._view.ui.replaceControllerFirmwaresComboBox.currentData()
         )
         self._view.ui.replaceControllerFirmwaresComboBox.clear()
-        for i in self._config.config.get("firmware_images", []):
+        for i in self._config.config.get("firmwareImages", []):
             self._view.ui.replaceControllerFirmwaresComboBox.addItem(
                 f"{i['name']} {i['version']}", userData=i["id"]
             )
