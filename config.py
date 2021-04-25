@@ -19,6 +19,7 @@ class DSFlasherConfig:
         pathlib.Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
         self._config_path = os.path.join(self.dirs.user_config_dir, "config.json")
         logging.info("Config path: %s", self._config_path)
+        logging.info("Cache dir: %s", self.dirs.user_cache_dir)
         self.config = self.load_config()
 
     def load_config(self) -> None:

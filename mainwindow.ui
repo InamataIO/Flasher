@@ -70,7 +70,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>3</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -812,7 +812,7 @@ access points</string>
             </widget>
            </item>
            <item row="1" column="1">
-            <widget class="QLineEdit" name="lineEdit"/>
+            <widget class="QLineEdit" name="addControllerNameLineEdit"/>
            </item>
            <item row="2" column="0">
             <widget class="QLabel" name="label_10">
@@ -932,7 +932,7 @@ access points</string>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="addBackPushButton">
+           <widget class="QPushButton" name="addControllerBackButton">
             <property name="text">
              <string>Back</string>
             </property>
@@ -1201,9 +1201,9 @@ access points</string>
   <tabstop>welcomeLogOutPushButton</tabstop>
   <tabstop>replaceBackPushButton</tabstop>
   <tabstop>addControllerSitesComboBox</tabstop>
-  <tabstop>lineEdit</tabstop>
+  <tabstop>addControllerNameLineEdit</tabstop>
   <tabstop>addControllerAPListView</tabstop>
-  <tabstop>addBackPushButton</tabstop>
+  <tabstop>addControllerBackButton</tabstop>
   <tabstop>addWiFiBackPushButton</tabstop>
  </tabstops>
  <resources/>

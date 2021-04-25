@@ -11,6 +11,9 @@ from worker import Worker, WorkerInformation, WorkerWarning
 
 
 class DSFlasherCtrl:
+    #####################
+    # Setup functionality
+
     def __init__(
         self,
         model: DSFlasherModel,
@@ -53,18 +56,20 @@ class DSFlasherCtrl:
         # Welcome Page
         self._view.ui.welcomeAddControllerButton.clicked.connect(self.to_add_controller)
         self._view.ui.welcomeReplaceControllerButton.clicked.connect(
-            self.replace_controller
+            self.to_replace_controller
         )
-        self._view.ui.welcomeManageWiFiButton.clicked.connect(self.manage_wifi)
+        self._view.ui.welcomeManageWiFiButton.clicked.connect(self.to_manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
         self._view.ui.welcomeUsername.setText(self._model.get_username())
 
         # Add Controller Page
-        self._view.ui.addControllerFlashButton.clicked.connect(self.download_and_flash)
+        self._view.ui.addControllerFlashButton.clicked.connect(
+            self.add_controller_download_and_flash
+        )
         self._view.ui.addControllerReloadButton.clicked.connect(
             self.add_controller_reload
         )
-        self._view.ui.addBackPushButton.clicked.connect(self.to_welcome_page)
+        self._view.ui.addControllerBackButton.clicked.connect(self.to_welcome_page)
 
         # Replace Controller Page
         self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.connect(
@@ -90,11 +95,8 @@ class DSFlasherCtrl:
         self._view.ui.addControllerAPListView.setModel(self._wifi_model)
         self._view.ui.replaceControllerAPListView.setModel(self._wifi_model)
 
-    def log_out(self):
-        """Log the user out and clear the password and auth token."""
-        self._model.log_out()
-        self._view.ui.passwordLineEdit.clear()
-        self._view.change_page(self._view.Pages.LOGIN)
+    ##########################
+    # Login Page Functionality
 
     def log_in(self):
         """Log the user in and save the auth token."""
@@ -120,33 +122,18 @@ class DSFlasherCtrl:
         self._view.ui.loginLoadingText.hide()
         self._view.ui.loginLoadingBar.hide()
 
-    def handle_error(self, error):
-        """
-        Handle errors raised by worker threads. Error handler. Use separate callbacks below to
-        avoid double free segmentation error.
-        """
-        if isinstance(error, WorkerInformation):
-            self._view.notify(str(error), "", "information")
-        elif isinstance(error, WorkerWarning):
-            self._view.notify(str(error), "", "warning")
-        else:
-            self._view.notify(str(error), "", "critical")
-
     def log_in_error(self, error):
         """Error handler for the login thread."""
         self.handle_error(error)
 
-    def handle_add_controller_page_error(self, error):
-        """Error handler for the add controller data fetch thread."""
-        self.handle_error(error)
+    ############################
+    # Welcome Page Functionality
 
-    def handle_replace_controller_page_error(self, error):
-        """Error handler for the replace controller data fetch thread."""
-        self.handle_error(error)
-
-    def replace_controller_load_controllers_error(self, error):
-        """Error handler for fetching the controllers thread."""
-        self.handle_error(error)
+    def log_out(self):
+        """Log the user out and clear the password and auth token."""
+        self._model.log_out()
+        self._view.ui.passwordLineEdit.clear()
+        self._view.change_page(self._view.Pages.LOGIN)
 
     def to_add_controller(self):
         """Request to switch to the add controller page. Go to add wifi if none exist."""
@@ -156,7 +143,7 @@ class DSFlasherCtrl:
             self._page_after_add_wifi = self._view.Pages.ADD_CONTROLLER
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
-    def replace_controller(self):
+    def to_replace_controller(self):
         """Request to switch to the replace controller page. Go to add wifi if none exist."""
         if self._wifi_model.ap_count():
             self._view.change_page(self._view.Pages.REPLACE_CONTROLLER)
@@ -164,7 +151,7 @@ class DSFlasherCtrl:
             self._page_after_add_wifi = self._view.Pages.REPLACE_CONTROLLER
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
-    def manage_wifi(self):
+    def to_manage_wifi(self):
         """Request to switch to the mange page. Go to add wifi if none exist."""
         if self._wifi_model.ap_count():
             self._view.change_page(self._view.Pages.MANAGE_WIFI)
@@ -172,10 +159,8 @@ class DSFlasherCtrl:
             self._page_after_add_wifi = self._view.Pages.MANAGE_WIFI
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
-    def download_and_flash(self):
-        """Download the selected firmware image and flash it to the ESP."""
-        self._view.ui.addControllerProgressText.show()
-        self._view.ui.addControllerProgressBar.show()
+    #############################
+    # Add WiFi Page Functionality
 
     def add_wifi_ap(self):
         """Add the WiFi AP according to the user input (SSID, password)."""
@@ -192,6 +177,9 @@ class DSFlasherCtrl:
             self._view.change_page(self._page_before_add_wifi)
             self._page_before_add_wifi = None
 
+    ################################
+    # Manage WiFi Page Functionality
+
     def manage_wifi_to_add_wifi(self):
         self._page_before_add_wifi = self._view.Pages.MANAGE_WIFI
         self._page_after_add_wifi = self._view.Pages.MANAGE_WIFI
@@ -202,22 +190,8 @@ class DSFlasherCtrl:
         if indexes := self._view.ui.apListView.selectedIndexes():
             self._wifi_model.remove_ap(indexes[0].row())
 
-    def to_welcome_page(self):
-        """Switch to the welcome page."""
-        self._view.change_page(self._view.Pages.WELCOME)
-
-    def page_changed(self, index: int):
-        """Called when the page of the stacked widget changes"""
-        if index == self._view.Pages.LOGIN[1]:
-            pass
-        elif index == self._view.Pages.WELCOME[1]:
-            pass
-        elif index == self._view.Pages.ADD_CONTROLLER[1]:
-            self.handle_add_controller_page()
-        elif index == self._view.Pages.REPLACE_CONTROLLER[1]:
-            self.handle_replace_controller_page()
-        else:
-            pass
+    ##############################
+    # Add controller functionality
 
     def handle_add_controller_page(self):
         """Get data and populate the combo boxes on the add controller page."""
@@ -260,6 +234,10 @@ class DSFlasherCtrl:
             if index:
                 self._view.ui.addControllerFirmwaresComboBox.setCurrentIndex(index)
 
+    def handle_add_controller_page_error(self, error):
+        """Error handler for the add controller data fetch thread."""
+        self.handle_error(error)
+
     def handle_add_controller_page_finished(self):
         """Hide the loading widgets for the add controller page."""
         self._view.ui.addControllerLoadingText.hide()
@@ -269,6 +247,88 @@ class DSFlasherCtrl:
         """Clear the cached data and repopulate the combo boxes."""
         self._config.clear_cached_data()
         self.handle_add_controller_page()
+
+    def add_controller_download_and_flash(self):
+        """Download the selected firmware image and flash it to the ESP."""
+        self.add_controller_set_widget_disabled_state(True)
+        self._view.ui.addControllerProgressText.setText("Downloading (1/2)")
+        self._view.ui.addControllerProgressText.show()
+        self._view.ui.addControllerProgressBar.setValue(0)
+        self._view.ui.addControllerProgressBar.setRange(0, 100)
+        self._view.ui.addControllerProgressBar.show()
+        firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
+        firmwares = self._config.config.get("firmware_images", [])
+        firmware = next((i for i in firmwares if i["id"] == firmware_id), None)
+        worker = Worker(self._model.get_firmware_image_data, firmware)
+        worker.signals.progress.connect(self.add_controller_download_progress)
+        worker.signals.result.connect(self.add_controller_download_result)
+        worker.signals.error.connect(self.add_controller_download_error)
+        self.threadpool.start(worker)
+
+    def add_controller_download_progress(self, progress):
+        """Set the download progress as half of the download and flash progress."""
+        if progress < 0:
+            self._view.ui.addControllerProgressBar.setValue(-1)
+            self._view.ui.addControllerProgressBar.setRange(0, 0)
+        else:
+            self._view.ui.addControllerProgressBar.setValue(progress / 2)
+
+    def add_controller_download_result(self, firmware: dict):
+        """After completing the download, flash the controller."""
+        self._view.ui.addControllerProgressText.setText("Flashing (2/2)")
+        self._view.ui.addControllerProgressBar.setValue(50)
+        worker = Worker(self._model.flash_controller, firmware)
+        worker.signals.progress.connect(self.add_controller_flash_progress)
+        worker.signals.result.connect(self.add_controller_flash_result)
+        worker.signals.error.connect(self.add_controller_flash_error)
+        worker.signals.finished.connect(self.add_controller_flash_finished)
+        self.threadpool.start(worker)
+
+    def add_controller_download_error(self, error):
+        """Handle errors while downloading the firmware."""
+        self._view.ui.addControllerProgressText.hide()
+        self._view.ui.addControllerProgressBar.hide()
+        self._view.ui.addControllerFlashButton.setDisabled(False)
+        self._view.ui.addControllerReloadButton.setDisabled(False)
+        self.handle_error(error)
+        self.add_controller_set_widget_disabled_state(False)
+
+    def add_controller_flash_progress(self, progress):
+        if progress < 0:
+            self._view.ui.addControllerProgressBar.setValue(-1)
+            self._view.ui.addControllerProgressBar.setRange(0, 0)
+        else:
+            self._view.ui.addControllerProgressBar.setValue(progress / 2 + 50)
+
+    def add_controller_flash_result(self, _):
+        message = "Successfully flashed the microcontroller."
+        self._view.notify(message, "Finished Flashing", "information")
+        self.add_controller_set_widget_disabled_state(False)
+
+    def add_controller_flash_error(self, error):
+        """Handle errors while flashing the controller."""
+        self._view.ui.addControllerProgressText.hide()
+        self._view.ui.addControllerProgressBar.hide()
+        self.handle_error(error)
+        self.add_controller_set_widget_disabled_state(False)
+
+    def add_controller_flash_finished(self):
+        """Handle the end (success or error) of flashing the controller."""
+        self._view.ui.addControllerProgressText.hide()
+        self._view.ui.addControllerProgressBar.hide()
+
+    def add_controller_set_widget_disabled_state(self, state: bool):
+        """Disable or enable all add controller widgets."""
+        self._view.ui.addControllerSitesComboBox.setDisabled(state)
+        self._view.ui.addControllerNameLineEdit.setDisabled(state)
+        self._view.ui.addControllerAPListView.setDisabled(state)
+        self._view.ui.addControllerFirmwaresComboBox.setDisabled(state)
+        self._view.ui.addControllerFlashButton.setDisabled(state)
+        self._view.ui.addControllerReloadButton.setDisabled(state)
+        self._view.ui.addControllerBackButton.setDisabled(state)
+
+    ##############################
+    # Replace controller functionality
 
     def handle_replace_controller_page(self):
         """Fetch data and populate the combo boxes for the replace controller page."""
@@ -319,6 +379,10 @@ class DSFlasherCtrl:
             if index >= 0:
                 self._view.ui.replaceControllerFirmwaresComboBox.setCurrentIndex(index)
 
+    def handle_replace_controller_page_error(self, error):
+        """Error handler for the replace controller data fetch thread."""
+        self.handle_error(error)
+
     def handle_replace_controller_page_finished(self):
         """Hide the loading widgets for the replace controller page."""
         self._view.ui.replaceControllerLoadingText.hide()
@@ -354,6 +418,10 @@ class DSFlasherCtrl:
         site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
         self.populate_replace_controller_controllers(site_id)
 
+    def replace_controller_load_controllers_error(self, error):
+        """Error handler for fetching the controllers thread."""
+        self.handle_error(error)
+
     def replace_controller_load_controllers_finished(self):
         """Hide the loading widgets on the replace controller page."""
         self._view.ui.replaceControllerLoadingText.hide()
@@ -387,6 +455,38 @@ class DSFlasherCtrl:
             self._view.ui.replaceControllerControllersComboBox.addItem(
                 "No controllers found"
             )
+
+    ##############################
+    # Miscellaneous functionality
+
+    def to_welcome_page(self):
+        """Switch to the welcome page."""
+        self._view.change_page(self._view.Pages.WELCOME)
+
+    def page_changed(self, index: int):
+        """Called when the page of the stacked widget changes"""
+        if index == self._view.Pages.LOGIN[1]:
+            pass
+        elif index == self._view.Pages.WELCOME[1]:
+            pass
+        elif index == self._view.Pages.ADD_CONTROLLER[1]:
+            self.handle_add_controller_page()
+        elif index == self._view.Pages.REPLACE_CONTROLLER[1]:
+            self.handle_replace_controller_page()
+        else:
+            pass
+
+    def handle_error(self, error):
+        """
+        Handle errors raised by worker threads. Error handler. Use separate callbacks below to
+        avoid double free segmentation error.
+        """
+        if isinstance(error, WorkerInformation):
+            self._view.notify(str(error), "", "information")
+        elif isinstance(error, WorkerWarning):
+            self._view.notify(str(error), "", "warning")
+        else:
+            self._view.notify(str(error), "", "critical")
 
     def handle_close(self, event: QCloseEvent):
         """Save the config on close."""

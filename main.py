@@ -47,7 +47,6 @@ def main():
     args = parser.parse_args()
     if args.verbose:
         logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
-        logging.info("Temp path: %s", sys._MEIPASS)
     else:
         logging.basicConfig(format="%(levelname)s: %(message)s")
 

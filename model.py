@@ -1,6 +1,9 @@
+import hashlib
 import json
 import logging
+import os
 import time
+from urllib.parse import urlparse
 
 import keyring
 import requests
@@ -31,27 +34,27 @@ class DSFlasherModel:
         if username := self._config.config.get("username"):
             self._auth_token = keyring.get_password(self._config.app_name, username)
 
-    def log_in(self, username: str, password: str, **kwargs):
+    def log_in(self, username: str, password: str, **kwargs) -> None:
         """Log in to the DeviceStacc server and get an auth token."""
         data = {"username": username, "password": password}
         response = self._server_request(self.token_url, data)
         token = json.loads(response.content)["token"]
         self._save_credentials(username, token)
 
-    def log_out(self):
+    def log_out(self) -> None:
         self._clear_credentials()
 
-    def sign_up(self):
+    def sign_up(self) -> None:
         print("Signing up!")
 
-    def get_site_and_firmware_data(self, **kwargs):
+    def get_site_and_firmware_data(self, **kwargs) -> None:
         """Get the available sites and firmware images."""
         data = {
             "query": """
             { 
                 allFirmwareImages {
                     edges { node {
-                        id, name, version, file
+                        id, name, version, file, hashSha3_512
                     } } 
                 }
                 allSites {
@@ -79,7 +82,7 @@ class DSFlasherModel:
         sites = [i["node"] for i in output["data"]["allSites"]["edges"]]
         self._config.config["sites"] = sites
 
-    def get_controller_data(self, site_id, **kwargs):
+    def get_controller_data(self, site_id: str, **kwargs) -> None:
         """Get the available controllers for a given site."""
         if not site_id:
             logging.info("get_controller_data called without site")
@@ -128,6 +131,69 @@ class DSFlasherModel:
 
     def is_authenticated(self) -> bool:
         return bool(self._auth_token)
+
+    def get_firmware_image_data(self, firmware_image, **kwargs) -> dict:
+        """Download the selected firmware if it is not cached locally."""
+        try:
+            filename = self._derive_firmware_image_filename(firmware_image)
+            path = os.path.join(self._config.dirs.user_cache_dir, filename)
+            # If the file has been downloaded to the cache and has the same hash, return
+            if self._is_file_valid(path, firmware_image["hashSha3_512"]):
+                return firmware_image
+            # Download the file and notify of progress
+            os.makedirs(self._config.dirs.user_cache_dir, exist_ok=True)
+            with open(path, "wb+") as f:
+                progress_callback = kwargs["progress_callback"]
+                response = requests.get(firmware_image["file"], stream=True)
+                total_length = response.headers.get("content-length")
+                # If the total length is unknown, skip notifying progress
+                if total_length is None:
+                    progress_callback(-1)
+                    f.write(response.content)
+                else:
+                    received_bytes = 0
+                    total_length = int(total_length)
+                    for data in response.iter_content(chunk_size=64 * 1024):
+                        f.write(data)
+                        received_bytes += len(data)
+                        percentage_done = int(100 * received_bytes / total_length)
+                        progress_callback.emit(percentage_done)
+            # Check the file hash. Delete and inform the user if it fails
+            if not self._is_file_valid(path, firmware_image["hashSha3_512"]):
+                os.remove(path)
+                raise WorkerWarning(
+                    "Checksum of downloaded file did not match. Please try another"
+                    " version or contact support."
+                )
+        except KeyError as err:
+            message = (
+                f"Error downloading firmware. Not all required metadata found ({err})."
+            )
+            raise WorkerWarning(message)
+        return firmware_image
+
+    def flash_controller(self, firmware, **kwargs):
+        progress_callback = kwargs["progress_callback"]
+        for i in range(1, 101):
+            time.sleep(0.1)
+            progress_callback.emit(i)
+
+    @staticmethod
+    def _derive_firmware_image_filename(firmware_image):
+        """Creates a filename with the schema <name>_v<version>.<ext>"""
+        path = urlparse(firmware_image["file"])
+        filename = os.path.basename(path.path)
+        extension = os.path.splitext(filename)
+        return f"{firmware_image['name']}_v{firmware_image['version']}{extension[1]}"
+
+    @staticmethod
+    def _is_file_valid(file_path: str, sha3_512_hash: str) -> bool:
+        try:
+            with open(file_path, "rb") as f:
+                file_hash = hashlib.sha3_512(f.read()).hexdigest()
+        except FileNotFoundError:
+            file_hash = ""
+        return sha3_512_hash == file_hash
 
     def _save_credentials(self, username: str, token: str) -> None:
         """Save the auth token in a keychain."""
