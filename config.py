@@ -3,11 +3,12 @@ import logging
 import os
 import pathlib
 from json import JSONDecodeError
+import shutil
 
 from appdirs import AppDirs
 
 
-class DSFlasherConfig:
+class Config:
     """Used to store and load configurations."""
 
     app_name = "ds-flasher"
@@ -42,3 +43,5 @@ class DSFlasherConfig:
         self.config.pop("sites", None)
         self.config.pop("controllers", None)
         self.config.pop("firmwareImages", None)
+        self.config.pop("partitionTables", None)
+        shutil.rmtree(self.dirs.user_cache_dir)

@@ -1,29 +1,30 @@
-from config import DSFlasherConfig
-from functools import partial
-
 from PySide2.QtCore import QThreadPool
 from PySide2.QtGui import QCloseEvent
 
-from model import DSFlasherModel
-from view import DSFlasherUi
-from wifi_model import DSFlasherWiFiModel
+from config import Config
+from server_model import ServerModel
+from wifi_model import WiFiModel
+from flash_model import FlashModel
+from main_view import MainView
 from worker import Worker, WorkerInformation, WorkerWarning
 
 
-class DSFlasherCtrl:
+class Controller:
     #####################
     # Setup functionality
 
     def __init__(
         self,
-        model: DSFlasherModel,
-        view: DSFlasherUi,
-        wifi_model: DSFlasherWiFiModel,
-        config: DSFlasherConfig,
+        server_model: ServerModel,
+        flash_model: FlashModel,
+        wifi_model: WiFiModel,
+        view: MainView,
+        config: Config,
     ):
-        self._model = model
-        self._view = view
+        self._server_model = server_model
+        self._flash_model = flash_model
         self._wifi_model = wifi_model
+        self._view = view
         self._config = config
 
         self.threadpool = QThreadPool()
@@ -31,7 +32,7 @@ class DSFlasherCtrl:
         self._connect_model_views()
         self._page_after_add_wifi = None
         self._page_before_add_wifi = None
-        if model.is_authenticated():
+        if server_model.is_authenticated():
             view.change_page(view.Pages.WELCOME)
         else:
             view.change_page(view.Pages.LOGIN)
@@ -44,8 +45,8 @@ class DSFlasherCtrl:
 
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
-        self._view.ui.signUpButton.clicked.connect(self._model.sign_up)
-        self._view.ui.emailLineEdit.setText(self._model.get_username())
+        self._view.ui.signUpButton.clicked.connect(self._server_model.sign_up)
+        self._view.ui.emailLineEdit.setText(self._server_model.get_username())
         self._view.ui.emailLineEdit.returnPressed.connect(
             self._view.ui.loginButton.click
         )
@@ -60,7 +61,7 @@ class DSFlasherCtrl:
         )
         self._view.ui.welcomeManageWiFiButton.clicked.connect(self.to_manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
-        self._view.ui.welcomeUsername.setText(self._model.get_username())
+        self._view.ui.welcomeUsername.setText(self._server_model.get_username())
 
         # Add Controller Page
         self._view.ui.addControllerFlashButton.clicked.connect(
@@ -104,7 +105,7 @@ class DSFlasherCtrl:
         self._view.ui.loginLoadingBar.show()
         email = self._view.ui.emailLineEdit.text()
         password = self._view.ui.passwordLineEdit.text()
-        worker = Worker(self._model.log_in, email, password)
+        worker = Worker(self._server_model.log_in, email, password)
         worker.signals.result.connect(self.log_in_result)
         worker.signals.error.connect(self.log_in_error)
         worker.signals.finished.connect(self.log_in_finished)
@@ -131,7 +132,7 @@ class DSFlasherCtrl:
 
     def log_out(self):
         """Log the user out and clear the password and auth token."""
-        self._model.log_out()
+        self._server_model.log_out()
         self._view.ui.passwordLineEdit.clear()
         self._view.change_page(self._view.Pages.LOGIN)
 
@@ -200,7 +201,7 @@ class DSFlasherCtrl:
         else:
             self._view.ui.addControllerLoadingText.show()
             self._view.ui.addControllerLoadingBar.show()
-            worker = Worker(self._model.get_site_and_firmware_data)
+            worker = Worker(self._server_model.get_site_and_firmware_data)
             worker.signals.result.connect(self.handle_add_controller_page_result)
             worker.signals.error.connect(self.handle_add_controller_page_error)
             worker.signals.finished.connect(self.handle_add_controller_page_finished)
@@ -251,17 +252,45 @@ class DSFlasherCtrl:
     def add_controller_download_and_flash(self):
         """Download the selected firmware image and flash it to the ESP."""
         self._view.ui.addControllerProgressText.setText("Downloading (1/3)")
+        if not self.add_controller_is_flash_input_valid():
+            return
         self.add_controller_set_widgets_for_flashing(True)
 
         firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
-        firmwares = self._config.config.get("firmwareImages", [])
-        firmware = next((i for i in firmwares if i["id"] == firmware_id), None)
-
-        worker = Worker(self._model.download_firmware_image, firmware)
+        worker = Worker(self._server_model.download_firmware_image, firmware_id)
         worker.signals.progress.connect(self.add_controller_download_progress)
         worker.signals.result.connect(self.add_controller_download_result)
         worker.signals.error.connect(self.add_controller_download_error)
         self.threadpool.start(worker)
+
+    def add_controller_is_flash_input_valid(self):
+        """Checks the user input and returns true if it looks good."""
+        if not self._view.ui.addControllerSitesComboBox.currentData():
+            message = (
+                "Please select a site or reload if none are available."
+                " If the problem persists please update the DS Flasher tool or contact your administrator."
+            )
+            self._view.notify(message, "Missing Input")
+            return False
+        if not self._view.ui.addControllerNameLineEdit.text():
+            message = "Please enter a name for the new controller."
+            self._view.notify(message, "Missing Input")
+            return False
+        if not self._view.ui.addControllerAPListView.selectedIndexes():
+            message = (
+                "Please select one or more WiFi access points to be used by the controller."
+                " To add or change entries, go to the 'Manager WiFi' page."
+            )
+            self._view.notify(message, "Missing Input")
+            return False
+        if not self._view.ui.addControllerFirmwaresComboBox.currentData():
+            message = (
+                "Please select a firmware version or reload if none are available."
+                " If the problem persists please update the DS Flasher tool or contact your administrator."
+            )
+            self._view.notify(message, "Missing Input")
+            return False
+        return True
 
     def add_controller_download_progress(self, progress):
         """Set the download progress as half of the download and flash progress."""
@@ -269,19 +298,23 @@ class DSFlasherCtrl:
             self._view.ui.addControllerProgressBar.setValue(-1)
             self._view.ui.addControllerProgressBar.setRange(0, 0)
         else:
-            self._view.ui.addControllerProgressBar.setValue(progress / 3)
+            self._view.ui.addControllerProgressBar.setValue(progress)
 
     def add_controller_download_result(self, firmware: dict):
         """After completing the download, flash the controller."""
         self._view.ui.addControllerProgressText.setText("Registering (2/3)")
-        self._view.ui.addControllerProgressBar.setValue(33)
+        self._view.ui.addControllerProgressBar.setValue(0)
 
         name = self._view.ui.addControllerNameLineEdit.text()
         site_id = self._view.ui.addControllerSitesComboBox.currentData()
         controller_type_id = self._config.config["controllerComponentTypes"][0]["id"]
 
         worker = Worker(
-            self._model.register_controller, name, site_id, controller_type_id
+            self._server_model.register_controller,
+            name,
+            site_id,
+            controller_type_id,
+            firmware["id"],
         )
         worker.signals.result.connect(self.add_controller_register_result)
         worker.signals.error.connect(self.add_controller_register_error)
@@ -292,19 +325,17 @@ class DSFlasherCtrl:
         self.add_controller_set_widgets_for_flashing(False)
         self.handle_error(error)
 
-    def add_controller_register_result(self, _):
+    def add_controller_register_result(self, controller):
         """After registering a new controller, start the flashing process."""
-        # Get the firmware image entry specified in the firmware combo box
-        firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
-        firmwares = self._config.config.get("firmwareImages", [])
-        firmware = next((i for i in firmwares if i["id"] == firmware_id), None)
+        self._view.ui.addControllerProgressText.setText("Flashing (3/3)")
+        self._view.ui.addControllerProgressBar.setValue(0)
 
         # Get the WiFi APs selected in the QListView
         indexes = self._view.ui.addControllerAPListView.selectedIndexes()
         wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
 
         # Start a task to flash the controller
-        worker = Worker(self._model.flash_controller, firmware, wifi_aps)
+        worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
         worker.signals.progress.connect(self.add_controller_flash_progress)
         worker.signals.result.connect(self.add_controller_flash_result)
         worker.signals.error.connect(self.add_controller_flash_error)
@@ -321,7 +352,7 @@ class DSFlasherCtrl:
             self._view.ui.addControllerProgressBar.setValue(-1)
             self._view.ui.addControllerProgressBar.setRange(0, 0)
         else:
-            self._view.ui.addControllerProgressBar.setValue(progress / 2 + 50)
+            self._view.ui.addControllerProgressBar.setValue(progress)
 
     def add_controller_flash_result(self, _):
         message = "Successfully flashed the microcontroller."
@@ -365,7 +396,7 @@ class DSFlasherCtrl:
         else:
             self._view.ui.replaceControllerLoadingText.show()
             self._view.ui.replaceControllerLoadingBar.show()
-            worker = Worker(self._model.get_site_and_firmware_data)
+            worker = Worker(self._server_model.get_site_and_firmware_data)
             worker.signals.result.connect(self.handle_replace_controller_page_result)
             worker.signals.error.connect(self.handle_replace_controller_page_error)
             worker.signals.finished.connect(
@@ -433,7 +464,7 @@ class DSFlasherCtrl:
         """Fetch available controllers for the selected site."""
         self._view.ui.replaceControllerLoadingText.show()
         self._view.ui.replaceControllerLoadingBar.show()
-        worker = Worker(self._model.get_controller_data, site_id)
+        worker = Worker(self._server_model.get_controller_data, site_id)
         worker.signals.result.connect(self.replace_controller_load_controllers_result)
         worker.signals.error.connect(self.replace_controller_load_controllers_error)
         worker.signals.finished.connect(

@@ -11,7 +11,7 @@ main_window_file = "mainwindow.ui"
 page_2_file = "page2.ui"
 
 
-class DSFlasherUi(QMainWindow):
+class MainView(QMainWindow):
     class Pages:
         LOGIN = ["loginPage", -1]
         WELCOME = ["welcomePage", -1]

@@ -1,7 +1,6 @@
+from flash_model import FlashModel
 import os
 import sys
-import io
-from contextlib import redirect_stdout
 import logging
 import argparse
 
@@ -16,27 +15,11 @@ except:
 from PySide2.QtWidgets import QApplication
 from PySide2 import QtCore
 
-# import esptool
-
-from config import DSFlasherConfig
-from controller import DSFlasherCtrl
-from model import DSFlasherModel
-from view import DSFlasherUi
-from wifi_model import DSFlasherWiFiModel
-
-
-# f = io.StringIO()
-# try:
-#     with redirect_stdout(f):
-#         print('foobar')
-#         esptool.main(["read_mac"])
-#         print(12)
-# except esptool.FatalError as err:
-#     print(err)
-# except esptool.UnsupportedCommandError as err:
-#     print(err)
-# print('Got stdout: "{0}"'.format(f.getvalue()))
-# exit()
+from config import Config
+from controller import Controller
+from server_model import ServerModel
+from main_view import MainView
+from wifi_model import WiFiModel
 
 
 def main():
@@ -55,12 +38,17 @@ def main():
     # Enable High DPI display with PyQt5
     if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
         ds_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
-    view = DSFlasherUi()
-    config = DSFlasherConfig()
-    model = DSFlasherModel(config=config)
-    wifi_model = DSFlasherWiFiModel(config=config)
-    controller = DSFlasherCtrl(
-        model=model, view=view, wifi_model=wifi_model, config=config
+    view = MainView()
+    config = Config()
+    server_model = ServerModel(config=config)
+    flash_model = FlashModel(server_model=server_model, config=config)
+    wifi_model = WiFiModel(config=config)
+    controller = Controller(
+        server_model=server_model,
+        flash_model=flash_model,
+        wifi_model=wifi_model,
+        view=view,
+        config=config,
     )
     view.show()
     sys.exit(ds_flasher.exec_())

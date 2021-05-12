@@ -3,10 +3,10 @@ from typing import List
 from PySide2 import QtCore
 from PySide2.QtCore import QAbstractListModel, QModelIndex
 
-from config import DSFlasherConfig
+from config import Config
 
 
-class DSFlasherWiFiModel(QAbstractListModel):
+class WiFiModel(QAbstractListModel):
     class AP:
         def __init__(self, ssid, password):
             self.ssid: str = ssid
@@ -15,7 +15,7 @@ class DSFlasherWiFiModel(QAbstractListModel):
         def __str__(self):
             return f"{self.ssid}:{self.password}"
 
-    def __init__(self, config: DSFlasherConfig, *args, **kwargs):
+    def __init__(self, config: Config, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._config = config
         self.aps: List[self.AP] = []
