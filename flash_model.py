@@ -3,8 +3,8 @@ import json
 import logging
 import os
 import subprocess
-from sys import stderr
 from typing import List
+from distutils.dir_util import copy_tree
 
 from config import Config
 from server_model import ServerModel
@@ -15,11 +15,20 @@ from worker import WorkerError, WorkerWarning, WorkerSignals
 class FlashModel:
     """Used to flash the ESP32 controller."""
 
+    # The path to the tool to generate the SPIFFS image
     _spiffs_tool_path = os.path.join(os.getcwd(), "esp-idf", "spiffsgen.py")
-    _partitions_tool_path = os.path.join(os.getcwd(), "esp-idf", "gen_esp32part.py")
-    _partition_image_offset = 32768  # 0x8000
-    _firmware_partition_subtype_ = "ota_0"
+    # The subtype of the partition in the partition table to be used for the SPIFFS image
     _spiffs_partition_subtype_ = "spiffs"
+    # The directory from which the files are copied to create the SPIFFS image
+    _spiffs_source_dir_ = os.path.join(os.getcwd(), "spiffs")
+
+    # The path to the tool to generate the partitions image
+    _partitions_tool_path = os.path.join(os.getcwd(), "esp-idf", "gen_esp32part.py")
+    # The offset in bytes where the partition image should be flashed to
+    _partition_image_offset = 32768  # 0x8000
+
+    # The subtype of the partition in the partition table to be used for the firmware image
+    _firmware_partition_subtype_ = "ota_0"
 
     def __init__(self, server_model: ServerModel, config: Config):
         self._server_model = server_model
@@ -29,12 +38,12 @@ class FlashModel:
 
         # All files / dirs to create the SPIFFS image
         self._spiffs_dir = os.path.join(cache_dir, "spiffs_dir")
-        self._spiffs_secret_file = os.path.join(self._spiffs_dir, "secrets.json")
+        self._spiffs_secret_path = os.path.join(self._spiffs_dir, "secrets.json")
         self._spiffs_image_path = os.path.join(cache_dir, "spiffs.bin")
 
         # All files / dirs to create the partition image
-        self._partitions_csv = os.path.join(cache_dir, "partitions.csv")
-        self._partitions_image = os.path.join(cache_dir, "partitions.bin")
+        self._partitions_csv_path = os.path.join(cache_dir, "partitions.csv")
+        self._partitions_image_path = os.path.join(cache_dir, "partitions.bin")
 
     def flash_controller(
         self, controller: dict, wifi_aps: List[WiFiModel.AP], **kwargs
@@ -64,7 +73,7 @@ class FlashModel:
         """Generate a partition table image."""
 
         # Create the CSV which is used by the partition tool
-        with open(self._partitions_csv, "w+") as csv_file:
+        with open(self._partitions_csv_path, "w+") as csv_file:
             csv_writer = csv.writer(csv_file)
             for partition in partition_table:
                 values = [
@@ -82,8 +91,8 @@ class FlashModel:
             [
                 "python",
                 self._partitions_tool_path,
-                self._partitions_csv,
-                self._partitions_image,
+                self._partitions_csv_path,
+                self._partitions_image_path,
             ],
             capture_output=True,
         )
@@ -102,10 +111,13 @@ class FlashModel:
                     {"ssid": i.ssid, "password": i.password} for i in wifi_aps
                 ],
                 "ws_token": controller["authToken"]["key"],
+                "core_domain": "core.openfarming.ai",
+                "force_insecure": False,
             }
             os.makedirs(self._spiffs_dir, exist_ok=True)
-            with open(self._spiffs_secret_file, "w+") as secret_file:
+            with open(self._spiffs_secret_path, "w+") as secret_file:
                 json.dump(secrets, secret_file)
+            copy_tree(self._spiffs_source_dir_, self._spiffs_dir)
 
             process = subprocess.run(
                 [
@@ -122,7 +134,7 @@ class FlashModel:
                 raise WorkerWarning("Error while generating the SPIFFS image.")
         finally:
             try:
-                os.remove(self._spiffs_secret_file)
+                os.remove(self._spiffs_secret_path)
             except FileNotFoundError:
                 pass
 
@@ -150,11 +162,11 @@ class FlashModel:
                 str(921600),
                 "write_flash",
                 str(self._partition_image_offset),
-                self._partitions_image,
-                str(firmware_partition["offset"]),
-                firmware_image_path,
+                self._partitions_image_path,
                 str(spiffs_partition["offset"]),
                 self._spiffs_image_path,
+                str(firmware_partition["offset"]),
+                firmware_image_path,
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -169,7 +181,6 @@ class FlashModel:
                 if offset >= firmware_partition["offset"]:
                     percent = int(output.split("(")[1].split("%")[0])
                     progress.emit(percent)
-                    print(percent)
         if process.poll():
             logging.error(process.stderr)
             raise WorkerError("Failed to flash the controller. Please try again.")            

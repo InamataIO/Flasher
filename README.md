@@ -10,3 +10,4 @@ This is a list of features that would be useful and show the tool's current limi
   - This is due to not handling paging of the GraphQL requests
 - Enable searching of combo boxes with many items
   - This is described on [StackOverflow](https://stackoverflow.com/questions/4827207/how-do-i-filter-the-pyqt-qcombobox-items-based-on-the-text-input)
+- Use PlatformIO as an flash/upload tool: https://community.platformio.org/t/upload-latest-build-without-a-compile-link/9520

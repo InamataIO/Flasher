@@ -44,4 +44,4 @@ class Config:
         self.config.pop("controllers", None)
         self.config.pop("firmwareImages", None)
         self.config.pop("partitionTables", None)
-        shutil.rmtree(self.dirs.user_cache_dir)
+        shutil.rmtree(self.dirs.user_cache_dir, ignore_errors=True)
