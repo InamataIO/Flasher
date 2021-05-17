@@ -2,7 +2,6 @@ import hashlib
 import json
 import logging
 import os
-import time
 from typing import List
 from urllib.parse import urlparse
 
@@ -114,7 +113,7 @@ class ServerModel:
         results = output["data"]["allControllerComponents"]
         if results["pageInfo"]["hasNextPage"]:
             message = (
-                "Not all controllers for this site could be fetched. Please upgrade your DS"
+                "Not all controllers for this site could be fetched. Please upgrade your Togayo"
                 "Flasher tool."
             )
             raise WorkerInformation(message)
@@ -122,11 +121,7 @@ class ServerModel:
             controllers = [i["node"] for i in results["edges"]]
         except KeyError:
             controllers = []
-        controllers.sort(key=lambda x: x["siteEntity"]["name"], reverse=True)
-
-        if "controllers" not in self._config.config:
-            self._config.config["controllers"] = {}
-        self._config.config["controllers"].update({site_id: controllers})
+        self._config.save_controllers(controllers, site_id)
 
     def get_default_partition_table(self) -> dict:
         """Try to get the default partition table."""
@@ -226,10 +221,74 @@ class ServerModel:
         response = self._auth_server_request(self.graphql_url, data)
         output = json.loads(response.content)
         if errors := output.get("errors"):
-            raise WorkerInformation(errors[0]["message"])
-        controllers = self._config.config.get("controllers", [])
+            logging.warning(errors[0]["message"])
+            raise WorkerWarning(errors[0]["message"])
         controller = output["data"]["createControllerComponent"]["controllerComponent"]
-        controllers.append(controller)
+        self._config.save_controller(controller, site_id)
+        return controller
+
+    def update_controller(
+        self, controller_id: str, site_id: str, firmware_image_id: str, **kwargs
+    ) -> dict:
+        """Update a controller and cycle it's auth token."""
+        partition_table = self.get_default_partition_table()
+        data = {
+            "query": """
+            mutation updateControllerComponent($input: UpdateControllerComponentInput!) {
+                updateControllerComponent(input: $input) {
+                    controllerComponent {
+                        id, siteEntity { name }, authToken { key },
+                        partitionTable { id }, firmwareImage { id }
+                    }
+                }
+            }
+            """,
+            "variables": json.dumps(
+                {
+                    "input": {
+                        "controller": controller_id,
+                        "partitionTable": partition_table["id"],
+                        "firmwareImage": firmware_image_id,
+                    }
+                }
+            ),
+        }
+        response = self._auth_server_request(self.graphql_url, data)
+        output = json.loads(response.content)
+        if errors := output.get("errors"):
+            logging.warning(errors[0]["message"])
+            raise WorkerWarning(errors[0]["message"])
+        controller = output["data"]["updateControllerComponent"]["controllerComponent"]
+        self._config.save_controller(controller, site_id)
+        return controller
+
+    def cycle_controller_auth_token(self, controller_id: str, site_id: str, **kwargs) -> dict:
+        """Cycle a controller's auth token to prevent duplicate connections."""
+        data = {
+            "query": """
+            mutation cycleControllerAuthToken($input: CycleControllerAuthTokenInput!) {
+                cycleControllerAuthToken(input: $input) {
+                    controllerAuthToken {
+                        key
+                    }
+                }
+            }
+            """,
+            "variables": json.dumps({"input": {"controller": controller_id}}),
+        }
+        response = self._auth_server_request(self.graphql_url, data)
+        output = json.loads(response.content)
+        if errors := output.get("errors"):
+            logging.warning(errors[0]["message"])
+            raise WorkerWarning(errors[0]["message"])
+        controller = self._config.get_controller(controller_id, site_id)
+        if not controller:
+            raise WorkerInformation(
+                "Could not find the controller. Please reload the controller data."
+            )
+        key = output["data"]["cycleControllerAuthToken"]["controllerAuthToken"]["key"]
+        controller["authToken"]["key"] = key
+        self._config.save_controller(controller, site_id)
         return controller
 
     def get_username(self) -> str:
@@ -367,7 +426,6 @@ class ServerModel:
 
     def _server_request(self, url, data, headers=None):
         """Make a GraphQL server request that handles HTTP errors."""
-        time.sleep(1.3)
         if not headers:
             headers = self._default_headers
         try:

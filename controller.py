@@ -6,7 +6,7 @@ from server_model import ServerModel
 from wifi_model import WiFiModel
 from flash_model import FlashModel
 from main_view import MainView
-from worker import Worker, WorkerInformation, WorkerWarning
+from worker import Worker, WorkerError, WorkerInformation, WorkerWarning
 
 
 class Controller:
@@ -76,10 +76,13 @@ class Controller:
         self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.connect(
             self.replace_controller_site_selected
         )
+        self._view.ui.replaceControllerFlashButton.clicked.connect(
+            self.replace_controller_download_and_flash
+        )
         self._view.ui.replaceControllerReloadButton.clicked.connect(
             self.replace_controller_reload
         )
-        self._view.ui.replaceBackPushButton.clicked.connect(self.to_welcome_page)
+        self._view.ui.replaceControllerBackButton.clicked.connect(self.to_welcome_page)
 
         # Add WiFi Page
         self._view.ui.addWiFiSubmitPushButton.clicked.connect(self.add_wifi_ap)
@@ -251,9 +254,9 @@ class Controller:
 
     def add_controller_download_and_flash(self):
         """Download the selected firmware image and flash it to the ESP."""
-        self._view.ui.addControllerProgressText.setText("Downloading (1/3)")
         if not self.add_controller_is_flash_input_valid():
             return
+        self._view.ui.addControllerProgressText.setText("Downloading (1/3)")
         self.add_controller_set_widgets_for_flashing(True)
 
         firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
@@ -268,7 +271,7 @@ class Controller:
         if not self._view.ui.addControllerSitesComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the DS Flasher tool or contact your administrator."
+                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -286,24 +289,20 @@ class Controller:
         if not self._view.ui.addControllerFirmwaresComboBox.currentData():
             message = (
                 "Please select a firmware version or reload if none are available."
-                " If the problem persists please update the DS Flasher tool or contact your administrator."
+                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
         return True
 
     def add_controller_download_progress(self, progress):
-        """Set the download progress as half of the download and flash progress."""
-        if progress < 0:
-            self._view.ui.addControllerProgressBar.setValue(-1)
-            self._view.ui.addControllerProgressBar.setRange(0, 0)
-        else:
-            self._view.ui.addControllerProgressBar.setValue(progress)
+        """Set the download progress."""
+        self.add_controller_set_progress_bar(progress)
 
     def add_controller_download_result(self, firmware: dict):
         """After completing the download, flash the controller."""
         self._view.ui.addControllerProgressText.setText("Registering (2/3)")
-        self._view.ui.addControllerProgressBar.setValue(0)
+        self.add_controller_set_progress_bar(0)
 
         name = self._view.ui.addControllerNameLineEdit.text()
         site_id = self._view.ui.addControllerSitesComboBox.currentData()
@@ -328,7 +327,7 @@ class Controller:
     def add_controller_register_result(self, controller):
         """After registering a new controller, start the flashing process."""
         self._view.ui.addControllerProgressText.setText("Flashing (3/3)")
-        self._view.ui.addControllerProgressBar.setValue(0)
+        self.add_controller_set_progress_bar(0)
 
         # Get the WiFi APs selected in the QListView
         indexes = self._view.ui.addControllerAPListView.selectedIndexes()
@@ -344,15 +343,11 @@ class Controller:
 
     def add_controller_register_error(self, error):
         """Handle errors when registering a new controller."""
-        self.handle_error(error)
         self.add_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
 
     def add_controller_flash_progress(self, progress):
-        if progress < 0:
-            self._view.ui.addControllerProgressBar.setValue(-1)
-            self._view.ui.addControllerProgressBar.setRange(0, 0)
-        else:
-            self._view.ui.addControllerProgressBar.setValue(progress)
+        self.add_controller_set_progress_bar(progress)
 
     def add_controller_flash_result(self, _):
         message = "Successfully flashed the microcontroller."
@@ -360,7 +355,6 @@ class Controller:
 
     def add_controller_flash_error(self, error):
         """Handle errors while flashing the controller."""
-
         self.handle_error(error)
 
     def add_controller_flash_finished(self):
@@ -371,8 +365,7 @@ class Controller:
         """Disable or enable all add controller widgets."""
         if is_flashing:
             self._view.ui.addControllerProgressText.show()
-            self._view.ui.addControllerProgressBar.setValue(0)
-            self._view.ui.addControllerProgressBar.setRange(0, 100)
+            self.add_controller_set_progress_bar(0)
             self._view.ui.addControllerProgressBar.show()
         else:
             self._view.ui.addControllerProgressText.hide()
@@ -385,6 +378,16 @@ class Controller:
         self._view.ui.addControllerFlashButton.setDisabled(is_flashing)
         self._view.ui.addControllerReloadButton.setDisabled(is_flashing)
         self._view.ui.addControllerBackButton.setDisabled(is_flashing)
+
+    def add_controller_set_progress_bar(self, progress: int) -> None:
+        """Set the progress bar for the add controller page."""
+        if progress < 0:
+            self._view.ui.addControllerProgressBar.setValue(-1)
+            self._view.ui.addControllerProgressBar.setRange(0, 0)
+        else:
+            limited_progress = min(progress, 100)
+            self._view.ui.addControllerProgressBar.setValue(limited_progress)
+            self._view.ui.addControllerProgressBar.setRange(0, 100)
 
     ##############################
     # Replace controller functionality
@@ -514,6 +517,170 @@ class Controller:
             self._view.ui.replaceControllerControllersComboBox.addItem(
                 "No controllers found"
             )
+
+    def replace_controller_download_and_flash(self):
+        """Download the selected firmware image and flash it to the ESP."""
+        if not self.replace_controller_is_flash_input_valid():
+            return
+        self._view.ui.replaceControllerProgressText.setText("Downloading (1/3)")
+        self.replace_controller_set_widgets_for_flashing(True)
+
+        firmware_id = self._view.ui.replaceControllerFirmwaresComboBox.currentData()
+        worker = Worker(self._server_model.download_firmware_image, firmware_id)
+        worker.signals.progress.connect(self.replace_controller_download_progress)
+        worker.signals.result.connect(self.replace_controller_download_result)
+        worker.signals.error.connect(self.replace_controller_download_error)
+        self.threadpool.start(worker)
+
+    def replace_controller_is_flash_input_valid(self) -> bool:
+        """Checks the user input and returns true is it looks good."""
+        if not self._view.ui.replaceControllerSitesComboBox.currentData():
+            message = (
+                "Please select a site or reload if none are available."
+                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+            )
+            self._view.notify(message, "Missing Input")
+            return False
+        if not self._view.ui.replaceControllerControllersComboBox.currentData():
+            message = (
+                "Please select a site or reload if none are available."
+                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+            )
+            self._view.notify(message, "Missing Input")
+            return False
+        if not self._view.ui.replaceControllerAPListView.selectedIndexes():
+            message = (
+                "Please select one or more WiFi access points to be used by the controller."
+                " To add or change entries, go to the 'Manager WiFi' page."
+            )
+            self._view.notify(message, "Missing Input")
+            return False
+        if not self._view.ui.replaceControllerFirmwaresComboBox.currentData():
+            message = (
+                "Please select a firmware version or reload if none are available."
+                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+            )
+            self._view.notify(message, "Missing Input")
+            return False
+        return True
+
+    def replace_controller_set_widgets_for_flashing(self, is_flashing: bool):
+        """Disable or enable all add controller widgets."""
+        if is_flashing:
+            self._view.ui.replaceControllerProgressText.show()
+            self._view.ui.replaceControllerProgressBar.setValue(0)
+            self._view.ui.replaceControllerProgressBar.setRange(0, 100)
+            self._view.ui.replaceControllerProgressBar.show()
+        else:
+            self._view.ui.replaceControllerProgressText.hide()
+            self._view.ui.replaceControllerProgressBar.hide()
+
+        self._view.ui.replaceControllerSitesComboBox.setDisabled(is_flashing)
+        self._view.ui.replaceControllerControllersComboBox.setDisabled(is_flashing)
+        self._view.ui.replaceControllerAPListView.setDisabled(is_flashing)
+        self._view.ui.replaceControllerFirmwaresComboBox.setDisabled(is_flashing)
+        self._view.ui.replaceControllerFlashButton.setDisabled(is_flashing)
+        self._view.ui.replaceControllerReloadButton.setDisabled(is_flashing)
+        self._view.ui.replaceControllerBackButton.setDisabled(is_flashing)
+
+    def replace_controller_download_progress(self, progress):
+        """Set the download progress as half of the download and flash progress."""
+        if progress < 0:
+            self._view.ui.replaceControllerProgressBar.setValue(-1)
+            self._view.ui.replaceControllerProgressBar.setRange(0, 0)
+        else:
+            self._view.ui.replaceControllerProgressBar.setValue(progress)
+
+    def replace_controller_download_result(self, firmware_image: dict):
+        """After completing the download, flash the controller."""
+        self._view.ui.replaceControllerProgressText.setText("Send Server Update (2/3)")
+        self._view.ui.replaceControllerProgressBar.setValue(0)
+
+        controller_id = self._view.ui.replaceControllerControllersComboBox.currentData()
+        site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
+
+        worker = Worker(
+            self._server_model.update_controller,
+            controller_id,
+            site_id,
+            firmware_image["id"],
+        )
+        worker.signals.result.connect(self.replace_controller_update_result)
+        worker.signals.error.connect(self.replace_controller_update_error)
+        self.threadpool.start(worker)
+
+    def replace_controller_download_error(self, error):
+        """Handle errors when downloading the firmware."""
+        self.replace_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
+
+    def replace_controller_update_result(self, controller):
+        """After updating the controller, cycle its auth token."""
+        self._view.ui.replaceControllerProgressBar.setValue(50)
+
+        controller_id = controller["id"]
+        site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
+
+        worker = Worker(
+            self._server_model.cycle_controller_auth_token, controller_id, site_id
+        )
+        worker.signals.result.connect(self.replace_controller_cycle_token_result)
+        worker.signals.error.connect(self.replace_controller_cycle_token_error)
+        self.threadpool.start(worker)
+
+    def replace_controller_update_error(self, error):
+        """Handle errors when updating the controller."""
+        self.replace_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
+
+    def replace_controller_cycle_token_result(self, controller):
+        """After updating the controller's auth key, flash it."""
+        self._view.ui.replaceControllerProgressText.setText("Flashing (3/3)")
+        self._view.ui.replaceControllerProgressBar.setValue(0)
+
+        # Get the WiFi APs selected in the QListView
+        indexes = self._view.ui.replaceControllerAPListView.selectedIndexes()
+        wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
+
+        # Start a task to flash the controller
+        worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
+        worker.signals.progress.connect(self.replace_controller_flash_progress)
+        worker.signals.result.connect(self.replace_controller_flash_result)
+        worker.signals.error.connect(self.replace_controller_flash_error)
+        worker.signals.finished.connect(self.replace_controller_flash_finished)
+        self.threadpool.start(worker)
+
+    def replace_controller_cycle_token_error(self, error):
+        """Handle errors when cycling a controller's auth token."""
+        self.replace_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
+
+    def replace_controller_flash_progress(self, progress: int) -> None:
+        """Handle the update when flashing the controller."""
+        self.replace_controller_set_progress_bar(progress)
+
+    def replace_controller_flash_result(self, _) -> None:
+        message = "Successfully flashed the microcontroller."
+        self._view.notify(message, "Finished Flashing", "information")
+
+    def replace_controller_flash_error(self, error: WorkerError) -> None:
+        """Handle an error when flashing."""
+        self.replace_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
+
+    def replace_controller_flash_finished(self) -> None:
+        """Handle the end (success or error) of flashing the controller."""
+        self.replace_controller_set_widgets_for_flashing(False)
+
+    def replace_controller_set_progress_bar(self, progress: int) -> None:
+        """Update the progress bar of the replace controller page."""
+        if progress < 0:
+            self._view.ui.replaceControllerProgressBar.setValue(-1)
+            self._view.ui.replaceControllerProgressBar.setRange(0, 0)
+        else:
+            limited_progress = min(progress, 100)
+            self._view.ui.replaceControllerProgressBar.setValue(limited_progress)
+            self._view.ui.replaceControllerProgressBar.setRange(0, 100)
 
     ##############################
     # Miscellaneous functionality

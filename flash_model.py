@@ -111,7 +111,7 @@ class FlashModel:
                     {"ssid": i.ssid, "password": i.password} for i in wifi_aps
                 ],
                 "ws_token": controller["authToken"]["key"],
-                "core_domain": "core.openfarming.ai",
+                "core_domain": ServerModel.ds_domain,
                 "force_insecure": False,
             }
             os.makedirs(self._spiffs_dir, exist_ok=True)

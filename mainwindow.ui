@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>730</width>
-    <height>468</height>
+    <height>473</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -744,7 +744,7 @@ multi-selection</string>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="replaceBackPushButton">
+           <widget class="QPushButton" name="replaceControllerBackButton">
             <property name="text">
              <string>Back</string>
             </property>
@@ -1220,7 +1220,7 @@ multi-selection</string>
   <tabstop>welcomeAddControllerButton</tabstop>
   <tabstop>welcomeReplaceControllerButton</tabstop>
   <tabstop>welcomeLogOutPushButton</tabstop>
-  <tabstop>replaceBackPushButton</tabstop>
+  <tabstop>replaceControllerBackButton</tabstop>
   <tabstop>addControllerSitesComboBox</tabstop>
   <tabstop>addControllerNameLineEdit</tabstop>
   <tabstop>addControllerAPListView</tabstop>
