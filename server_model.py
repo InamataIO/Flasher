@@ -17,8 +17,8 @@ from worker import WorkerInformation, WorkerWarning
 class ServerModel:
     """Used to login to the DS server."""
 
-    ds_domain = "localhost:8000"
-    secure_url = False
+    ds_domain = "core.openfarming.ai"
+    secure_url = True
     default_partition_table_name = "min_spiffs"
     default_partition_table_id = ""
 

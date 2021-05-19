@@ -1,8 +1,8 @@
 import sys
 from typing import Callable, List, Union
 
-from PySide2.QtCore import QEvent, QFile, QIODevice
-from PySide2.QtGui import QCloseEvent
+from PySide2.QtCore import QEvent, QFile, QIODevice, QSize
+from PySide2.QtGui import QCloseEvent, QIcon
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QMainWindow, QMessageBox, QWidget
 
@@ -37,6 +37,7 @@ class MainView(QMainWindow):
         self._set_page_indexes()
         self.ui.installEventFilter(self)
         self._hide_disabled_widgets()
+        self._add_app_icon()
 
     def notify(self, message, title, level="information"):
         if level == "information":
@@ -64,8 +65,9 @@ class MainView(QMainWindow):
             page = self.ui.findChild(QWidget, i[0])
             index = self.ui.stackedWidget.indexOf(page)
             i[1] = index
-    
+
     def _hide_disabled_widgets(self):
+        """Preemptively hide disabled widgets."""
         self.ui.manageWiFiEditButton.hide()
         self.ui.loginLoadingText.hide()
         self.ui.loginLoadingBar.hide()
@@ -77,7 +79,18 @@ class MainView(QMainWindow):
         self.ui.replaceControllerLoadingBar.hide()
         self.ui.replaceControllerProgressText.hide()
         self.ui.replaceControllerProgressBar.hide()
-    
+
+    def _add_app_icon(self):
+        """Add a window app icon that is also used in the task bar."""
+        app_icon = QIcon()
+        app_icon.addFile("images/icon_512.png", QSize(512, 512))
+        app_icon.addFile("images/icon_256.png", QSize(256, 256))
+        app_icon.addFile("images/icon_128.png", QSize(128, 128))
+        app_icon.addFile("images/icon_64.png", QSize(64, 64))
+        app_icon.addFile("images/icon_32.png", QSize(32, 32))
+        app_icon.addFile("images/icon_16.png", QSize(16, 16))
+        self.ui.setWindowIcon(app_icon)
+
     def eventFilter(self, watched, event):
         if watched is self.ui and event.type() == QEvent.Close:
             self.closeEvent(event)

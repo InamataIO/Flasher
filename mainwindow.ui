@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Togayo Flasher</string>
   </property>
   <property name="styleSheet">
    <string notr="true">* {
@@ -73,7 +73,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -109,7 +109,7 @@ QLabel {
            <widget class="QLabel" name="label">
             <property name="maximumSize">
              <size>
-              <width>100</width>
+              <width>320</width>
               <height>100</height>
              </size>
             </property>
@@ -117,26 +117,10 @@ QLabel {
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>images/logo_white_180.png</pixmap>
+             <pixmap>images/logo_white_960.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="header">
-            <property name="font">
-             <font>
-              <family>Lato</family>
-              <pointsize>-1</pointsize>
-             </font>
-            </property>
-            <property name="text">
-             <string>Flasher</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
             </property>
            </widget>
           </item>
@@ -303,6 +287,66 @@ QLabel {
              </size>
             </property>
            </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="ofai_logo">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>71</width>
+              <height>47</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>OpenFarming.AI</string>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">margin-right: 20;</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>images/ofai_logo_128.png</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="ph_logo">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>64</width>
+              <height>47</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Protohaus
+Makerspace</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>images/protohaus_makerspace_logo_128.png</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
+            </property>
+           </widget>
           </item>
          </layout>
         </item>
