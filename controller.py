@@ -1,11 +1,13 @@
-from PySide2.QtCore import QThreadPool
-from PySide2.QtGui import QCloseEvent
+import platform
+
+from PySide2.QtCore import QThreadPool, QUrl
+from PySide2.QtGui import QCloseEvent, QDesktopServices
 
 from config import Config
-from server_model import ServerModel
-from wifi_model import WiFiModel
 from flash_model import FlashModel
 from main_view import MainView
+from server_model import ServerModel
+from wifi_model import WiFiModel
 from worker import Worker, WorkerError, WorkerInformation, WorkerWarning
 
 
@@ -45,7 +47,7 @@ class Controller:
 
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
-        self._view.ui.signUpButton.clicked.connect(self._server_model.sign_up)
+        self._view.ui.signUpButton.clicked.connect(self.sign_up)
         self._view.ui.emailLineEdit.setText(self._server_model.get_username())
         self._view.ui.emailLineEdit.returnPressed.connect(
             self._view.ui.loginButton.click
@@ -130,6 +132,9 @@ class Controller:
         """Error handler for the login thread."""
         self.handle_error(error)
 
+    def sign_up(self):
+        QDesktopServices.openUrl(QUrl("https://core.openfarming.ai/"))
+
     ############################
     # Welcome Page Functionality
 
@@ -145,6 +150,7 @@ class Controller:
             self._view.change_page(self._view.Pages.ADD_CONTROLLER)
         else:
             self._page_after_add_wifi = self._view.Pages.ADD_CONTROLLER
+            self._page_before_add_wifi = self._view.Pages.WELCOME
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
     def to_replace_controller(self):
@@ -153,6 +159,7 @@ class Controller:
             self._view.change_page(self._view.Pages.REPLACE_CONTROLLER)
         else:
             self._page_after_add_wifi = self._view.Pages.REPLACE_CONTROLLER
+            self._page_before_add_wifi = self._view.Pages.WELCOME
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
     def to_manage_wifi(self):
@@ -161,6 +168,7 @@ class Controller:
             self._view.change_page(self._view.Pages.MANAGE_WIFI)
         else:
             self._page_after_add_wifi = self._view.Pages.MANAGE_WIFI
+            self._page_before_add_wifi = self._view.Pages.WELCOME
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
     #############################
@@ -180,6 +188,8 @@ class Controller:
         if self._page_before_add_wifi:
             self._view.change_page(self._page_before_add_wifi)
             self._page_before_add_wifi = None
+        else:
+            self._view.change_page(self._view.Pages.WELCOME)
 
     ################################
     # Manage WiFi Page Functionality
@@ -333,6 +343,9 @@ class Controller:
         indexes = self._view.ui.addControllerAPListView.selectedIndexes()
         wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
 
+        if platform.system == "Windows":
+            self.ui.notify("Please press and hold the boot button on the ESP32 until the flash process starts.", "Enable Flash Mode")
+        
         # Start a task to flash the controller
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
         worker.signals.progress.connect(self.add_controller_flash_progress)
@@ -641,6 +654,10 @@ class Controller:
         # Get the WiFi APs selected in the QListView
         indexes = self._view.ui.replaceControllerAPListView.selectedIndexes()
         wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
+
+        # Notify the user to hold the flash (boot) button
+        if platform.system() == "Windows":
+            self._view.notify("Please press and hold the boot button on the ESP32 until the flash process starts.", "Enable Flash Mode")
 
         # Start a task to flash the controller
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)

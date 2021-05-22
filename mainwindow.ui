@@ -28,6 +28,7 @@
   <property name="styleSheet">
    <string notr="true">* {
   font-family: Lato;
+  font-size: 16px;
 }
 QPushButton {
   font-size: 16px;
@@ -1271,6 +1272,8 @@ multi-selection</string>
   <tabstop>addControllerBackButton</tabstop>
   <tabstop>addWiFiBackPushButton</tabstop>
  </tabstops>
- <resources/>
+ <resources>
+  <include location="qt_resource.qrc"/>
+ </resources>
  <connections/>
 </ui>
