@@ -4,7 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-PySide2 = "*"
+PySide2 = "~=5.15"
+pyserial = "~=3.5"
 pyinstaller = "~=4.3"
 requests = "~=2.25.1"
 keyring = "~=23.0.1"

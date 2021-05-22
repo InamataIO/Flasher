@@ -1,28 +1,38 @@
-from flash_model import FlashModel
-import os
-import sys
-import logging
 import argparse
+import logging
+import os
+import platform
+import sys
 
-# Needed for Wayland applications
-os.environ["QT_QPA_PLATFORM"] = "xcb"
 # Change the current dir to the temporary one created by PyInstaller
 try:
     os.chdir(sys._MEIPASS)
 except:
     pass
 
-from PySide2.QtWidgets import QApplication
+# Needed for Wayland applications
+if platform.system() == "posix":
+    os.environ["QT_QPA_PLATFORM"] = "xcb"
+
+import ctypes
 from PySide2 import QtCore
+from PySide2.QtWidgets import QApplication, QStyleFactory
+from PySide2.QtGui import QIcon
 
 from config import Config
 from controller import Controller
-from server_model import ServerModel
+from flash_model import FlashModel
 from main_view import MainView
+from server_model import ServerModel
 from wifi_model import WiFiModel
 
 
 def main():
+    # Required on Windows to use own app icon
+    if platform.system() == "Windows":
+        myappid = 'togayo.com.flasher.0.0.1' # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-v", "--verbose", help="increase output verbosity", action="store_true"
@@ -34,10 +44,12 @@ def main():
         logging.basicConfig(format="%(levelname)s: %(message)s")
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
-    ds_flasher = QApplication(sys.argv)
+    togayo_flasher = QApplication(sys.argv)
+    togayo_flasher.setStyle(QStyleFactory.create("Fusion"))
+
     # Enable High DPI display with PyQt5
     if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
-        ds_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+        togayo_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
     view = MainView()
     config = Config()
     server_model = ServerModel(config=config)
@@ -51,7 +63,7 @@ def main():
         config=config,
     )
     view.show()
-    sys.exit(ds_flasher.exec_())
+    sys.exit(togayo_flasher.exec_())
 
 
 if __name__ == "__main__":

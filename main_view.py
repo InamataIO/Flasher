@@ -2,7 +2,7 @@ import sys
 from typing import Callable, List, Union
 
 from PySide2.QtCore import QEvent, QFile, QIODevice, QSize
-from PySide2.QtGui import QCloseEvent, QIcon
+from PySide2.QtGui import QCloseEvent, QIcon, QFontDatabase, QFont
 from PySide2.QtUiTools import QUiLoader
 from PySide2.QtWidgets import QMainWindow, QMessageBox, QWidget
 
@@ -32,10 +32,12 @@ class MainView(QMainWindow):
         if not ui_file.open(QIODevice.ReadOnly):
             print(f"Cannot open {main_window_file}: {ui_file.errorString()}")
             sys.exit(-1)
-        self.ui = QUiLoader().load(ui_file, self)
+        self.ui = QUiLoader().load(ui_file)
+        self.setCentralWidget(self.ui)
+        self.setWindowTitle("Togayo Flasher")
         ui_file.close()
+        self._set_font()
         self._set_page_indexes()
-        self.ui.installEventFilter(self)
         self._hide_disabled_widgets()
         self._add_app_icon()
 
@@ -46,9 +48,6 @@ class MainView(QMainWindow):
             QMessageBox.warning(self.ui, title, message)
         if level == "critical":
             QMessageBox.critical(self.ui, title, message)
-
-    def show(self):
-        self.ui.show()
 
     def change_page(self, page: Union[str, List]):
         """Change the stack page to the specified page"""
@@ -65,6 +64,13 @@ class MainView(QMainWindow):
             page = self.ui.findChild(QWidget, i[0])
             index = self.ui.stackedWidget.indexOf(page)
             i[1] = index
+
+    def _set_font(self):
+        """Set the font used by the UI."""
+        id = QFontDatabase.addApplicationFont("./fonts/Lato-Regular.ttf")
+        _fontstr = QFontDatabase.applicationFontFamilies(id)[0]
+        _font = QFont(_fontstr, 16)
+        self.setFont(_font)
 
     def _hide_disabled_widgets(self):
         """Preemptively hide disabled widgets."""
@@ -89,14 +95,16 @@ class MainView(QMainWindow):
         app_icon.addFile("images/icon_64.png", QSize(64, 64))
         app_icon.addFile("images/icon_32.png", QSize(32, 32))
         app_icon.addFile("images/icon_16.png", QSize(16, 16))
-        self.ui.setWindowIcon(app_icon)
+        self.setWindowIcon(app_icon)
 
     def eventFilter(self, watched, event):
+        """Catch the close event to save settings."""
         if watched is self.ui and event.type() == QEvent.Close:
             self.closeEvent(event)
         return super().eventFilter(watched, event)
 
     def closeEvent(self, event):
+        """Pass the close event to the registered close callback."""
         if self.close_callback:
             self.close_callback(event)
         else:

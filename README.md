@@ -1,4 +1,4 @@
-# DeviceStacc Flasher
+# Togayo Flasher
 
 Flash the firmware onto an ESP32 and register it with the server.
 
@@ -6,6 +6,10 @@ Flash the firmware onto an ESP32 and register it with the server.
 
 This is a list of features that would be useful and show the tool's current limitations
 
+- Add link to Windows ESP32 driver
+  - https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
+  - https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
+- Add instructions for Linux driver setup
 - Handling of more than 100 site, firmware images or controller instances
   - This is due to not handling paging of the GraphQL requests
 - Enable searching of combo boxes with many items
