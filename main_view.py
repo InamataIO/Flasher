@@ -26,16 +26,17 @@ class MainView(QMainWindow):
 
     close_callback: Callable[[QCloseEvent], None] = None
 
-    def __init__(self):
+    def __init__(self, version: str):
         super().__init__()
         ui_file = QFile(main_window_file)
         if not ui_file.open(QIODevice.ReadOnly):
             print(f"Cannot open {main_window_file}: {ui_file.errorString()}")
             sys.exit(-1)
         self.ui = QUiLoader().load(ui_file)
+        ui_file.close()
+        self.ui.welcomeVersion.setText(version)
         self.setCentralWidget(self.ui)
         self.setWindowTitle("Togayo Flasher")
-        ui_file.close()
         self._set_font()
         self._set_page_indexes()
         self._hide_disabled_widgets()

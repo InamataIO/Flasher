@@ -73,6 +73,7 @@ class Controller:
             self.add_controller_reload
         )
         self._view.ui.addControllerBackButton.clicked.connect(self.to_welcome_page)
+        self._view.ui.addControllerDriverButton.clicked.connect(self.to_driver_install)
 
         # Replace Controller Page
         self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.connect(
@@ -85,6 +86,9 @@ class Controller:
             self.replace_controller_reload
         )
         self._view.ui.replaceControllerBackButton.clicked.connect(self.to_welcome_page)
+        self._view.ui.replaceControllerDriverButton.clicked.connect(
+            self.to_driver_install
+        )
 
         # Add WiFi Page
         self._view.ui.addWiFiSubmitPushButton.clicked.connect(self.add_wifi_ap)
@@ -100,6 +104,12 @@ class Controller:
         self._view.ui.apListView.setModel(self._wifi_model)
         self._view.ui.addControllerAPListView.setModel(self._wifi_model)
         self._view.ui.replaceControllerAPListView.setModel(self._wifi_model)
+
+    def to_driver_install(self):
+        """Open the driver installation web page."""
+        QDesktopServices.openUrl(
+            QUrl("https://github.com/Togayo/Flasher#driver-setup-instructions")
+        )
 
     ##########################
     # Login Page Functionality
@@ -233,6 +243,11 @@ class Controller:
             index = self._view.ui.addControllerSitesComboBox.findData(current_site)
             if index:
                 self._view.ui.addControllerSitesComboBox.setCurrentIndex(index)
+        if not self._view.ui.addControllerSitesComboBox.count():
+            self._view.notify(
+                "No sites found. Visit <a href='https://core.openfarming.ai' style='color: #ccc'>core.openfarming.ai</a> to create new sites.",
+                "No Sites Found",
+            )
 
         # Update the firmware combo box and retain the currently selected item
         current_firmware = self._view.ui.addControllerFirmwaresComboBox.currentData()
@@ -343,9 +358,12 @@ class Controller:
         indexes = self._view.ui.addControllerAPListView.selectedIndexes()
         wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
 
-        if platform.system == "Windows":
-            self.ui.notify("Please press and hold the boot button on the ESP32 until the flash process starts.", "Enable Flash Mode")
-        
+        if platform.system() == "Windows":
+            self._view.notify(
+                "Please press and hold the boot button on the ESP32 until the flash process starts.",
+                "Enable Flash Mode",
+            )
+
         # Start a task to flash the controller
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
         worker.signals.progress.connect(self.add_controller_flash_progress)
@@ -438,6 +456,12 @@ class Controller:
             self._view.ui.replaceControllerSitesComboBox.setCurrentIndex(index)
         else:
             self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.emit(0)
+        if not self._view.ui.replaceControllerSitesComboBox.count():
+            self._view.notify(
+                "No sites found. Visit <a href='https://core.openfarming.ai' style='color: #ccc'>core.openfarming.ai</a> to create new sites.",
+                "No Sites Found",
+            )
+        
         # Update the firmware combo box and retain the currently selected item
         current_firmware = (
             self._view.ui.replaceControllerFirmwaresComboBox.currentData()
@@ -657,7 +681,10 @@ class Controller:
 
         # Notify the user to hold the flash (boot) button
         if platform.system() == "Windows":
-            self._view.notify("Please press and hold the boot button on the ESP32 until the flash process starts.", "Enable Flash Mode")
+            self._view.notify(
+                "Please press and hold the boot button on the ESP32 until the flash process starts.",
+                "Enable Flash Mode",
+            )
 
         # Start a task to flash the controller
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)

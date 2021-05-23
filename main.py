@@ -1,3 +1,19 @@
+#!/usr/bin/env python
+
+"""Register ESP32's with the Togayo Server
+
+Togayo Flasher is a tool for flashing the sdg-controller firmware on ESP32
+microcontrollers and registering their authentication token on the server.
+"""
+
+__author__ = "Moritz Ulmer"
+__license__ = "GPLv2"
+__version__ = "0.1.1"
+__date__ = "23.05.2021"
+__maintainer__ = "Moritz Ulmer"
+__email__ = "moritz.ulmer@posteo.de "
+__status__ = "Development"
+
 import argparse
 import logging
 import os
@@ -30,7 +46,7 @@ from wifi_model import WiFiModel
 def main():
     # Required on Windows to use own app icon
     if platform.system() == "Windows":
-        myappid = 'togayo.com.flasher.0.0.1' # arbitrary string
+        myappid = f"togayo.com.flasher.{__version__}"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     parser = argparse.ArgumentParser()
@@ -50,7 +66,7 @@ def main():
     # Enable High DPI display with PyQt5
     if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
         togayo_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
-    view = MainView()
+    view = MainView(__version__)
     config = Config()
     server_model = ServerModel(config=config)
     flash_model = FlashModel(server_model=server_model, config=config)

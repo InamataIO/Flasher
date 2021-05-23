@@ -39,9 +39,6 @@ QLabel {
   font-size: 16px;
   color: white;
 }
-#replaceControllerHint, #addControllerHint {
-  color: #ccc;
-}
 #centralWidget, QMessageBox {
   background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #620890, stop:1 #d33479);
 }
@@ -59,7 +56,7 @@ QLabel {
   margin-top: 8px;
 }
 
-#welcomeUsername {
+#welcomeUsername, #welcomeVersion {
   color: #ccc;
 }</string>
   </property>
@@ -74,7 +71,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -566,7 +563,7 @@ Makerspace</string>
            </widget>
           </item>
           <item>
-           <spacer name="horizontalSpacer_8">
+           <spacer name="horizontalSpacer_3">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -581,7 +578,30 @@ Makerspace</string>
           <item>
            <widget class="QLabel" name="welcomeUsername">
             <property name="text">
-             <string>TextLabel</string>
+             <string>Username</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_8">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QLabel" name="welcomeVersion">
+            <property name="text">
+             <string>Version</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
@@ -738,6 +758,13 @@ multi-selection</string>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <widget class="QPushButton" name="replaceControllerDriverButton">
+            <property name="text">
+             <string>Install Driver</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <spacer name="horizontalSpacer_7">
             <property name="orientation">
@@ -948,6 +975,13 @@ multi-selection</string>
         </item>
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <widget class="QPushButton" name="addControllerDriverButton">
+            <property name="text">
+             <string>Install Driver</string>
+            </property>
+           </widget>
+          </item>
           <item>
            <spacer name="horizontalSpacer_6">
             <property name="orientation">
