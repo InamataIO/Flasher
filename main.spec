@@ -6,7 +6,7 @@ block_cipher = None
 
 a = Analysis(
     ["main.py"],
-    pathex=["/home/moritz/Sandbox/ds-flasher"],
+    pathex=[],
     binaries=[],
     datas=[
         ("mainwindow.ui", "."),
