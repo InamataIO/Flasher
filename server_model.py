@@ -2,7 +2,7 @@ import hashlib
 import json
 import logging
 import os
-from typing import List
+from typing import Callable, List, Optional
 from urllib.parse import urlparse
 
 import keyring
@@ -17,7 +17,8 @@ from worker import WorkerInformation, WorkerWarning
 class ServerModel:
     """Used to login to the DS server."""
 
-    ds_domain = "core.openfarming.ai"
+    server_domain = "core.openfarming.ai"
+    server_port = None
     secure_url = True
     default_partition_table_name = "min_spiffs"
     default_partition_table_id = ""
@@ -28,9 +29,14 @@ class ServerModel:
             http_type = "https://"
         else:
             http_type = "http://"
-        self.token_url = f"{http_type}{self.ds_domain}/api/v1/accounts/auth-token/"
-        self.graphql_url = f"{http_type}{self.ds_domain}/graphql/"
-        self._default_headers = {"Host": self.ds_domain}
+        if port := self.server_port:
+            server_url = f"{http_type}{self.server_domain}:{port}"
+            self._default_headers = {"Host": f"{self.server_domain}:{port}"}
+        else:
+            server_url = f"{http_type}{self.server_domain}"
+            self._default_headers = {"Host": self.server_domain}
+        self.token_url = f"{server_url}/api/v1/accounts/auth-token/"
+        self.graphql_url = f"{server_url}/graphql/"
         # Get auth token if it has been retrieved and saved
         self._auth_token = ""
         if username := self._config.config.get("username"):
@@ -56,8 +62,13 @@ class ServerModel:
             { 
                 allFirmwareImages {
                     edges { node {
-                        id, name, version, file, hashSha3_512
+                        id, name, version, bootloader { id }, file, hashSha3_512
                     } } 
+                }
+                allBootloaderImages {
+                    edges { node {
+                        id, name, version, file, hashSha3_512
+                    } }
                 }
                 allSites {
                     edges { node {
@@ -77,13 +88,25 @@ class ServerModel:
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning("Error while getting site and firmware data.")
+
+        # Store firmware image metadata. Sort them by their semantic version
         firmware_images = [
             i["node"] for i in output["data"]["allFirmwareImages"]["edges"]
         ]
         firmware_images.sort(key=lambda x: Version(x["version"]), reverse=True)
         self._config.config["firmwareImages"] = firmware_images
+
+        # Store bootload image metadata. Sort them by their semantic version
+        bootloader_images = [
+            i["node"] for i in output["data"]["allBootloaderImages"]["edges"]
+        ]
+        bootloader_images.sort(key=lambda x: Version(x["version"]), reverse=True)
+        self._config.config["bootloaderImages"] = bootloader_images
+
+        # Store sites and controller types
         sites = [i["node"] for i in output["data"]["allSites"]["edges"]]
         self._config.config["sites"] = sites
+
         controller_types = [
             i["node"] for i in output["data"]["allControllerComponentTypes"]["edges"]
         ]
@@ -262,7 +285,9 @@ class ServerModel:
         self._config.save_controller(controller, site_id)
         return controller
 
-    def cycle_controller_auth_token(self, controller_id: str, site_id: str, **kwargs) -> dict:
+    def cycle_controller_auth_token(
+        self, controller_id: str, site_id: str, **kwargs
+    ) -> dict:
         """Cycle a controller's auth token to prevent duplicate connections."""
         data = {
             "query": """
@@ -302,51 +327,17 @@ class ServerModel:
         try:
             firmwares = self._config.config["firmwareImages"]
             firmware = next(i for i in firmwares if i["id"] == firmware_id)
-            path = self.get_firmware_image_path(firmware)
-            # If the file has been downloaded to the cache and has the same hash, return
-            if self._is_file_valid(path, firmware["hashSha3_512"]):
-                return firmware
-            # Download the file and notify of progress
-            os.makedirs(self._config.dirs.user_cache_dir, exist_ok=True)
-            with open(path, "wb+") as f:
-                progress_callback = kwargs["progress_callback"]
-                # If the download link has expired, request a new one and retry
-                response = requests.get(firmware["file"], stream=True)
-                if response.status_code >= 400:
-                    self._refresh_firmware_image_url(firmware)
-                    response = requests.get(firmware["file"], stream=True)
-                total_length = response.headers.get("content-length")
-                # If the total length is unknown, skip notifying progress
-                if total_length is None:
-                    progress_callback(-1)
-                    f.write(response.content)
-                else:
-                    received_bytes = 0
-                    total_length = int(total_length)
-                    for data in response.iter_content(chunk_size=64 * 1024):
-                        f.write(data)
-                        received_bytes += len(data)
-                        percentage_done = int(100 * received_bytes / total_length)
-                        progress_callback.emit(percentage_done)
-            # Check the file hash. Delete and inform the user if it fails
-            if not self._is_file_valid(path, firmware["hashSha3_512"]):
-                os.remove(path)
-                raise WorkerWarning(
-                    "Checksum of downloaded file did not match. Please try another"
-                    " version or contact support."
-                )
+            firmware = self._download_image(
+                firmware,
+                self._refresh_firmware_image_url,
+                kwargs.get("progress_callback", None),
+            )
         except KeyError as err:
             message = (
                 f"Error downloading firmware. Not all required metadata found ({err})."
             )
             raise WorkerWarning(message)
         return firmware
-
-    def get_firmware_image_path(self, firmware_image) -> str:
-        """Returns the absolute path to the firmware image."""
-        parse_result = urlparse(firmware_image["file"])
-        filename = os.path.basename(parse_result.path)
-        return os.path.join(self._config.dirs.user_cache_dir, filename)
 
     def get_firmware_image(self, firmware_image_id: str) -> dict:
         """Returns the firmware image for a given ID."""
@@ -356,6 +347,86 @@ class ServerModel:
             if i["id"] == firmware_image_id
         )
         return firmware_image
+
+    def download_bootloader_image(self, bootloader_id: str, **kwargs) -> dict:
+        """Download the selected bootloader if it is not cached locally."""
+        try:
+            bootloaders = self._config.config["bootloaderImages"]
+            bootloader = next(i for i in bootloaders if i["id"] == bootloader_id)
+            bootloader = self._download_image(
+                bootloader,
+                self._refresh_bootloader_image_url,
+                kwargs.get("progress_callback", None),
+            )
+        except KeyError as err:
+            message = f"Error downloading bootloader. Not all required metadata found ({err})."
+            raise WorkerWarning(message)
+        return bootloader
+
+    def get_bootloader_image(self, bootloader_image_id: str) -> dict:
+        """Returns the bootloader image for a given ID."""
+        bootloader_image = next(
+            i
+            for i in self._config.config.get("bootloaderImages")
+            if i["id"] == bootloader_image_id
+        )
+        return bootloader_image
+
+    def get_image_path(self, image: dict) -> str:
+        """Returns the absolute path to the image."""
+        parse_result = urlparse(image["file"])
+        filename = os.path.basename(parse_result.path)
+        return os.path.join(self._config.dirs.user_cache_dir, filename)
+
+    def _download_image(
+        self,
+        image: dict,
+        refresh_url: Callable[[dict], None],
+        progress_callback: Optional[Callable[[int], None]],
+    ) -> dict:
+        """Download the selected image if it is not locally cached."""
+        path = self.get_image_path(image)
+        # If the file has been downloaded to the cache and has the same hash, return
+        if self._is_file_valid(path, image["hashSha3_512"]):
+            return image
+        # Download the file and notify of progress
+        os.makedirs(self._config.dirs.user_cache_dir, exist_ok=True)
+        with open(path, "wb+") as f:
+            # If the download link has expired, request a new one and retry
+            response = requests.get(image["file"], stream=True)
+            if response.status_code >= 400:
+                refresh_url(image)
+                response = requests.get(image["file"], stream=True)
+                if response.status_code >= 400:
+                    logging.error(
+                        f"Failed to download file (Error {response.status_code})"
+                    )
+                    raise WorkerWarning(
+                        "Failed downloading the file. Try refreshing, check your internet connection or contact support."
+                    )
+            total_length = response.headers.get("content-length")
+            # If the total length is unknown, skip notifying progress
+            if total_length is None:
+                if progress_callback:
+                    progress_callback(-1)
+                f.write(response.content)
+            else:
+                received_bytes = 0
+                total_length = int(total_length)
+                for data in response.iter_content(chunk_size=64 * 1024):
+                    f.write(data)
+                    received_bytes += len(data)
+                    percentage_done = int(100 * received_bytes / total_length)
+                    if progress_callback:
+                        progress_callback.emit(percentage_done)
+        # Check the file hash. Delete and inform the user if it fails
+        if not self._is_file_valid(path, image["hashSha3_512"]):
+            os.remove(path)
+            raise WorkerWarning(
+                "Checksum of downloaded file did not match. Please try another"
+                " version or contact support."
+            )
+        return image
 
     @staticmethod
     def _is_file_valid(file_path: str, sha3_512_hash: str) -> bool:
@@ -383,14 +454,12 @@ class ServerModel:
             partition_tables = {}
         partition_tables.update({partition_table_id: partition_table})
 
-    def _refresh_firmware_image_url(self, firmware_image):
+    def _refresh_firmware_image_url(self, firmware_image: dict):
         """Refresh the (expired) URL of a firmware image."""
         data = {
             "query": f"""
             {{
-                firmwareImage(id: "{firmware_image['id']}") {{
-                    id, name, version, file, hashSha3_512
-                }}
+                firmwareImage(id: "{firmware_image['id']}") {{ file }}
             }}""",
             "variables": None,
         }
@@ -402,6 +471,23 @@ class ServerModel:
                 "Error while refreshing the firmware URL. Please reload data."
             )
         firmware_image["file"] = output["data"]["firmwareImage"]["file"]
+
+    def _refresh_bootloader_image_url(self, bootloader_image):
+        """Refresh the (expired) URL of a bootloader image."""
+        data = {
+            "query": f"""
+            {{
+                bootloaderImage(id: "{bootloader_image['id']}") {{ file }}
+            }}"""
+        }
+        response = self._auth_server_request(self.graphql_url, data)
+        output = json.loads(response.content)
+        if errors := output.get("errors"):
+            logging.warning(errors)
+            raise WorkerWarning(
+                "Error while refreshing the bootloader URL. Please reload data."
+            )
+        bootloader_image["file"] = output["data"]["bootloaderImage"]["file"]
 
     def _save_credentials(self, username: str, token: str) -> None:
         """Save the auth token in a keychain."""

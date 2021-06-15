@@ -42,18 +42,36 @@ class EsptoolOutputHandler:
 
 
 class FlashModel:
-    """Used to flash the ESP32 controller."""
+    """Used to flash the ESP32 controller.
+    
+    Standard partition table:
+    - 0x1000 - **2nd stage bootloader
+    - 0x8000 - partition table
+    - 0xe000 - **otadata
+    - 0x10000 - program
+    - 0x3D0000 - SPIFFS
+    """
 
     # The subtype of the partition in the partition table to be used for the SPIFFS image
-    _spiffs_partition_subtype_ = "spiffs"
+    _spiffs_partition_subtype = "spiffs"
     # The directory from which the files are copied to create the SPIFFS image
-    _spiffs_source_dir_ = os.path.join(os.getcwd(), "spiffs")
+    _spiffs_source_dir = os.path.join(os.getcwd(), "spiffs")
+
+    # The offset in bytes where the bootloader image should be flashed to
+    _bootloader_image_offset = 4096  # 0x1000
 
     # The offset in bytes where the partition image should be flashed to
     _partition_image_offset = 32768  # 0x8000
 
     # The subtype of the partition in the partition table to be used for the firmware image
-    _firmware_partition_subtype_ = "ota_0"
+    _firmware_partition_subtype = "ota_0"
+
+    # The type and subtype of the otadata partition table (which OTA app slot to boot)
+    _otadata_partition_type = "data"
+    _otadata_partition_subtype = "ota"
+
+    # ESP tool flash baud rate
+    _esptool_baud_rate = 921600
 
     def __init__(self, server_model: ServerModel, config: Config):
         self._server_model = server_model
@@ -94,7 +112,12 @@ class FlashModel:
         firmware_image = self._server_model.get_firmware_image(
             controller["firmwareImage"]["id"]
         )
-        self._flash_controller(partitions, firmware_image, progress_callback)
+        bootloader_image = self._server_model.get_bootloader_image(
+            firmware_image["bootloader"]["id"]
+        )
+        self._flash_controller(
+            partitions, firmware_image, bootloader_image, progress_callback
+        )
 
     def _create_partition_image(self, partition_table: dict):
         """Generate a partition table image."""
@@ -142,8 +165,8 @@ class FlashModel:
                     {"ssid": i.ssid, "password": i.password} for i in wifi_aps
                 ],
                 "ws_token": controller["authToken"]["key"],
-                "core_domain": ServerModel.ds_domain,
-                "force_insecure": False,
+                "core_domain": ServerModel.server_domain,
+                "secure_url": ServerModel.secure_url,
             }
             # Make a directory to place all files in for the SPIFFS image
             os.makedirs(self._spiffs_dir, exist_ok=True)
@@ -151,7 +174,7 @@ class FlashModel:
             with open(self._spiffs_secret_path, "w+") as secret_file:
                 json.dump(secrets, secret_file)
             # Copy over other files to be added to the SPIFFS image
-            copy_tree(self._spiffs_source_dir_, self._spiffs_dir)
+            copy_tree(self._spiffs_source_dir, self._spiffs_dir)
 
             # Prepare to run the SPIFFS generator. Save the cmdline args to be restored
             original_argv = sys.argv
@@ -177,28 +200,55 @@ class FlashModel:
                 pass
 
     def _flash_controller(
-        self, partitions: dict, firmware: dict, progress: WorkerSignals
+        self,
+        partitions: dict,
+        firmware: dict,
+        bootloader: dict,
+        progress: WorkerSignals,
     ):
         """Flash the controller with the generate images."""
-        firmware_image_path = self._server_model.get_firmware_image_path(firmware)
+        firmware_image_path = self._server_model.get_image_path(firmware)
         if not os.path.isfile(firmware_image_path):
             logging.error(f"Could not find firmware image at: {firmware_image_path}")
             raise WorkerError(
                 "Firmware image could not be found. Please refresh the cached files."
             )
+        bootloader_image_path = self._server_model.get_image_path(bootloader)
+        if not os.path.isfile(bootloader_image_path):
+            logging.error(f"Could not find bootloader image at: {bootloader_image_path}")
+            raise WorkerError(
+                "Bootloader image could not be found. Please refresh the cached files."
+            )
         firmware_partition = next(
-            i for i in partitions if i["subtype"] == self._firmware_partition_subtype_
+            i for i in partitions if i["subtype"] == self._firmware_partition_subtype
         )
         spiffs_partition = next(
-            i for i in partitions if i["subtype"] == self._spiffs_partition_subtype_
+            i for i in partitions if i["subtype"] == self._spiffs_partition_subtype
         )
-        # Flash the partition table, firmware and SPIFFS image
-        esptool_args = [
+        otadata_partition = next(
+            i
+            for i in partitions
+            if i["type"] == self._otadata_partition_type
+            and i["subtype"] == self._otadata_partition_subtype
+        )
+        # Erase the OTA data partition
+        esptool_erase_otadata_args = [
             "--baud",
-            str(921600),
+            str(self._esptool_baud_rate),
+            "erase_region",
+            str(otadata_partition["offset"]),
+            str(otadata_partition["size"]),
+        ]
+        # Flash the partition table, firmware and SPIFFS image
+        # WORKAROUND: Place the SPIFFS flash command before the image flash command
+        esptool_flash_args = [
+            "--baud",
+            str(self._esptool_baud_rate),
             "write_flash",
             str(self._partition_image_offset),
             self._partitions_image_path,
+            str(self._bootloader_image_offset),
+            bootloader_image_path,
             str(spiffs_partition["offset"]),
             self._spiffs_image_path,
             str(firmware_partition["offset"]),
@@ -209,7 +259,8 @@ class FlashModel:
         stderr = StringIO()
         try:
             with redirect_stderr(stderr):
-                esptool.main(esptool_args)
+                esptool.main(esptool_erase_otadata_args)
+                esptool.main(esptool_flash_args)
         except SystemExit as err:
             logging.error(stderr)
             raise WorkerError("Failed to flash the controller. Please try again.")

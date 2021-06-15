@@ -281,14 +281,14 @@ class Controller:
         """Download the selected firmware image and flash it to the ESP."""
         if not self.add_controller_is_flash_input_valid():
             return
-        self._view.ui.addControllerProgressText.setText("Downloading (1/3)")
+        self._view.ui.addControllerProgressText.setText("Get Firmware (1/4)")
         self.add_controller_set_widgets_for_flashing(True)
 
         firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
         worker = Worker(self._server_model.download_firmware_image, firmware_id)
-        worker.signals.progress.connect(self.add_controller_download_progress)
-        worker.signals.result.connect(self.add_controller_download_result)
-        worker.signals.error.connect(self.add_controller_download_error)
+        worker.signals.progress.connect(self.add_controller_download_firmware_progress)
+        worker.signals.result.connect(self.add_controller_download_firmware_result)
+        worker.signals.error.connect(self.add_controller_download_firmware_error)
         self.threadpool.start(worker)
 
     def add_controller_is_flash_input_valid(self):
@@ -320,38 +320,62 @@ class Controller:
             return False
         return True
 
-    def add_controller_download_progress(self, progress):
+    def add_controller_download_firmware_progress(self, progress):
         """Set the download progress."""
         self.add_controller_set_progress_bar(progress)
 
-    def add_controller_download_result(self, firmware: dict):
+    def add_controller_download_firmware_result(self, firmware: dict):
         """After completing the download, flash the controller."""
-        self._view.ui.addControllerProgressText.setText("Registering (2/3)")
+        self._view.ui.addControllerProgressText.setText("Get Bootloader (2/4)")
+        self.add_controller_set_progress_bar(0)
+
+        bootloader_id = firmware["bootloader"]["id"]
+        worker = Worker(self._server_model.download_bootloader_image, bootloader_id)
+        worker.signals.progress.connect(
+            self.add_controller_download_bootloader_progress
+        )
+        worker.signals.result.connect(self.add_controller_download_bootloader_result)
+        worker.signals.error.connect(self.add_controller_download_bootloader_error)
+        self.threadpool.start(worker)
+
+    def add_controller_download_firmware_error(self, error):
+        """Handle errors while downloading the firmware."""
+        self.add_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
+
+    def add_controller_download_bootloader_progress(self, progress):
+        """Set the download progress."""
+        self.add_controller_set_progress_bar(progress)
+
+    def add_controller_download_bootloader_result(self, bootloader: dict):
+        """After completing the bootloader download, register the controller."""
+        self._view.ui.addControllerProgressText.setText("Registering (3/4)")
         self.add_controller_set_progress_bar(0)
 
         name = self._view.ui.addControllerNameLineEdit.text()
         site_id = self._view.ui.addControllerSitesComboBox.currentData()
         controller_type_id = self._config.config["controllerComponentTypes"][0]["id"]
+        firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
 
         worker = Worker(
             self._server_model.register_controller,
             name,
             site_id,
             controller_type_id,
-            firmware["id"],
+            firmware_id,
         )
         worker.signals.result.connect(self.add_controller_register_result)
         worker.signals.error.connect(self.add_controller_register_error)
         self.threadpool.start(worker)
 
-    def add_controller_download_error(self, error):
-        """Handle errors while downloading the firmware."""
+    def add_controller_download_bootloader_error(self, error):
+        """Handle errors while downloading the bootloader."""
         self.add_controller_set_widgets_for_flashing(False)
         self.handle_error(error)
 
     def add_controller_register_result(self, controller):
         """After registering a new controller, start the flashing process."""
-        self._view.ui.addControllerProgressText.setText("Flashing (3/3)")
+        self._view.ui.addControllerProgressText.setText("Flashing (4/4)")
         self.add_controller_set_progress_bar(0)
 
         # Get the WiFi APs selected in the QListView
@@ -559,14 +583,16 @@ class Controller:
         """Download the selected firmware image and flash it to the ESP."""
         if not self.replace_controller_is_flash_input_valid():
             return
-        self._view.ui.replaceControllerProgressText.setText("Downloading (1/3)")
+        self._view.ui.replaceControllerProgressText.setText("Get Firmware (1/4)")
         self.replace_controller_set_widgets_for_flashing(True)
 
         firmware_id = self._view.ui.replaceControllerFirmwaresComboBox.currentData()
         worker = Worker(self._server_model.download_firmware_image, firmware_id)
-        worker.signals.progress.connect(self.replace_controller_download_progress)
-        worker.signals.result.connect(self.replace_controller_download_result)
-        worker.signals.error.connect(self.replace_controller_download_error)
+        worker.signals.progress.connect(
+            self.replace_controller_download_firmware_progress
+        )
+        worker.signals.result.connect(self.replace_controller_download_firmware_result)
+        worker.signals.error.connect(self.replace_controller_download_firmware_error)
         self.threadpool.start(worker)
 
     def replace_controller_is_flash_input_valid(self) -> bool:
@@ -620,33 +646,52 @@ class Controller:
         self._view.ui.replaceControllerReloadButton.setDisabled(is_flashing)
         self._view.ui.replaceControllerBackButton.setDisabled(is_flashing)
 
-    def replace_controller_download_progress(self, progress):
+    def replace_controller_download_firmware_progress(self, progress):
         """Set the download progress as half of the download and flash progress."""
-        if progress < 0:
-            self._view.ui.replaceControllerProgressBar.setValue(-1)
-            self._view.ui.replaceControllerProgressBar.setRange(0, 0)
-        else:
-            self._view.ui.replaceControllerProgressBar.setValue(progress)
+        self.replace_controller_set_progress_bar(progress)
 
-    def replace_controller_download_result(self, firmware_image: dict):
+    def replace_controller_download_firmware_result(self, firmware: dict):
         """After completing the download, flash the controller."""
-        self._view.ui.replaceControllerProgressText.setText("Send Server Update (2/3)")
+        self._view.ui.replaceControllerProgressText.setText("Get Bootloader (2/4)")
+        self.replace_controller_set_progress_bar(0)
+
+        bootloader_id = firmware["bootloader"]["id"]
+        worker = Worker(self._server_model.download_bootloader_image, bootloader_id)
+        worker.signals.progress.connect(
+            self.replace_controller_download_bootloader_progress
+        )
+        worker.signals.result.connect(
+            self.replace_controller_download_bootloader_result
+        )
+        worker.signals.error.connect(self.replace_controller_download_bootloader_error)
+        self.threadpool.start(worker)
+
+    def replace_controller_download_firmware_error(self, error):
+        """Handle errors while downloading the firmware."""
+        self.replace_controller_set_widgets_for_flashing(False)
+        self.handle_error(error)
+
+    def replace_controller_download_bootloader_progress(self, progress):
+        """Set the download progress."""
+        self.replace_controller_set_progress_bar(progress)
+
+    def replace_controller_download_bootloader_result(self, bootloader_image: dict):
+        """After completing the download, flash the controller."""
+        self._view.ui.replaceControllerProgressText.setText("Registering (3/4)")
         self._view.ui.replaceControllerProgressBar.setValue(0)
 
         controller_id = self._view.ui.replaceControllerControllersComboBox.currentData()
         site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
+        firmware_id = self._view.ui.replaceControllerFirmwaresComboBox.currentData()
 
         worker = Worker(
-            self._server_model.update_controller,
-            controller_id,
-            site_id,
-            firmware_image["id"],
+            self._server_model.update_controller, controller_id, site_id, firmware_id
         )
         worker.signals.result.connect(self.replace_controller_update_result)
         worker.signals.error.connect(self.replace_controller_update_error)
         self.threadpool.start(worker)
 
-    def replace_controller_download_error(self, error):
+    def replace_controller_download_bootloader_error(self, error):
         """Handle errors when downloading the firmware."""
         self.replace_controller_set_widgets_for_flashing(False)
         self.handle_error(error)
@@ -672,7 +717,7 @@ class Controller:
 
     def replace_controller_cycle_token_result(self, controller):
         """After updating the controller's auth key, flash it."""
-        self._view.ui.replaceControllerProgressText.setText("Flashing (3/3)")
+        self._view.ui.replaceControllerProgressText.setText("Flashing (4/4)")
         self._view.ui.replaceControllerProgressBar.setValue(0)
 
         # Get the WiFi APs selected in the QListView
