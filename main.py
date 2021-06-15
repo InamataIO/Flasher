@@ -7,9 +7,9 @@ microcontrollers and registering their authentication token on the server.
 """
 
 __author__ = "Moritz Ulmer"
-__license__ = "GPLv2"
-__version__ = "0.1.1"
-__date__ = "23.05.2021"
+__license__ = "apache-2.0"
+__version__ = "0.2.0"
+__date__ = "15.06.2021"
 __maintainer__ = "Moritz Ulmer"
 __email__ = "moritz.ulmer@posteo.de "
 __status__ = "Development"
