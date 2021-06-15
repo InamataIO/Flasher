@@ -136,7 +136,7 @@ class ServerModel:
         results = output["data"]["allControllerComponents"]
         if results["pageInfo"]["hasNextPage"]:
             message = (
-                "Not all controllers for this site could be fetched. Please upgrade your Togayo"
+                "Not all controllers for this site could be fetched. Please upgrade your OFAI"
                 "Flasher tool."
             )
             raise WorkerInformation(message)

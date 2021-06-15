@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Togayo Flasher</string>
+   <string>OFAI Flasher</string>
   </property>
   <property name="styleSheet">
    <string notr="true">* {
@@ -40,7 +40,7 @@ QLabel {
   color: white;
 }
 #centralWidget, QMessageBox {
-  background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #2dc63a, stop:1 #b3de39);
+  background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #514A9D, stop:1 #24C6DC);
 }
 #header, #welcomeHeader, #replaceHeader, #addHeader, #addWiFiHeader, #manageWiFiHeader {
   margin: 20px;

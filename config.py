@@ -12,8 +12,8 @@ from appdirs import AppDirs
 class Config:
     """Used to store and load configurations."""
 
-    app_name = "togayo-flasher"
-    app_author = "togayo"
+    app_name = "ofai-flasher"
+    app_author = "protohaus"
     dirs = AppDirs(app_name, app_author)
 
     def __init__(self):

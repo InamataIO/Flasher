@@ -1,4 +1,4 @@
-![Togayo Flasher](./images/header-logo.png)
+![OFAI Flasher](./images/header-logo.png)
 
 Flash the firmware onto an ESP32 and register it with the server.
 
@@ -31,13 +31,21 @@ Push the final version, create a new release on Github, create a distributable b
 
 ### Windows
 
-TBD
+After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing certificate, run the following commands:
+
+    pipenv install -d
+    pipenv shell
+    pyinstaller main.spec
+    signtool.exe sign /tr http://timestamp.sectigo.com/ /td sha256 /fd sha256 /a C:\path\to\ofai_flasher.exe
+
+The following instructions are useful to set up the [code signing key](https://stackoverflow.com/a/64499199/6783666) and install the [code signing tool](https://stackoverflow.com/questions/31869552/how-to-install-signtool-exe-for-windows-10).
 
 ### Linux
 
 Run the following command to create a PyInstaller distributable:
 
     pipenv install -d
+    pipenv shell
     pyinstaller main.spec
 
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Register ESP32's with the Togayo Server
+"""Register ESP32's with the OFAI Server
 
-Togayo Flasher is a tool for flashing the sdg-controller firmware on ESP32
+OFAI Flasher is a tool for flashing the sdg-controller firmware on ESP32
 microcontrollers and registering their authentication token on the server.
 """
 
@@ -46,7 +46,7 @@ from wifi_model import WiFiModel
 def main():
     # Required on Windows to use own app icon
     if platform.system() == "Windows":
-        myappid = f"togayo.com.flasher.{__version__}"
+        myappid = f"protohaus.com.ofai-flasher.{__version__}"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     parser = argparse.ArgumentParser()
@@ -60,12 +60,12 @@ def main():
         logging.basicConfig(format="%(levelname)s: %(message)s")
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
-    togayo_flasher = QApplication(sys.argv)
-    togayo_flasher.setStyle(QStyleFactory.create("Fusion"))
+    ofai_flasher = QApplication(sys.argv)
+    ofai_flasher.setStyle(QStyleFactory.create("Fusion"))
 
     # Enable High DPI display with PyQt5
     if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
-        togayo_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+        ofai_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
     view = MainView(__version__)
     config = Config()
     server_model = ServerModel(config=config)
@@ -79,7 +79,7 @@ def main():
         config=config,
     )
     view.show()
-    sys.exit(togayo_flasher.exec_())
+    sys.exit(ofai_flasher.exec_())
 
 
 if __name__ == "__main__":

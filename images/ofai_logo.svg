@@ -1005,10 +1005,7 @@
    height="106.34173"
    x="79.810509"
    y="-394.89212"
-   transform="scale(1,-1)"
-   inkscape:export-filename="/home/moritz/Documents/Togayo/Software/Flasher/images/header-logo.png"
-   inkscape:export-xdpi="276.41"
-   inkscape:export-ydpi="276.41" /><g
+   transform="scale(1,-1)" /><g
    id="g1373"
    clip-path="url(#clipPath244)"
    transform="translate(38.37111,-157.92736)"><g
@@ -1020,10 +1017,7 @@
          inkscape:connector-curvature="0" /></g></g></g><g
    id="g1397"
    transform="translate(-6.4656076,-144.44146)"
-   style="fill:#ffffff"
-   inkscape:export-filename="/home/moritz/Documents/Togayo/Software/Flasher/images/logo_white_960.png"
-   inkscape:export-xdpi="276.41"
-   inkscape:export-ydpi="276.41"><g
+   style="fill:#ffffff"><g
      id="g1395"
      clip-path="url(#clipPath40)"
      style="fill:#ffffff"><g
@@ -1176,10 +1170,7 @@
    x="304.95065"
    y="-352.33905"
    id="text8097"
-   transform="scale(1,-1)"
-   inkscape:export-filename="/home/moritz/Documents/Togayo/Software/Flasher/images/logo_white_960.png"
-   inkscape:export-xdpi="276.41"
-   inkscape:export-ydpi="276.41"><tspan
+   transform="scale(1,-1)"><tspan
      sodipodi:role="line"
      id="tspan8095"
      style="font-weight:normal;font-size:39.0267px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.75"

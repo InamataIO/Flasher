@@ -108,7 +108,7 @@ class Controller:
     def to_driver_install(self):
         """Open the driver installation web page."""
         QDesktopServices.openUrl(
-            QUrl("https://github.com/Togayo/Flasher#driver-setup-instructions")
+            QUrl("https://github.com/protohaus/sdg-flasher#driver-setup-instructions")
         )
 
     ##########################
@@ -296,7 +296,7 @@ class Controller:
         if not self._view.ui.addControllerSitesComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the OFAI Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -314,7 +314,7 @@ class Controller:
         if not self._view.ui.addControllerFirmwaresComboBox.currentData():
             message = (
                 "Please select a firmware version or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the OFAI Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -600,14 +600,14 @@ class Controller:
         if not self._view.ui.replaceControllerSitesComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the OFAI Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
         if not self._view.ui.replaceControllerControllersComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the OFAI Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -621,7 +621,7 @@ class Controller:
         if not self._view.ui.replaceControllerFirmwaresComboBox.currentData():
             message = (
                 "Please select a firmware version or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the OFAI Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False

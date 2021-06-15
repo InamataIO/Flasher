@@ -36,7 +36,7 @@ class MainView(QMainWindow):
         ui_file.close()
         self.ui.welcomeVersion.setText(version)
         self.setCentralWidget(self.ui)
-        self.setWindowTitle("Togayo Flasher")
+        self.setWindowTitle("OFAI Flasher")
         self._set_font()
         self._set_page_indexes()
         self._hide_disabled_widgets()
