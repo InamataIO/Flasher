@@ -2,11 +2,6 @@
 
 Flash the firmware onto an ESP32 and register it with the server.
 
-| Windows Screenshots                                 | Linux Screenshots                                      |
-| ----------------------------------------------------| ------------------------------------------------------ |
-| ![Windows Welcome](screenshots/windows_welcome.png) | ![Linux Welcome](screenshots/linux_add_controller.png) |
-| Welcome page for Windows 10 → [more pages][1]       | Add controller page for Ubuntu 20.04 → [more pages][2] |
-
 ## Driver Setup Instructions
 
 ### Windows

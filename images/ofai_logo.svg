@@ -819,8 +819,8 @@
      fit-margin-right="5"
      fit-margin-bottom="5"
      inkscape:zoom="1.6081092"
-     inkscape:cx="243.76455"
-     inkscape:cy="241.58808"
+     inkscape:cx="243.76454"
+     inkscape:cy="241.58807"
      inkscape:window-x="72"
      inkscape:window-y="27"
      inkscape:window-maximized="1"
@@ -1005,7 +1005,10 @@
    height="106.34173"
    x="79.810509"
    y="-394.89212"
-   transform="scale(1,-1)" /><g
+   transform="scale(1,-1)"
+   inkscape:export-filename="/home/moritz/Documents/Togayo/Software/Flasher/images/header-logo.png"
+   inkscape:export-xdpi="276.41"
+   inkscape:export-ydpi="276.41" /><g
    id="g1373"
    clip-path="url(#clipPath244)"
    transform="translate(38.37111,-157.92736)"><g
@@ -1016,7 +1019,7 @@
          id="path1367"
          inkscape:connector-curvature="0" /></g></g></g><g
    id="g1397"
-   transform="translate(-10.05692,-141.97437)"
+   transform="translate(-6.4656076,-144.44146)"
    style="fill:#ffffff"
    inkscape:export-filename="/home/moritz/Documents/Togayo/Software/Flasher/images/logo_white_960.png"
    inkscape:export-xdpi="276.41"
@@ -1170,8 +1173,8 @@
      style="font-weight:normal;font-size:26.55px;fill:url(#linearGradient1489);fill-opacity:1;stroke-width:0.75">.</tspan></text><text
    xml:space="preserve"
    style="font-size:39.0267px;line-height:1.25;font-family:Ubuntu;-inkscape-font-specification:Ubuntu;text-align:center;letter-spacing:0px;word-spacing:0px;text-anchor:middle;fill:#ffffff;stroke-width:0.75"
-   x="289.90247"
-   y="-354.80612"
+   x="304.95065"
+   y="-352.33905"
    id="text8097"
    transform="scale(1,-1)"
    inkscape:export-filename="/home/moritz/Documents/Togayo/Software/Flasher/images/logo_white_960.png"
@@ -1180,10 +1183,10 @@
      sodipodi:role="line"
      id="tspan8095"
      style="font-weight:normal;font-size:39.0267px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.75"
-     x="289.90247"
-     y="-354.80612">OFAI</tspan><tspan
+     x="304.95065"
+     y="-352.33905">OFAI</tspan><tspan
      sodipodi:role="line"
      style="font-weight:normal;font-size:39.0267px;text-align:center;text-anchor:middle;fill:#ffffff;stroke-width:0.75"
-     x="289.90247"
-     y="-306.02274"
+     x="304.95065"
+     y="-303.55566"
      id="tspan27621">Flasher</tspan></text></g></svg>
