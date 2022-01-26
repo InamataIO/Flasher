@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>730</width>
-    <height>473</height>
+    <height>477</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Togayo Flasher</string>
+   <string>Inamata Flasher</string>
   </property>
   <property name="styleSheet">
    <string notr="true">* {
@@ -34,11 +34,16 @@ QPushButton {
   font-size: 16px;
   padding: 8px;
 }
-
 QLabel {
   font-size: 16px;
   color: white;
 }
+
+#loginForm_2 QPushButton {
+  font-size: 30px;
+  padding: 30px
+}
+
 #centralWidget, QMessageBox {
   background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #620890, stop:1 #d33479);
 }
@@ -49,10 +54,10 @@ QLabel {
 #welcomeSubHeader {
   font-size: 25px;
 }
-#loginForm QLabel, #addForm QLabel, #replaceForm QLabel, #addWiFiForm QLabel {
+#addForm QLabel, #replaceForm QLabel, #addWiFiForm QLabel {
   padding-right: 8px;
 }
-#loginForm QPushButton, #addForm QPushButton, #replaceForm QPushButton, #addWiFiForm QPushButton {
+#addForm QPushButton, #replaceForm QPushButton, #addWiFiForm QPushButton {
   margin-top: 8px;
 }
 
@@ -71,7 +76,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -105,20 +110,20 @@ QLabel {
           </item>
           <item>
            <widget class="QLabel" name="label">
-            <property name="maximumSize">
-             <size>
-              <width>320</width>
-              <height>100</height>
-             </size>
+            <property name="font">
+             <font>
+              <family>Lato</family>
+              <pointsize>60</pointsize>
+              <weight>50</weight>
+              <italic>false</italic>
+              <bold>false</bold>
+             </font>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">font: 60pt</string>
             </property>
             <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>images/logo_white_960.png</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
+             <string>Flasher</string>
             </property>
            </widget>
           </item>
@@ -151,79 +156,84 @@ QLabel {
          </spacer>
         </item>
         <item>
-         <widget class="QWidget" name="loginForm" native="true">
-          <layout class="QFormLayout" name="loginForm_">
-           <property name="leftMargin">
-            <number>40</number>
-           </property>
-           <property name="rightMargin">
-            <number>40</number>
-           </property>
-           <item row="0" column="0">
-            <widget class="QLabel" name="emailLabel">
+         <widget class="QWidget" name="loginForm_2" native="true">
+          <layout class="QHBoxLayout" name="loginForm">
+           <item>
+            <spacer name="horizontalSpacer_14">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item>
+            <widget class="QPushButton" name="loginButton">
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="font">
+              <font>
+               <family>Lato</family>
+               <pointsize>-1</pointsize>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
              <property name="text">
-              <string>E-Mail</string>
+              <string>Log in</string>
+             </property>
+             <property name="default">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
-           <item row="0" column="1">
-            <widget class="QLineEdit" name="emailLineEdit"/>
+           <item>
+            <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
            </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="passwordLabel">
+           <item>
+            <widget class="QPushButton" name="signUpButton">
+             <property name="minimumSize">
+              <size>
+               <width>100</width>
+               <height>0</height>
+              </size>
+             </property>
              <property name="text">
-              <string>Password</string>
+              <string>Sign up</string>
              </property>
             </widget>
            </item>
-           <item row="1" column="1">
-            <widget class="QLineEdit" name="passwordLineEdit">
-             <property name="echoMode">
-              <enum>QLineEdit::Password</enum>
+           <item>
+            <spacer name="horizontalSpacer_15">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
              </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <layout class="QHBoxLayout" name="horizontalLayout">
-             <item>
-              <widget class="QPushButton" name="loginButton">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Lato</family>
-                 <pointsize>-1</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true"/>
-               </property>
-               <property name="text">
-                <string>Log in</string>
-               </property>
-               <property name="default">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="signUpButton">
-               <property name="minimumSize">
-                <size>
-                 <width>100</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="text">
-                <string>Sign up</string>
-               </property>
-              </widget>
-             </item>
-            </layout>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
            </item>
           </layout>
          </widget>
@@ -287,38 +297,7 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QLabel" name="ofai_logo">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>71</width>
-              <height>47</height>
-             </size>
-            </property>
-            <property name="toolTip">
-             <string>OpenFarming.AI</string>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">margin-right: 20;</string>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="pixmap">
-             <pixmap>images/ofai_logo_128.png</pixmap>
-            </property>
-            <property name="scaledContents">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLabel" name="ph_logo">
+           <widget class="QLabel" name="inamata_logo">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -327,7 +306,7 @@ QLabel {
             </property>
             <property name="maximumSize">
              <size>
-              <width>64</width>
+              <width>102</width>
               <height>47</height>
              </size>
             </property>
@@ -339,7 +318,7 @@ Makerspace</string>
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>images/protohaus_makerspace_logo_128.png</pixmap>
+             <pixmap>images/inamata_logo_white_128.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -578,7 +557,7 @@ Makerspace</string>
           <item>
            <widget class="QLabel" name="welcomeUsername">
             <property name="text">
-             <string>Username</string>
+             <string>hello@inamata.co</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
@@ -601,7 +580,7 @@ Makerspace</string>
           <item>
            <widget class="QLabel" name="welcomeVersion">
             <property name="text">
-             <string>Version</string>
+             <string>0.2.1</string>
             </property>
             <property name="alignment">
              <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
@@ -1292,10 +1271,6 @@ multi-selection</string>
   </widget>
  </widget>
  <tabstops>
-  <tabstop>emailLineEdit</tabstop>
-  <tabstop>passwordLineEdit</tabstop>
-  <tabstop>loginButton</tabstop>
-  <tabstop>signUpButton</tabstop>
   <tabstop>welcomeAddControllerButton</tabstop>
   <tabstop>welcomeReplaceControllerButton</tabstop>
   <tabstop>welcomeLogOutPushButton</tabstop>

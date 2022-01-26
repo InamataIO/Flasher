@@ -19,3 +19,7 @@ black = "==20.8b1"
 
 [requires]
 python_version = "3.8"
+
+[packages.pyjwt]
+extras = [ "crypto",]
+version = "~=2.3.0"

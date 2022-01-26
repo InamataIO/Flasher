@@ -4,7 +4,7 @@ import os
 import pathlib
 from json import JSONDecodeError
 import shutil
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from appdirs import AppDirs
 
@@ -12,8 +12,8 @@ from appdirs import AppDirs
 class Config:
     """Used to store and load configurations."""
 
-    app_name = "togayo-flasher"
-    app_author = "togayo"
+    app_name = "inamata-flasher"
+    app_author = "inamata"
     dirs = AppDirs(app_name, app_author)
 
     def __init__(self):
@@ -23,6 +23,15 @@ class Config:
         logging.info("Config path: %s", self._config_path)
         logging.info("Cache dir: %s", self.dirs.user_cache_dir)
         self.config = self.load_config()
+    
+    @property
+    def users_name(self) -> str:
+        """Tries to return the user's name, else their username or a blank string."""
+        if name := self.config.get("name"):
+            return name
+        elif username := self.config.get("username"):
+            return username
+        return ""
 
     def save_controllers(self, controllers: List[dict], site_id: str) -> None:
         """Save controllers to cache. Clears existing controllers for a site."""
@@ -57,7 +66,7 @@ class Config:
             return sites.get(site_id)
         return None
 
-    def load_config(self) -> None:
+    def load_config(self) -> Dict:
         """Gets the stored config."""
         try:
             with open(self._config_path, "r") as file:

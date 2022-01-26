@@ -2,12 +2,17 @@ import hashlib
 import json
 import logging
 import os
-from typing import Callable, List, Optional
+import webbrowser
+from datetime import datetime, timedelta, timezone
+from functools import cached_property
+from time import sleep
+from typing import Callable, Dict, Optional
 from urllib.parse import urlparse
 
+import jwt
 import keyring
 import requests
-from keyring.errors import PasswordDeleteError
+from keyring.errors import KeyringError, PasswordDeleteError
 from semantic_version import Version
 
 from config import Config
@@ -15,42 +20,82 @@ from worker import WorkerInformation, WorkerWarning
 
 
 class ServerModel:
-    """Used to login to the DS server."""
+    """Used to login to the Inamata server."""
 
-    server_domain = "core.openfarming.ai"
-    server_port = None
-    secure_url = True
-    default_partition_table_name = "min_spiffs"
-    default_partition_table_id = ""
+    _core_base_url = "https://core.staging.inamata.co"
+    _core_graphql_path = "/graphql/"
+
+    _oauth_client_id = "flasher"
+    _oauth_base_url = "https://auth.staging.inamata.co"
+    _oauth_realm = "inamata"
+    _oauth_device_path = (
+        f"/auth/realms/{_oauth_realm}/protocol/openid-connect/auth/device"
+    )
+    _oauth_token_path = f"/auth/realms/{_oauth_realm}/protocol/openid-connect/token"
+    _openid_config_path = (
+        f"/auth/realms/{_oauth_realm}/.well-known/openid-configuration"
+    )
+    _openid_profile_keys = ["name", "email", "given_name", "family_name"]
+    _access_token_audience = ["core-service", "account"]
+    _refresh_token_audience = f"{_oauth_base_url}/auth/realms/{_oauth_realm}"
+
+    _default_partition_table_name = "min_spiffs"
+    _default_partition_table_id = ""
 
     def __init__(self, config: Config):
-        self._config = config
-        if self.secure_url:
-            http_type = "https://"
-        else:
-            http_type = "http://"
-        if port := self.server_port:
-            server_url = f"{http_type}{self.server_domain}:{port}"
-            self._default_headers = {"Host": f"{self.server_domain}:{port}"}
-        else:
-            server_url = f"{http_type}{self.server_domain}"
-            self._default_headers = {"Host": self.server_domain}
-        self.token_url = f"{server_url}/api/v1/accounts/auth-token/"
-        self.graphql_url = f"{server_url}/graphql/"
-        # Get auth token if it has been retrieved and saved
-        self._auth_token = ""
-        if username := self._config.config.get("username"):
-            self._auth_token = keyring.get_password(self._config.app_name, username)
+        self._config: Config = config
+        self._oauth_access_token_cache: str = ""
+        self._oauth_access_token_data_cache: Dict = {}
+        self._oauth_refresh_token_cache: str = ""
+        self._oauth_refresh_token_data_cache: Dict = {}
 
-    def log_in(self, username: str, password: str, **kwargs) -> None:
+    def log_in(self, **kwargs) -> None:
         """Log in to the DeviceStacc server and get an auth token."""
-        data = {"username": username, "password": password}
-        response = self._server_request(self.token_url, data)
-        token = json.loads(response.content)["token"]
-        self._save_credentials(username, token)
+
+        data = {"client_id": self._oauth_client_id, "scope": "offline_access"}
+        headers = {"content-type": "application/x-www-form-urlencoded"}
+        response = self._server_request(self._oauth_device_url, data, headers=headers)
+        device_auth = response.json()
+        # Open the web browser so that the user can log in and authorize the request
+        webbrowser.open(device_auth["verification_uri_complete"])
+
+        data = {
+            "client_id": self._oauth_client_id,
+            "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+            "device_code": device_auth["device_code"],
+        }
+        while True:
+            # Poll for the access token with the given period
+            sleep(device_auth["interval"])
+            try:
+                response = self._server_request(
+                    self._oauth_token_url, data, headers=headers, raise_for_status=False
+                )
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as err:
+                reply = err.response.json()
+                if reply["error"] == "slow_down":
+                    logging.info("Device auth polling too fast")
+                elif reply["error"] == "authorization_pending":
+                    logging.debug("Device authorization pending")
+                elif reply["error"] == "invalid_grant":
+                    raise WorkerWarning("Log in process timed out") from err
+                elif reply["error"] == "access_denied":
+                    raise WorkerWarning(
+                        "Did not receive access from authentication service. Please try again and grant access in the browser prompt."
+                    ) from err
+                else:
+                    raise WorkerWarning(reply["error_description"]) from err
+                continue
+            break
+
+        tokens = response.json()
+        self._save_credentials(tokens["access_token"], tokens["refresh_token"])
+        self._store_token_profile(self._oauth_access_token_data)
 
     def log_out(self) -> None:
         self._clear_credentials()
+        self._clear_token_profile()
 
     def sign_up(self) -> None:
         print("Signing up!")
@@ -59,11 +104,11 @@ class ServerModel:
         """Get the available sites and firmware images."""
         data = {
             "query": """
-            { 
+            {
                 allFirmwareImages {
                     edges { node {
                         id, name, version, bootloader { id }, file, hashSha3_512
-                    } } 
+                    } }
                 }
                 allBootloaderImages {
                     edges { node {
@@ -83,8 +128,7 @@ class ServerModel:
             }""",
             "variables": None,
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning("Error while getting site and firmware data.")
@@ -128,8 +172,7 @@ class ServerModel:
             """,
             "variables": None,
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning("Error while getting controller data.")
@@ -149,12 +192,12 @@ class ServerModel:
     def get_default_partition_table(self) -> dict:
         """Try to get the default partition table."""
         if partition_table := self._get_cached_partition_table(
-            self.default_partition_table_id
+            self._default_partition_table_id
         ):
             return partition_table
 
         # Search for the partition table from the server
-        partition_table_name = self.default_partition_table_name
+        partition_table_name = self._default_partition_table_name
         data = {
             "query": f"""
             {{
@@ -169,8 +212,7 @@ class ServerModel:
             """,
             "variables": None,
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning("Error while getting default partition table data.")
@@ -181,7 +223,7 @@ class ServerModel:
                 f"Could not find default partition table ({partition_table_name})"
             )
         partition_table_id = partition_tables[0]["id"]
-        self.default_partition_table_id = partition_table_id
+        self._default_partition_table_id = partition_table_id
         self._cache_partition_table(partition_table_id, partition_tables[0])
         return partition_tables[0]
 
@@ -201,8 +243,7 @@ class ServerModel:
             """,
             "variables": None,
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning("Error while getting partition table data.")
@@ -241,8 +282,7 @@ class ServerModel:
                 }
             ),
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
@@ -276,8 +316,7 @@ class ServerModel:
                 }
             ),
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
@@ -301,8 +340,7 @@ class ServerModel:
             """,
             "variables": json.dumps({"input": {"controller": controller_id}}),
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
@@ -320,7 +358,9 @@ class ServerModel:
         return self._config.config.get("username", "")
 
     def is_authenticated(self) -> bool:
-        return bool(self._auth_token)
+        if self._is_token_expired(self._oauth_refresh_token_data):
+            return False
+        return True
 
     def download_firmware_image(self, firmware_id: str, **kwargs) -> dict:
         """Download the selected firmware if it is not cached locally."""
@@ -463,8 +503,7 @@ class ServerModel:
             }}""",
             "variables": None,
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning(
@@ -480,8 +519,7 @@ class ServerModel:
                 bootloaderImage(id: "{bootloader_image['id']}") {{ file }}
             }}"""
         }
-        response = self._auth_server_request(self.graphql_url, data)
-        output = json.loads(response.content)
+        output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning(
@@ -489,14 +527,30 @@ class ServerModel:
             )
         bootloader_image["file"] = output["data"]["bootloaderImage"]["file"]
 
-    def _save_credentials(self, username: str, token: str) -> None:
+    def _save_credentials(self, access_token: str, refresh_token: str) -> None:
         """Save the auth token in a keychain."""
+
+        # Cache the tokens and their decoded data, to be access via propery functions
+        self._oauth_access_token_cache = access_token
+        self._oauth_access_token_data_cache = self._decode_access_token(access_token)
+        self._oauth_refresh_token_cache = refresh_token
+        self._oauth_refresh_token_data_cache = self._decode_refresh_token(refresh_token)
+
+        # Store the refresh token for future application starts
+        username = self._oauth_access_token_data["preferred_username"]
         self._config.config["username"] = username
-        self._auth_token = token
-        keyring.set_password(self._config.app_name, username, token)
+        try:
+            keyring.set_password(self._config.app_name, username, refresh_token)
+        except KeyringError as err:
+            # If the system keyring is broken, do not restrict remaining functionality
+            logging.warn("Failed to store refresh token in system keyring")
 
     def _clear_credentials(self) -> None:
         """Clear the username and auth token"""
+        self._oauth_access_token_cache = ""
+        self._oauth_access_token_data_cache = {}
+        self._oauth_refresh_token_cache = ""
+        self._oauth_refresh_token_data_cache = {}
         username = self._config.config["username"]
         try:
             keyring.delete_password(self._config.app_name, username)
@@ -507,31 +561,35 @@ class ServerModel:
         """Make a GraphQL server request with the cached auth token."""
         if not headers:
             headers = {**self._default_headers}
-        headers = {**headers, "Authorization": f"Token {self._auth_token}"}
+        if self._is_token_expired(self._oauth_access_token_data):
+            updated = self._refresh_access_token()
+            if not updated:
+                raise WorkerWarning("Access has expired. Please log in again.")
+        headers = {**headers, "Authorization": f"Token {self._oauth_access_token}"}
         return self._server_request(url, data, headers)
 
-    def _server_request(self, url, data, headers=None):
+    def _server_request(
+        self,
+        url: str,
+        data: Dict[str, str],
+        headers: Optional[Dict[str, str]] = None,
+        raise_for_status: Optional[bool] = True,
+    ) -> requests.Response:
         """Make a GraphQL server request that handles HTTP errors."""
         if not headers:
             headers = self._default_headers
         try:
             response = requests.post(url, data, headers=headers, timeout=10)
-            response.raise_for_status()
-            return response
+            if raise_for_status:
+                response.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            if err.response.status_code == 400 and err.request.url == self.token_url:
-                message = "Login credentials not correct. Please check your e-mail and password."
-                raise WorkerInformation(message) from err
-            if err.response.status_code == 400 and err.request.url == self.graphql_url:
+            if err.response.status_code == 400 and err.request.url == self._graphql_url:
                 logging.info(f"GraphQL error: {err.response.content}")
                 message = (
                     "An error occured while requesting data from the server API."
-                    " Check that you're using an up-to-date version of the DS Flasher tool"
+                    " Check that you're using an up-to-date version of the Inamata Flasher tool"
                 )
                 raise WorkerWarning(message) from err
-            if err.response.status_code == 401:
-                message = "Invalid authentication token. Please log in again."
-                raise WorkerInformation(message) from err
             raise WorkerWarning(str(err)) from err
         except requests.exceptions.ConnectionError as err:
             error_type = type(err.args[0]).__name__
@@ -541,3 +599,155 @@ class ServerModel:
             raise WorkerWarning(str(err)) from err
         except requests.exceptions.RequestException as err:
             raise WorkerWarning(str(err)) from err
+        return response
+
+    def _decode_refresh_token(self, token, raise_error: bool = False) -> Optional[Dict]:
+        try:
+            data = jwt.decode(token, options={"verify_signature": False})
+        except jwt.InvalidTokenError as err:
+            if raise_error:
+                raise err
+            return None
+        return data
+
+    def _decode_access_token(self, token, raise_error: bool = False) -> Optional[Dict]:
+        """
+        Attempts to decode the token. Returns a Dict on success or none on failure
+        """
+        # Get the public key from the identity provider, i.e., the keycloak server
+        public_key = self._jwks_client.get_signing_key_from_jwt(token).key
+        # Decode and verify the JWT with the server's public key specified in the
+        # JWT's header, the required audience and the allowed crypto algorithms it
+        # published
+        try:
+            data = jwt.decode(
+                token,
+                public_key,
+                audience=self._access_token_audience,
+                algorithms=self._openid_config["id_token_signing_alg_values_supported"],
+            )
+        except jwt.InvalidTokenError as err:
+            if raise_error:
+                raise err
+            return None
+        return data
+
+    def _store_token_profile(self, token_data: Dict) -> None:
+        """Extract all profile entries specified in the openid profile keys.
+
+        If the keys are not present in the token, they will be removed from the local
+        config to remove stale data.
+        """
+        for key in self._openid_profile_keys:
+            if value := token_data.get(key):
+                self._config.config[key] = value
+            else:
+                self._config.config.pop(key, None)
+
+    def _clear_token_profile(self) -> None:
+        """Clear the set profile entries loaded from an access token."""
+        for key in self._openid_profile_keys:
+            self._config.config.pop(key, None)
+
+    def _refresh_access_token(self) -> bool:
+        """Try to get a new access token with the refresh token.
+
+        Returns true if the update was successful."""
+        logging.debug("Refreshing the access token")
+        headers = {"content-type": "application/x-www-form-urlencoded"}
+        data = {
+            "client_id": self._oauth_client_id,
+            "grant_type": "refresh_token",
+            "refresh_token": self._oauth_refresh_token,
+        }
+        response = self._server_request(
+            self._oauth_token_url, data, headers=headers, raise_for_status=False
+        )
+        if not response.ok:
+            logging.warn("Failed to refresh access token")
+            return False
+        tokens = response.json()
+        self._save_credentials(tokens["access_token"], tokens["refresh_token"])
+        self._store_token_profile(self._oauth_access_token_data)
+        logging.info("Successfully refreshed the access token")
+        return True
+
+    def _load_stored_refresh_token(self) -> bool:
+        username = self._config.config.get("username")
+        if not username:
+            return False
+        try:
+            credential = keyring.get_credential(self._config.app_name, username)
+        except KeyringError as err:
+            return False
+        if not credential:
+            return False
+        refresh_token = credential.password
+        data = self._decode_refresh_token(refresh_token)
+        self._oauth_refresh_token_cache = refresh_token
+        self._oauth_refresh_token_data_cache = data
+        return True
+
+    @staticmethod
+    def _is_token_expired(
+        token_data: Dict, buffer: Optional[timedelta] = timedelta(seconds=60)
+    ):
+        """Returns true if the token has expired or invalid with a buffer of 60s."""
+        try:
+            expiration = datetime.fromtimestamp(token_data.get("exp"), tz=timezone.utc)
+        except TypeError:
+            return True
+        # If the expiration date lies in the future, it is valid
+        if expiration > datetime.now(tz=timezone.utc):
+            return False
+        return True
+
+    @property
+    def _oauth_refresh_token(self) -> str:
+        """Return the refresh token or an empty string."""
+        # If it is cached, return it from there, else use the system keyring
+        if not self._oauth_refresh_token_cache:
+            self._load_stored_refresh_token()
+        return self._oauth_refresh_token_cache
+
+    @property
+    def _oauth_refresh_token_data(self) -> Dict:
+        """Return the decoded refresh token or an empty dict."""
+        if not self._oauth_refresh_token_data_cache:
+            self._load_stored_refresh_token()
+        return self._oauth_refresh_token_data_cache
+
+    @property
+    def _oauth_access_token(self) -> str:
+        return self._oauth_access_token_cache
+
+    @property
+    def _oauth_access_token_data(self) -> Dict:
+        return self._oauth_access_token_data_cache
+
+    @property
+    def _oauth_device_url(self) -> str:
+        return f"{self._oauth_base_url}{self._oauth_device_path}"
+
+    @property
+    def _oauth_token_url(self) -> str:
+        return f"{self._oauth_base_url}{self._oauth_token_path}"
+
+    @cached_property
+    def _openid_config(self) -> Dict[str, str]:
+        url = f"{self._oauth_base_url}{self._openid_config_path}"
+        return requests.get(url, self._default_headers).json()
+
+    @cached_property
+    def _jwks_client(self):
+        """Collects the identity provider's public keys"""
+        return jwt.PyJWKClient(self._openid_config["jwks_uri"])
+
+    @property
+    def _graphql_url(self) -> str:
+        return f"{self._core_base_url}{self._core_graphql_path}"
+
+    @property
+    def _default_headers(self) -> Dict[str, str]:
+        parsed_core_url = urlparse(self._core_base_url)
+        return {"Host": parsed_core_url.netloc}

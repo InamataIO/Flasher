@@ -48,13 +48,6 @@ class Controller:
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
         self._view.ui.signUpButton.clicked.connect(self.sign_up)
-        self._view.ui.emailLineEdit.setText(self._server_model.get_username())
-        self._view.ui.emailLineEdit.returnPressed.connect(
-            self._view.ui.loginButton.click
-        )
-        self._view.ui.passwordLineEdit.returnPressed.connect(
-            self._view.ui.loginButton.click
-        )
 
         # Welcome Page
         self._view.ui.welcomeAddControllerButton.clicked.connect(self.to_add_controller)
@@ -63,7 +56,7 @@ class Controller:
         )
         self._view.ui.welcomeManageWiFiButton.clicked.connect(self.to_manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
-        self._view.ui.welcomeUsername.setText(self._server_model.get_username())
+        self._view.ui.welcomeUsername.setText(self._config.users_name)
 
         # Add Controller Page
         self._view.ui.addControllerFlashButton.clicked.connect(
@@ -118,9 +111,7 @@ class Controller:
         """Log the user in and save the auth token."""
         self._view.ui.loginLoadingText.show()
         self._view.ui.loginLoadingBar.show()
-        email = self._view.ui.emailLineEdit.text()
-        password = self._view.ui.passwordLineEdit.text()
-        worker = Worker(self._server_model.log_in, email, password)
+        worker = Worker(self._server_model.log_in)
         worker.signals.result.connect(self.log_in_result)
         worker.signals.error.connect(self.log_in_error)
         worker.signals.finished.connect(self.log_in_finished)
@@ -128,10 +119,11 @@ class Controller:
 
     def log_in_result(self, _):
         """If login succeeds, go to the welcome page."""
-        email = self._view.ui.emailLineEdit.text()
-        self._view.ui.welcomeUsername.setText(email)
+        name = self._config.config.get("name")
+        if not name:
+            name = self._config.config.get("username")
+        self._view.ui.welcomeUsername.setText(name)
         self._view.change_page(self._view.Pages.WELCOME)
-        self._view.ui.passwordLineEdit.clear()
 
     def log_in_finished(self):
         """After the login attempt, hide the loading widgets."""
@@ -143,7 +135,7 @@ class Controller:
         self.handle_error(error)
 
     def sign_up(self):
-        QDesktopServices.openUrl(QUrl("https://core.openfarming.ai/"))
+        QDesktopServices.openUrl(QUrl("https://app.staging.inamata.co/"))
 
     ############################
     # Welcome Page Functionality
@@ -151,7 +143,8 @@ class Controller:
     def log_out(self):
         """Log the user out and clear the password and auth token."""
         self._server_model.log_out()
-        self._view.ui.passwordLineEdit.clear()
+        self._config.clear_cached_data()
+        self._config.save_config()
         self._view.change_page(self._view.Pages.LOGIN)
 
     def to_add_controller(self):
