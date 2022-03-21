@@ -48,6 +48,7 @@ class Controller:
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
         self._view.ui.signUpButton.clicked.connect(self.sign_up)
+        self._view.ui.clearDataButton.clicked.connect(self.clear_data)
 
         # Welcome Page
         self._view.ui.welcomeAddControllerButton.clicked.connect(self.to_add_controller)
@@ -100,9 +101,7 @@ class Controller:
 
     def to_driver_install(self):
         """Open the driver installation web page."""
-        QDesktopServices.openUrl(
-            QUrl("https://github.com/Togayo/Flasher#driver-setup-instructions")
-        )
+        QDesktopServices.openUrl(QUrl("https://app.inamata.co"))
 
     ##########################
     # Login Page Functionality
@@ -136,6 +135,14 @@ class Controller:
 
     def sign_up(self):
         QDesktopServices.openUrl(QUrl("https://app.staging.inamata.co/"))
+
+    def clear_data(self):
+        self._server_model.log_out()
+        self._wifi_model.remove_all_aps()
+        self._config.clear_stored_data()
+        self._view.notify(
+            "Cleared secrets, configurations and cached data.", "Cleared data"
+        )
 
     ############################
     # Welcome Page Functionality
@@ -289,7 +296,7 @@ class Controller:
         if not self._view.ui.addControllerSitesComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -307,7 +314,7 @@ class Controller:
         if not self._view.ui.addControllerFirmwaresComboBox.currentData():
             message = (
                 "Please select a firmware version or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -482,7 +489,7 @@ class Controller:
                 "No sites found. Visit <a href='https://app.inamata.co' style='color: #ccc'>app.inamata.co</a> to create new sites.",
                 "No Sites Found",
             )
-        
+
         # Update the firmware combo box and retain the currently selected item
         current_firmware = (
             self._view.ui.replaceControllerFirmwaresComboBox.currentData()
@@ -597,14 +604,14 @@ class Controller:
         if not self._view.ui.replaceControllerSitesComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
         if not self._view.ui.replaceControllerControllersComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -618,7 +625,7 @@ class Controller:
         if not self._view.ui.replaceControllerFirmwaresComboBox.currentData():
             message = (
                 "Please select a firmware version or reload if none are available."
-                " If the problem persists please update the Togayo Flasher tool or contact your administrator."
+                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -645,7 +652,7 @@ class Controller:
 
     def replace_controller_download_firmware_progress(self, progress):
         """Set download progress for 0% to 30%."""
-        mapped_progress = (progress / 100 * 30)
+        mapped_progress = progress / 100 * 30
         self.replace_controller_set_progress_bar(mapped_progress)
 
     def replace_controller_download_firmware_result(self, firmware: dict):
@@ -806,5 +813,6 @@ class Controller:
     def handle_close(self, event: QCloseEvent):
         """Save the config on close."""
         self._wifi_model.save_to_config()
-        self._config.save_config()
+        if self._config.config:
+            self._config.save_config()
         event.accept()

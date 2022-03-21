@@ -254,6 +254,13 @@ QLabel {
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_10">
           <item>
+           <widget class="QPushButton" name="clearDataButton">
+            <property name="text">
+             <string>Clear data</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer name="horizontalSpacer_13">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
@@ -309,10 +316,6 @@ QLabel {
               <width>102</width>
               <height>47</height>
              </size>
-            </property>
-            <property name="toolTip">
-             <string>Protohaus
-Makerspace</string>
             </property>
             <property name="text">
              <string/>

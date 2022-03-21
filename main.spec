@@ -10,9 +10,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ("mainwindow.ui", "."),
-        ("images/logo_white_960.png", "images"),
-        ("images/ofai_logo_128.png", "images"),
-        ("images/protohaus_makerspace_logo_128.png", "images"),
+        ("images/inamata_logo_white_128.png", "images"),
         ("images/icon_512.ico", "images"),
         ("images/icon_512.png", "images"),
         ("images/icon_256.png", "images"),

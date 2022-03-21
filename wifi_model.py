@@ -46,13 +46,19 @@ class WiFiModel(QAbstractListModel):
         self.beginRemoveRows(QModelIndex(), row, row)
         self.aps.pop(row)
         self.endRemoveRows()
-    
+
+    def remove_all_aps(self):
+        self.aps = []
+        self._config.config.pop("wifi_aps")
+
     def get_ap(self, index: QModelIndex):
         """Get the AP at the specified index."""
         return self.aps[index.row()]
 
     def save_to_config(self):
-        """Save the current APs to the config file"""
-        self._config.config["wifi_aps"] = [
-            {"ssid": i.ssid, "password": i.password} for i in self.aps
-        ]
+        """Save the current APs to the config"""
+        wifi_aps = [{"ssid": i.ssid, "password": i.password} for i in self.aps]
+        if wifi_aps:
+            self._config.config["wifi_aps"] = wifi_aps
+        else:
+            self._config.config.pop("wifi_aps")

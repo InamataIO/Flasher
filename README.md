@@ -1,4 +1,4 @@
-![Togayo Flasher](./images/header-logo.png)
+![Inamata Flasher](./images/header-logo.png)
 
 Flash the firmware onto an ESP32 and register it with the server.
 

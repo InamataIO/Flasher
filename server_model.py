@@ -45,7 +45,7 @@ class ServerModel:
     @property
     def core_domain(self) -> str:
         return urlparse(self._core_base_url).hostname
-    
+
     @property
     def is_core_url_secure(self) -> str:
         return urlparse(self._core_base_url).scheme == "https"
@@ -104,9 +104,6 @@ class ServerModel:
     def log_out(self) -> None:
         self._clear_credentials()
         self._clear_token_profile()
-
-    def sign_up(self) -> None:
-        print("Signing up!")
 
     def get_site_and_firmware_data(self, **kwargs) -> None:
         """Get the available sites and firmware images."""
@@ -187,7 +184,7 @@ class ServerModel:
         results = output["data"]["allControllerComponents"]
         if results["pageInfo"]["hasNextPage"]:
             message = (
-                "Not all controllers for this site could be fetched. Please upgrade your Togayo"
+                "Not all controllers for this site could be fetched. Please upgrade your Inamata"
                 "Flasher tool."
             )
             raise WorkerInformation(message)
@@ -558,11 +555,11 @@ class ServerModel:
         self._oauth_access_token_data_cache = {}
         self._oauth_refresh_token_cache = ""
         self._oauth_refresh_token_data_cache = {}
-        username = self._config.config["username"]
-        try:
-            keyring.delete_password(self._config.app_name, username)
-        except PasswordDeleteError:
-            pass
+        if username := self._config.config.get("username"):
+            try:
+                keyring.delete_password(self._config.app_name, username)
+            except PasswordDeleteError:
+                pass
 
     def _auth_server_request(self, url, data, headers=None):
         """Make a GraphQL server request with the cached auth token."""

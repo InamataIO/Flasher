@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Register ESP32's with the Togayo Server
+"""Register ESP32's with the Inamata Server
 
-Togayo Flasher is a tool for flashing the sdg-controller firmware on ESP32
+Inamata Flasher is a tool for flashing the Inamata controller firmware on ESP32
 microcontrollers and registering their authentication token on the server.
 """
 

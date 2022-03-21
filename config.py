@@ -77,9 +77,20 @@ class Config:
 
     def save_config(self) -> None:
         """Overwrites the config file."""
-        print("Saving config")
+        pathlib.Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
         with open(self._config_path, "w") as file:
             json.dump(self.config, file)
+
+    def clear_stored_data(self) -> None:
+        """Clears all local data."""
+        self.config = {}
+        shutil.rmtree(self.dirs.user_data_dir, ignore_errors=True)
+        shutil.rmtree(self.dirs.site_data_dir, ignore_errors=True)
+        shutil.rmtree(self.dirs.user_config_dir, ignore_errors=True)
+        shutil.rmtree(self.dirs.site_config_dir, ignore_errors=True)
+        shutil.rmtree(self.dirs.user_cache_dir, ignore_errors=True)
+        shutil.rmtree(self.dirs.user_state_dir, ignore_errors=True)
+        shutil.rmtree(self.dirs.user_log_dir, ignore_errors=True)
 
     def clear_cached_data(self) -> None:
         """Clears cache incl. sites, firmware images and controller data."""
