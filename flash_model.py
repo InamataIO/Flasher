@@ -23,13 +23,21 @@ class EsptoolOutputHandler:
     def __init__(self, progress):
         self.progress = progress
 
-    def write(self, output):
+    def write(self, output: str):
         """Capture stdout to update flash progress."""
         if sys.__stdout__:
             sys.__stdout__.write(output)
         if output and output.startswith("Writing at "):
-            percent = int(output.split("(")[1].split("%")[0])
-            self.progress.emit(percent)
+            if "0x00008000..." in output:
+                self.progress.emit(5)
+            elif "0x00001000..." in output:
+                self.progress.emit(10)
+            elif "0x003d0000..." in output:
+                self.progress.emit(15)
+            else:
+                percent = int(output.split("(")[1].split("%")[0])
+                mapped_percent = percent / 100 * 80 + 20
+                self.progress.emit(mapped_percent)
 
     def flush(self):
         """Required by the interface."""
@@ -43,7 +51,7 @@ class EsptoolOutputHandler:
 
 class FlashModel:
     """Used to flash the ESP32 controller.
-    
+
     Standard partition table:
     - 0x1000 - **2nd stage bootloader
     - 0x8000 - partition table
@@ -94,8 +102,6 @@ class FlashModel:
         """Flash a controller."""
         # Check if the controller has a partition table
         progress_callback = kwargs["progress_callback"]
-        # Set the progress bar as loading until flashing actually starts
-        progress_callback.emit(-1)
         try:
             partition_table_id = controller["partitionTable"]["id"]
             if not partition_table_id:
@@ -215,7 +221,9 @@ class FlashModel:
             )
         bootloader_image_path = self._server_model.get_image_path(bootloader)
         if not os.path.isfile(bootloader_image_path):
-            logging.error(f"Could not find bootloader image at: {bootloader_image_path}")
+            logging.error(
+                f"Could not find bootloader image at: {bootloader_image_path}"
+            )
             raise WorkerError(
                 "Bootloader image could not be found. Please refresh the cached files."
             )

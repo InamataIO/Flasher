@@ -314,13 +314,14 @@ class Controller:
         return True
 
     def add_controller_download_firmware_progress(self, progress):
-        """Set the download progress."""
-        self.add_controller_set_progress_bar(progress)
+        """Set the download progress for 0% to 30%."""
+        mapped_progress = progress / 100 * 30
+        self.add_controller_set_progress_bar(mapped_progress)
 
     def add_controller_download_firmware_result(self, firmware: dict):
         """After completing the download, flash the controller."""
         self._view.ui.addControllerProgressText.setText("Get Bootloader (2/4)")
-        self.add_controller_set_progress_bar(0)
+        self.add_controller_set_progress_bar(30)
 
         bootloader_id = firmware["bootloader"]["id"]
         worker = Worker(self._server_model.download_bootloader_image, bootloader_id)
@@ -337,13 +338,14 @@ class Controller:
         self.handle_error(error)
 
     def add_controller_download_bootloader_progress(self, progress):
-        """Set the download progress."""
-        self.add_controller_set_progress_bar(progress)
+        """Set the download progress from 30% to 40%."""
+        mapped_progress = (progress / 100 * 10) + 30
+        self.add_controller_set_progress_bar(mapped_progress)
 
     def add_controller_download_bootloader_result(self, bootloader: dict):
         """After completing the bootloader download, register the controller."""
         self._view.ui.addControllerProgressText.setText("Registering (3/4)")
-        self.add_controller_set_progress_bar(0)
+        self.add_controller_set_progress_bar(40)
 
         name = self._view.ui.addControllerNameLineEdit.text()
         site_id = self._view.ui.addControllerSitesComboBox.currentData()
@@ -369,7 +371,7 @@ class Controller:
     def add_controller_register_result(self, controller):
         """After registering a new controller, start the flashing process."""
         self._view.ui.addControllerProgressText.setText("Flashing (4/4)")
-        self.add_controller_set_progress_bar(0)
+        self.add_controller_set_progress_bar(50)
 
         # Get the WiFi APs selected in the QListView
         indexes = self._view.ui.addControllerAPListView.selectedIndexes()
@@ -395,7 +397,9 @@ class Controller:
         self.handle_error(error)
 
     def add_controller_flash_progress(self, progress):
-        self.add_controller_set_progress_bar(progress)
+        """Set the flash progress from 50% to 100%."""
+        mapped_progress = (progress / 100 * 50) + 50
+        self.add_controller_set_progress_bar(mapped_progress)
 
     def add_controller_flash_result(self, _):
         message = "Successfully flashed the microcontroller."
@@ -640,13 +644,14 @@ class Controller:
         self._view.ui.replaceControllerBackButton.setDisabled(is_flashing)
 
     def replace_controller_download_firmware_progress(self, progress):
-        """Set the download progress as half of the download and flash progress."""
-        self.replace_controller_set_progress_bar(progress)
+        """Set download progress for 0% to 30%."""
+        mapped_progress = (progress / 100 * 30)
+        self.replace_controller_set_progress_bar(mapped_progress)
 
     def replace_controller_download_firmware_result(self, firmware: dict):
         """After completing the download, flash the controller."""
         self._view.ui.replaceControllerProgressText.setText("Get Bootloader (2/4)")
-        self.replace_controller_set_progress_bar(0)
+        self.replace_controller_set_progress_bar(30)
 
         bootloader_id = firmware["bootloader"]["id"]
         worker = Worker(self._server_model.download_bootloader_image, bootloader_id)
@@ -665,13 +670,14 @@ class Controller:
         self.handle_error(error)
 
     def replace_controller_download_bootloader_progress(self, progress):
-        """Set the download progress."""
-        self.replace_controller_set_progress_bar(progress)
+        """Set the download progress for 30% to 40%."""
+        mapped_progress = (progress / 100 * 10) + 30
+        self.replace_controller_set_progress_bar(mapped_progress)
 
     def replace_controller_download_bootloader_result(self, bootloader_image: dict):
         """After completing the download, flash the controller."""
         self._view.ui.replaceControllerProgressText.setText("Registering (3/4)")
-        self._view.ui.replaceControllerProgressBar.setValue(0)
+        self._view.ui.replaceControllerProgressBar.setValue(40)
 
         controller_id = self._view.ui.replaceControllerControllersComboBox.currentData()
         site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
@@ -691,7 +697,7 @@ class Controller:
 
     def replace_controller_update_result(self, controller):
         """After updating the controller, cycle its auth token."""
-        self._view.ui.replaceControllerProgressBar.setValue(50)
+        self._view.ui.replaceControllerProgressBar.setValue(45)
 
         controller_id = controller["id"]
         site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
@@ -711,7 +717,7 @@ class Controller:
     def replace_controller_cycle_token_result(self, controller):
         """After updating the controller's auth key, flash it."""
         self._view.ui.replaceControllerProgressText.setText("Flashing (4/4)")
-        self._view.ui.replaceControllerProgressBar.setValue(0)
+        self._view.ui.replaceControllerProgressBar.setValue(50)
 
         # Get the WiFi APs selected in the QListView
         indexes = self._view.ui.replaceControllerAPListView.selectedIndexes()
@@ -738,8 +744,9 @@ class Controller:
         self.handle_error(error)
 
     def replace_controller_flash_progress(self, progress: int) -> None:
-        """Handle the update when flashing the controller."""
-        self.replace_controller_set_progress_bar(progress)
+        """Set the flash progress for 50% to 100%."""
+        mapped_progress = (progress / 100 * 50) + 50
+        self.replace_controller_set_progress_bar(mapped_progress)
 
     def replace_controller_flash_result(self, _) -> None:
         message = "Successfully flashed the microcontroller."
