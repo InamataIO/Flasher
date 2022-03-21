@@ -41,7 +41,7 @@ After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing ce
     pipenv install -d
     pipenv shell
     pyinstaller main.spec
-    signtool.exe sign /tr http://timestamp.sectigo.com/ /td sha256 /fd sha256 /a C:\path\to\togayo_flasher.exe
+    signtool.exe sign /tr http://timestamp.sectigo.com/ /td sha256 /fd sha256 /a C:\path\to\inamata_flasher.exe
 
 The following instructions are useful to set up the [code signing key](https://stackoverflow.com/a/64499199/6783666) and install the [code signing tool](https://stackoverflow.com/questions/31869552/how-to-install-signtool-exe-for-windows-10).
 

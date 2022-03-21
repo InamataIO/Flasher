@@ -8,10 +8,10 @@ microcontrollers and registering their authentication token on the server.
 
 __author__ = "Moritz Ulmer"
 __license__ = "apache-2.0"
-__version__ = "0.2.0"
-__date__ = "15.06.2021"
+__version__ = "0.2.1"
+__date__ = "21.03.2022"
 __maintainer__ = "Moritz Ulmer"
-__email__ = "moritz.ulmer@posteo.de "
+__email__ = "moritz@silentwind.eu "
 __status__ = "Development"
 
 import argparse
@@ -46,7 +46,7 @@ from wifi_model import WiFiModel
 def main():
     # Required on Windows to use own app icon
     if platform.system() == "Windows":
-        myappid = f"togayo.com.flasher.{__version__}"
+        myappid = f"inamata.co.flasher.{__version__}"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     parser = argparse.ArgumentParser()
@@ -60,12 +60,12 @@ def main():
         logging.basicConfig(format="%(levelname)s: %(message)s")
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
-    togayo_flasher = QApplication(sys.argv)
-    togayo_flasher.setStyle(QStyleFactory.create("Fusion"))
+    inamata_flasher = QApplication(sys.argv)
+    inamata_flasher.setStyle(QStyleFactory.create("Fusion"))
 
     # Enable High DPI display with PyQt5
     if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
-        togayo_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
+        inamata_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
     view = MainView(__version__)
     config = Config()
     server_model = ServerModel(config=config)
@@ -79,7 +79,7 @@ def main():
         config=config,
     )
     view.show()
-    sys.exit(togayo_flasher.exec_())
+    sys.exit(inamata_flasher.exec_())
 
 
 if __name__ == "__main__":

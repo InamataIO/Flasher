@@ -40,7 +40,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="togayo_flasher",
+    name="inamata_flasher",
     icon="images/icon_512.ico",
     debug=False,
     bootloader_ignore_signals=False,

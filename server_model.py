@@ -366,9 +366,8 @@ class ServerModel:
         return self._config.config.get("username", "")
 
     def is_authenticated(self) -> bool:
-        if self._is_token_expired(self._oauth_refresh_token_data):
-            return False
-        return True
+        updated = self._refresh_access_token()
+        return updated
 
     def download_firmware_image(self, firmware_id: str, **kwargs) -> dict:
         """Download the selected firmware if it is not cached locally."""
