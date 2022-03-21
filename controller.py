@@ -238,7 +238,7 @@ class Controller:
                 self._view.ui.addControllerSitesComboBox.setCurrentIndex(index)
         if not self._view.ui.addControllerSitesComboBox.count():
             self._view.notify(
-                "No sites found. Visit <a href='https://core.openfarming.ai' style='color: #ccc'>core.openfarming.ai</a> to create new sites.",
+                "No sites found. Visit <a href='https://app.inamata.co' style='color: #ccc'>app.inamata.co</a> to create new sites.",
                 "No Sites Found",
             )
 
@@ -475,7 +475,7 @@ class Controller:
             self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.emit(0)
         if not self._view.ui.replaceControllerSitesComboBox.count():
             self._view.notify(
-                "No sites found. Visit <a href='https://core.openfarming.ai' style='color: #ccc'>core.openfarming.ai</a> to create new sites.",
+                "No sites found. Visit <a href='https://app.inamata.co' style='color: #ccc'>app.inamata.co</a> to create new sites.",
                 "No Sites Found",
             )
         

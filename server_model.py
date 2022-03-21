@@ -42,6 +42,14 @@ class ServerModel:
     _default_partition_table_name = "min_spiffs"
     _default_partition_table_id = ""
 
+    @property
+    def core_domain(self) -> str:
+        return urlparse(self._core_base_url).hostname
+    
+    @property
+    def is_core_url_secure(self) -> str:
+        return urlparse(self._core_base_url).scheme == "https"
+
     def __init__(self, config: Config):
         self._config: Config = config
         self._oauth_access_token_cache: str = ""

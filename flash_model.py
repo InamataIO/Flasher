@@ -165,8 +165,8 @@ class FlashModel:
                     {"ssid": i.ssid, "password": i.password} for i in wifi_aps
                 ],
                 "ws_token": controller["authToken"]["key"],
-                "core_domain": ServerModel.server_domain,
-                "secure_url": ServerModel.secure_url,
+                "core_domain": self._server_model.core_domain,
+                "secure_url": self._server_model.is_core_url_secure,
             }
             # Make a directory to place all files in for the SPIFFS image
             os.makedirs(self._spiffs_dir, exist_ok=True)
