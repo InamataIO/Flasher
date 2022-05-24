@@ -31,9 +31,8 @@ if platform.system() == "posix":
     os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 import ctypes
-from PySide2 import QtCore
-from PySide2.QtWidgets import QApplication, QStyleFactory
-from PySide2.QtGui import QIcon
+from PySide6 import QtCore
+from PySide6.QtWidgets import QApplication
 
 from config import Config
 from controller import Controller
@@ -61,11 +60,7 @@ def main():
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     inamata_flasher = QApplication(sys.argv)
-    inamata_flasher.setStyle(QStyleFactory.create("Fusion"))
 
-    # Enable High DPI display with PyQt5
-    if hasattr(QtCore.Qt, "AA_UseHighDpiPixmaps"):
-        inamata_flasher.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps)
     view = MainView(__version__)
     config = Config()
     server_model = ServerModel(config=config)
@@ -79,7 +74,7 @@ def main():
         config=config,
     )
     view.show()
-    sys.exit(inamata_flasher.exec_())
+    sys.exit(inamata_flasher.exec())
 
 
 if __name__ == "__main__":

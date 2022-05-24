@@ -1,10 +1,10 @@
 import sys
 from typing import Callable, List, Union
 
-from PySide2.QtCore import QEvent, QFile, QIODevice, QSize
-from PySide2.QtGui import QCloseEvent, QIcon, QFontDatabase, QFont
-from PySide2.QtUiTools import QUiLoader
-from PySide2.QtWidgets import QMainWindow, QMessageBox, QWidget
+from PySide6.QtCore import QEvent, QFile, QIODevice, QSize
+from PySide6.QtGui import QCloseEvent, QIcon, QFontDatabase, QFont
+from PySide6.QtUiTools import QUiLoader
+from PySide6.QtWidgets import QMainWindow, QMessageBox, QWidget
 
 ### Settings
 main_window_file = "mainwindow.ui"

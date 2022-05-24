@@ -1,4 +1,4 @@
-from PySide2.QtCore import QObject, QRunnable, Signal, Slot
+from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 
 class WorkerError(Exception):

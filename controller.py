@@ -1,7 +1,7 @@
 import platform
 
-from PySide2.QtCore import QThreadPool, QUrl
-from PySide2.QtGui import QCloseEvent, QDesktopServices
+from PySide6.QtCore import QThreadPool, QUrl
+from PySide6.QtGui import QCloseEvent, QDesktopServices
 
 from config import Config
 from flash_model import FlashModel
