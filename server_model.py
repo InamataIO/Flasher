@@ -355,6 +355,27 @@ class ServerModel:
         self._config.cache_controllers([controller])
         return controller
 
+    def delete_controller(self, controller_id: str, **kwargs) -> None:
+        """Delete a controller."""
+        data = {
+            "query": """
+            mutation deleteController($input: DeleteControllerInput!) {
+                deleteController(input: $input) { success }
+            }
+            """,
+            "variables": json.dumps({"input": {"controller": controller_id}}),
+        }
+        output = self._auth_server_request(self._graphql_url, data).json()
+        if errors := output.get("errors"):
+            logging.warning(errors[0]["message"])
+            raise WorkerWarning(errors[0]["message"])
+        success = output["data"]["deleteController"]["success"]
+        if not success:
+            logging.warning(f"Failed deleting controller: {controller_id}")
+            raise WorkerWarning(
+                "Failed deleting controller. Check your permissions or contact your administrator."
+            )
+
     def get_username(self) -> str:
         return self._config.config.get("username", "")
 

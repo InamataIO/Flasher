@@ -419,7 +419,9 @@ class Controller:
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
         worker.signals.progress.connect(self.add_controller_flash_progress)
         worker.signals.result.connect(self.add_controller_flash_result)
-        worker.signals.error.connect(self.add_controller_flash_error)
+        worker.signals.error.connect(
+            lambda error: self.add_controller_flash_error(error, controller)
+        )
         worker.signals.finished.connect(self.add_controller_flash_finished)
         self.threadpool.start(worker)
 
@@ -437,8 +439,12 @@ class Controller:
         message = "Successfully flashed the microcontroller."
         self._view.notify(message, "Finished Flashing", "information")
 
-    def add_controller_flash_error(self, error):
+    def add_controller_flash_error(self, error, controller):
         """Handle errors while flashing the controller."""
+        try:
+            self._server_model.delete_controller(controller.id)
+        except WorkerError as err:
+            self.handle_error(err)
         self.handle_error(error)
 
     def add_controller_flash_finished(self):
