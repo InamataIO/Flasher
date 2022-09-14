@@ -2,7 +2,7 @@ import sys
 from typing import Callable, List, Union
 
 from PySide6.QtCore import QEvent, QFile, QIODevice, QSize
-from PySide6.QtGui import QCloseEvent, QIcon, QFontDatabase, QFont
+from PySide6.QtGui import QCloseEvent, QFont, QFontDatabase, QIcon
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QWidget
 

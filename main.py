@@ -31,6 +31,7 @@ if platform.system() == "posix":
     os.environ["QT_QPA_PLATFORM"] = "xcb"
 
 import ctypes
+
 from PySide6 import QtCore
 from PySide6.QtWidgets import QApplication
 
@@ -52,11 +53,17 @@ def main():
     parser.add_argument(
         "-v", "--verbose", help="increase output verbosity", action="store_true"
     )
+    parser.add_argument("-d", "--debug", help="start debugpy", action="store_true")
     args = parser.parse_args()
-    if args.verbose:
-        logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.DEBUG)
-    else:
-        logging.basicConfig(format="%(levelname)s: %(message)s")
+    log_level = logging.INFO if not args.verbose else logging.DEBUG
+    logging.basicConfig(
+        format="%(levelname)s | %(name)s.%(funcName)s:%(lineno)s | %(message)s",
+        level=log_level,
+    )
+    if args.debug:
+        import debugpy
+
+        debugpy.listen(5678)
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     inamata_flasher = QApplication(sys.argv)

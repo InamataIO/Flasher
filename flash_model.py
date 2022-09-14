@@ -10,7 +10,7 @@ from typing import List
 
 import esptool
 
-from config import Config
+from config import Config, ControllerModel
 from esp_idf import gen_esp32part, spiffsgen
 from server_model import ServerModel
 from wifi_model import WiFiModel
@@ -97,18 +97,14 @@ class FlashModel:
         self._partitions_image_path = os.path.join(cache_dir, "partitions.bin")
 
     def flash_controller(
-        self, controller: dict, wifi_aps: List[WiFiModel.AP], **kwargs
+        self, controller: ControllerModel, wifi_aps: List[WiFiModel.AP], **kwargs
     ):
         """Flash a controller."""
         # Check if the controller has a partition table
         progress_callback = kwargs["progress_callback"]
-        try:
-            partition_table_id = controller["partitionTable"]["id"]
-            if not partition_table_id:
-                raise KeyError
-        except KeyError:
-            raise WorkerWarning("The controller does not have a partition table")
-        partition_table = self._server_model.get_partition_table(partition_table_id)
+        partition_table = self._server_model.get_partition_table(
+            controller.partition_table_id
+        )
         partitions = json.loads(partition_table["table"])
         spiffs_partition = next(i for i in partitions if i["name"] == "spiffs")
         spiffs_size = spiffs_partition["size"]
@@ -116,7 +112,7 @@ class FlashModel:
         self._create_spiffs_image(spiffs_size, wifi_aps, controller)
 
         firmware_image = self._server_model.get_firmware_image(
-            controller["firmwareImage"]["id"]
+            controller.firmware_image_id
         )
         bootloader_image = self._server_model.get_bootloader_image(
             firmware_image["bootloader"]["id"]
@@ -160,7 +156,7 @@ class FlashModel:
             sys.argv = original_argv
 
     def _create_spiffs_image(
-        self, image_size: int, wifi_aps: List[WiFiModel.AP], controller: dict
+        self, image_size: int, wifi_aps: List[WiFiModel.AP], controller: ControllerModel
     ):
         """Generate a SPIFFS image."""
 
@@ -170,7 +166,7 @@ class FlashModel:
                 "wifi_aps": [
                     {"ssid": i.ssid, "password": i.password} for i in wifi_aps
                 ],
-                "ws_token": controller["authToken"]["key"],
+                "ws_token": controller.auth_token,
                 "core_domain": self._server_model.core_domain,
                 "secure_url": self._server_model.is_core_url_secure,
             }

@@ -2,11 +2,29 @@ import json
 import logging
 import os
 import pathlib
-from json import JSONDecodeError
 import shutil
+from dataclasses import dataclass, field
+from json import JSONDecodeError
 from typing import Dict, List, Optional
 
 from appdirs import AppDirs
+
+
+@dataclass
+class ControllerModel:
+    id: str
+    name: str
+    site_id: str
+    controller_type_id: str
+    firmware_image_id: str
+    partition_table_id: str
+    auth_token: str = field(default=None)
+
+
+@dataclass
+class SiteModel:
+    id: str
+    name: str
 
 
 class Config:
@@ -23,7 +41,8 @@ class Config:
         logging.info("Config path: %s", self._config_path)
         logging.info("Cache dir: %s", self.dirs.user_cache_dir)
         self.config = self.load_config()
-    
+        self._init_cache()
+
     @property
     def users_name(self) -> str:
         """Tries to return the user's name, else their username or a blank string."""
@@ -33,38 +52,29 @@ class Config:
             return username
         return ""
 
-    def save_controllers(self, controllers: List[dict], site_id: str) -> None:
-        """Save controllers to cache. Clears existing controllers for a site."""
-        if "controllers" not in self.config:
-            self.config["controllers"] = {}
-        controllers.sort(key=self.controller_key)
-        self.config["controllers"].update({site_id: controllers})
+    def cache_controllers(self, controllers: List[ControllerModel]) -> None:
+        """Save controllers to cache."""
+        self._cache["controllers"].update({c.id: c for c in controllers})
 
-    def save_controller(self, controller: dict, site_id: str) -> None:
-        """Save a controller to cache."""
-        sites = self.config.get("controllers", {})
-        controllers = sites.get(site_id, [])
-        # Remove duplicates of the new controller, if present
-        controllers = [i for i in controllers if i["id"] != controller["id"]]
-        # Add to and sort the list of controllers
-        controllers.append(controller)
-        controllers.sort(key=self.controller_key)
-        # Save the site-partitioned controller list
-        sites.update({site_id: controllers})
-        self.config["controllers"] = sites
+    def get_controller(self, controller_id: str) -> Optional[ControllerModel]:
+        """Get a cached controller."""
+        return self._cache["controllers"].get(controller_id)
 
-    def get_controller(self, controller_id: str, site_id: str) -> Optional[dict]:
-        """Get a controller."""
-        if sites := self.config.get("controllers"):
-            controllers = sites.get(site_id, [])
-            return next(i for i in controllers if i["id"] == controller_id)
-        return None
+    def get_controllers_by_site(self, site_id: str) -> List[ControllerModel]:
+        """Get all cached controllers for a site."""
+        return [c for c in self._cache["controllers"].values() if c.site_id == site_id]
 
-    def get_controllers(self, site_id: str) -> Optional[List[dict]]:
-        """Get all controllers for a site."""
-        if sites := self.config.get("controllers"):
-            return sites.get(site_id)
-        return None
+    def cache_sites(self, sites: List[SiteModel]) -> None:
+        """Cache sites."""
+        self._cache["sites"].update({s.id: s for s in sites})
+
+    def has_cached_sites(self) -> bool:
+        """Checks if sites have been cached."""
+        return bool(self._cache["sites"])
+
+    def get_sites(self) -> List[SiteModel]:
+        """Get all cached sites."""
+        return [s for s in self._cache["sites"].values()]
 
     def load_config(self) -> Dict:
         """Gets the stored config."""
@@ -93,16 +103,12 @@ class Config:
         shutil.rmtree(self.dirs.user_log_dir, ignore_errors=True)
 
     def clear_cached_data(self) -> None:
-        """Clears cache incl. sites, firmware images and controller data."""
-        self.config.pop("sites", None)
-        self.config.pop("controllers", None)
-        self.config.pop("controller", None)
+        """Clears cache incl. firmware images and controller data."""
+        self._init_cache()
         self.config.pop("firmwareImages", None)
         self.config.pop("bootloaderImages", None)
         self.config.pop("partitionTables", None)
         shutil.rmtree(self.dirs.user_cache_dir, ignore_errors=True)
 
-    @staticmethod
-    def controller_key(controller):
-        """Used to sort controller lists."""
-        return controller["siteEntity"]["name"]
+    def _init_cache(self) -> None:
+        self._cache = {"controllers": {}, "sites": {}}

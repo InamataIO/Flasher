@@ -6,7 +6,7 @@ import webbrowser
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 from time import sleep
-from typing import Callable, Dict, Optional
+from typing import Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
 import jwt
@@ -15,8 +15,8 @@ import requests
 from keyring.errors import KeyringError, PasswordDeleteError
 from semantic_version import Version
 
-from config import Config
-from worker import WorkerInformation, WorkerWarning
+from config import Config, ControllerModel, SiteModel
+from worker import WorkerError, WorkerInformation, WorkerWarning
 
 
 class ServerModel:
@@ -125,7 +125,7 @@ class ServerModel:
                         id, name
                     } }
                 }
-                allControllerComponentTypes(isGlobal: true, name: "ESP32") {
+                allControllerTypes(isGlobal: true, name: "ESP32") {
                     edges { node {
                         id, name, isGlobal
                     } }
@@ -142,6 +142,7 @@ class ServerModel:
         firmware_images = [
             i["node"] for i in output["data"]["allFirmwareImages"]["edges"]
         ]
+        firmware_images = [i for i in firmware_images if i["version"] != "-1"]
         firmware_images.sort(key=lambda x: Version(x["version"]), reverse=True)
         self._config.config["firmwareImages"] = firmware_images
 
@@ -153,24 +154,24 @@ class ServerModel:
         self._config.config["bootloaderImages"] = bootloader_images
 
         # Store sites and controller types
-        sites = [i["node"] for i in output["data"]["allSites"]["edges"]]
-        self._config.config["sites"] = sites
+        sites = self.parse_sites(output["data"]["allSites"]["edges"])
+        self._config.cache_sites(sites)
 
         controller_types = [
-            i["node"] for i in output["data"]["allControllerComponentTypes"]["edges"]
+            i["node"] for i in output["data"]["allControllerTypes"]["edges"]
         ]
-        self._config.config["controllerComponentTypes"] = controller_types
+        self._config.config["controllerTypes"] = controller_types
 
-    def get_controller_data(self, site_id: str, **kwargs) -> None:
+    def get_controller_data(self, site_id: str, **kwargs) -> List[ControllerModel]:
         """Get the available controllers for a given site."""
         data = {
             "query": f"""
             {{
-                allControllerComponents(siteEntity_Site: "{site_id}") {{
+                allControllers(site: "{site_id}") {{
                     pageInfo {{ hasNextPage }}
                     edges {{ node {{
-                        id, siteEntity {{ name }}, authToken {{ key }},
-                        partitionTable {{ id }}, firmwareImage {{ id }}
+                        id, name, authToken {{ key }}, controllerTypeId
+                        partitionTableId, firmwareImageId, siteId
                     }} }}
                 }}
             }}
@@ -181,18 +182,18 @@ class ServerModel:
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning("Error while getting controller data.")
-        results = output["data"]["allControllerComponents"]
+        results = output["data"]["allControllers"]
         if results["pageInfo"]["hasNextPage"]:
             message = (
                 "Not all controllers for this site could be fetched. Please upgrade your Inamata"
                 "Flasher tool."
             )
             raise WorkerInformation(message)
-        try:
-            controllers = [i["node"] for i in results["edges"]]
-        except KeyError:
-            controllers = []
-        self._config.save_controllers(controllers, site_id)
+        if "edges" not in results:
+            return None
+        controllers = self.parse_controllers(results["edges"])
+        self._config.cache_controllers(controllers)
+        return controllers
 
     def get_default_partition_table(self) -> dict:
         """Try to get the default partition table."""
@@ -261,16 +262,16 @@ class ServerModel:
 
     def register_controller(
         self, name, site_id, controller_type_id, firmware_image_id, **kwargs
-    ) -> dict:
+    ) -> ControllerModel:
         """Create and register a controller on the server."""
         partition_table = self.get_default_partition_table()
         data = {
             "query": """
-            mutation createControllerComponent($input: CreateControllerComponentInput!) {
-                createControllerComponent(input: $input) {
-                    controllerComponent {
-                        id, siteEntity { name }, authToken { key },
-                        partitionTable { id }, firmwareImage { id }
+            mutation createController($input: CreateControllerInput!) {
+                createController(input: $input) {
+                    controller {
+                        id, name, authToken { key }, controllerTypeId
+                        partitionTableId, firmwareImageId, siteId
                     }
                 }
             }
@@ -291,32 +292,30 @@ class ServerModel:
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
-        controller = output["data"]["createControllerComponent"]["controllerComponent"]
-        self._config.save_controller(controller, site_id)
+        controller_data = output["data"]["createController"]["controller"]
+        controller = self.parse_controller(controller_data)
+        self._config.cache_controllers([controller])
         return controller
 
     def update_controller(
-        self, controller_id: str, site_id: str, firmware_image_id: str, **kwargs
-    ) -> dict:
-        """Update a controller and cycle it's auth token."""
-        partition_table = self.get_default_partition_table()
+        self, controller: ControllerModel, **kwargs
+    ) -> ControllerModel:
+        """Update a controller."""
         data = {
             "query": """
-            mutation updateControllerComponent($input: UpdateControllerComponentInput!) {
-                updateControllerComponent(input: $input) {
-                    controllerComponent {
-                        id, siteEntity { name }, authToken { key },
-                        partitionTable { id }, firmwareImage { id }
-                    }
-                }
+            mutation updateController($input: UpdateControllerInput!) {
+                updateController(input: $input) { success }
             }
             """,
             "variables": json.dumps(
                 {
                     "input": {
-                        "controller": controller_id,
-                        "partitionTable": partition_table["id"],
-                        "firmwareImage": firmware_image_id,
+                        "name": controller.name,
+                        "site": controller.site_id,
+                        "controller": controller.id,
+                        "controllerType": controller.controller_type_id,
+                        "partitionTable": controller.partition_table_id,
+                        "firmwareImage": controller.firmware_image_id,
                     }
                 }
             ),
@@ -325,21 +324,18 @@ class ServerModel:
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
-        controller = output["data"]["updateControllerComponent"]["controllerComponent"]
-        self._config.save_controller(controller, site_id)
+        self._config.cache_controllers([controller])
         return controller
 
     def cycle_controller_auth_token(
-        self, controller_id: str, site_id: str, **kwargs
-    ) -> dict:
+        self, controller_id: str, **kwargs
+    ) -> ControllerModel:
         """Cycle a controller's auth token to prevent duplicate connections."""
         data = {
             "query": """
             mutation cycleControllerAuthToken($input: CycleControllerAuthTokenInput!) {
                 cycleControllerAuthToken(input: $input) {
-                    controllerAuthToken {
-                        key
-                    }
+                    controllerAuthToken { key }
                 }
             }
             """,
@@ -349,22 +345,32 @@ class ServerModel:
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
-        controller = self._config.get_controller(controller_id, site_id)
+        controller = self._config.get_controller(controller_id)
         if not controller:
             raise WorkerInformation(
                 "Could not find the controller. Please reload the controller data."
             )
         key = output["data"]["cycleControllerAuthToken"]["controllerAuthToken"]["key"]
-        controller["authToken"]["key"] = key
-        self._config.save_controller(controller, site_id)
+        controller.auth_token = key
+        self._config.cache_controllers([controller])
         return controller
 
     def get_username(self) -> str:
         return self._config.config.get("username", "")
 
-    def is_authenticated(self) -> bool:
-        updated = self._refresh_access_token()
-        return updated
+    def try_access_token_refresh(self, **kwargs) -> bool:
+        """Returns true if authenticated.
+
+        Raises:
+            WorkerError: On network error
+        """
+        try:
+            success = self._refresh_access_token()
+        except WorkerError as err:
+            raise WorkerWarning(
+                "Failed connecting to the server. Check your internet connection or contact Inamata."
+            ) from err
+        return success
 
     def download_firmware_image(self, firmware_id: str, **kwargs) -> dict:
         """Download the selected firmware if it is not cached locally."""
@@ -588,7 +594,7 @@ class ServerModel:
                 response.raise_for_status()
         except requests.exceptions.HTTPError as err:
             if err.response.status_code == 400 and err.request.url == self._graphql_url:
-                logging.info(f"GraphQL error: {err.response.content}")
+                logging.warning(f"GraphQL error: {err.response.content}")
                 message = (
                     "An error occured while requesting data from the server API."
                     " Check that you're using an up-to-date version of the Inamata Flasher tool"
@@ -755,3 +761,26 @@ class ServerModel:
     def _default_headers(self) -> Dict[str, str]:
         parsed_core_url = urlparse(self._core_base_url)
         return {"Host": parsed_core_url.netloc}
+
+    @staticmethod
+    def parse_sites(data: List) -> List[SiteModel]:
+        """Expects data as [{"node: {...}, ...]"""
+        return [SiteModel(id=i["node"]["id"], name=i["node"]["name"]) for i in data]
+
+    @classmethod
+    def parse_controllers(cls, data: List) -> List[ControllerModel]:
+        """Expects data as [{"node": {...}}, ...]}"""
+        return [cls.parse_controller(i["node"]) for i in data]
+
+    @staticmethod
+    def parse_controller(data: Dict) -> ControllerModel:
+        """Expects data as {"id: ..., "name": ...}"""
+        return ControllerModel(
+            id=data["id"],
+            name=data["name"],
+            site_id=data["siteId"],
+            controller_type_id=data["controllerTypeId"],
+            firmware_image_id=data["firmwareImageId"],
+            partition_table_id=data["partitionTableId"],
+            auth_token=data["authToken"]["key"] if data["authToken"] else None,
+        )

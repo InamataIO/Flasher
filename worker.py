@@ -1,18 +1,23 @@
+import logging
+
 from PySide6.QtCore import QObject, QRunnable, Signal, Slot
 
 
 class WorkerError(Exception):
     """A handled error inform the user."""
-    pass
+
 
 class WorkerInformation(WorkerError):
     """An error on the information level."""
 
+
 class WorkerWarning(WorkerError):
     """An error on the warning level."""
 
+
 class WorkerCritical(WorkerError):
     """An error on the critical level."""
+
 
 class WorkerSignals(QObject):
     """
@@ -76,6 +81,7 @@ class Worker(QRunnable):
         try:
             result = self.fn(*self.args, **self.kwargs)
         except Exception as error:
+            logging.exception(error)
             self.signals.error.emit(error)
         else:
             self.signals.result.emit(result)  # Return the result of the processing

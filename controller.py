@@ -1,9 +1,10 @@
 import platform
+from typing import List
 
 from PySide6.QtCore import QThreadPool, QUrl
 from PySide6.QtGui import QCloseEvent, QDesktopServices
 
-from config import Config
+from config import Config, ControllerModel
 from flash_model import FlashModel
 from main_view import MainView
 from server_model import ServerModel
@@ -34,10 +35,8 @@ class Controller:
         self._connect_model_views()
         self._page_after_add_wifi = None
         self._page_before_add_wifi = None
-        if server_model.is_authenticated():
-            view.change_page(view.Pages.WELCOME)
-        else:
-            view.change_page(view.Pages.LOGIN)
+        view.change_page(view.Pages.LOGIN)
+        self.auto_log_in()
 
     def _connect_signals(self):
         """Connect widget signals to the appropriate function."""
@@ -144,6 +143,34 @@ class Controller:
             "Cleared secrets, configurations and cached data.", "Cleared data"
         )
 
+    def auto_log_in(self):
+        self._view.ui.loginLoadingText.show()
+        self._view.ui.loginLoadingBar.show()
+        worker = Worker(self._server_model.try_access_token_refresh)
+        worker.signals.result.connect(self.auto_log_in_result)
+        worker.signals.error.connect(self.auto_log_in_error)
+        worker.signals.finished.connect(self.auto_log_in_finished)
+        self.threadpool.start(worker)
+
+    def auto_log_in_result(self, success: bool):
+        """If the auto login succeeds, go to the welcome page."""
+        if not success:
+            return
+        name = self._config.config.get("name")
+        if not name:
+            name = self._config.config.get("username")
+        self._view.ui.welcomeUsername.setText(name)
+        self._view.change_page(self._view.Pages.WELCOME)
+
+    def auto_log_in_finished(self):
+        """After the auto login attempt, hide the loading widgets."""
+        self._view.ui.loginLoadingText.hide()
+        self._view.ui.loginLoadingBar.hide()
+
+    def auto_log_in_error(self, error):
+        """Error handler for the auto login thread."""
+        self.handle_error(error)
+
     ############################
     # Welcome Page Functionality
 
@@ -219,7 +246,7 @@ class Controller:
 
     def handle_add_controller_page(self):
         """Get data and populate the combo boxes on the add controller page."""
-        if self._config.config.get("sites"):
+        if self._config.has_cached_sites():
             self.handle_add_controller_page_result(None)
         else:
             self._view.ui.addControllerLoadingText.show()
@@ -235,10 +262,8 @@ class Controller:
         # Update the site combo box and retain the currently selected item
         current_site = self._view.ui.addControllerSitesComboBox.currentData()
         self._view.ui.addControllerSitesComboBox.clear()
-        for i in self._config.config.get("sites", []):
-            self._view.ui.addControllerSitesComboBox.addItem(
-                i["name"], userData=i["id"]
-            )
+        for i in self._config.get_sites():
+            self._view.ui.addControllerSitesComboBox.addItem(i.name, userData=i.id)
         if current_site:
             index = self._view.ui.addControllerSitesComboBox.findData(current_site)
             if index:
@@ -356,7 +381,7 @@ class Controller:
 
         name = self._view.ui.addControllerNameLineEdit.text()
         site_id = self._view.ui.addControllerSitesComboBox.currentData()
-        controller_type_id = self._config.config["controllerComponentTypes"][0]["id"]
+        controller_type_id = self._config.config["controllerTypes"][0]["id"]
         firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
 
         worker = Worker(
@@ -453,7 +478,7 @@ class Controller:
 
     def handle_replace_controller_page(self):
         """Fetch data and populate the combo boxes for the replace controller page."""
-        if self._config.config.get("sites"):
+        if self._config.has_cached_sites():
             self.handle_replace_controller_page_result(None)
         else:
             self._view.ui.replaceControllerLoadingText.show()
@@ -474,10 +499,8 @@ class Controller:
         current_site = self._view.ui.replaceControllerSitesComboBox.currentData()
         self._view.ui.replaceControllerSitesComboBox.clear()
         self._view.ui.replaceControllerSitesComboBox.blockSignals(True)
-        for i in self._config.config.get("sites", []):
-            self._view.ui.replaceControllerSitesComboBox.addItem(
-                i["name"], userData=i["id"]
-            )
+        for i in self._config.get_sites():
+            self._view.ui.replaceControllerSitesComboBox.addItem(i.name, userData=i.id)
         self._view.ui.replaceControllerSitesComboBox.blockSignals(False)
         index = self._view.ui.replaceControllerSitesComboBox.findData(current_site)
         if index >= 0:
@@ -523,8 +546,9 @@ class Controller:
     def replace_controller_site_selected(self, index):
         """Start the process to populate the controller combo box for the selected site."""
         if site_id := self._view.ui.replaceControllerSitesComboBox.itemData(index):
-            if site_id in self._config.config.get("controllers", {}):
-                self.populate_replace_controller_controllers(site_id)
+            controllers = self._config.get_controllers_by_site(site_id)
+            if controllers:
+                self.populate_replace_controller_controllers(controllers)
             else:
                 self.replace_controller_load_controllers(site_id)
 
@@ -540,10 +564,11 @@ class Controller:
         )
         self.threadpool.start(worker)
 
-    def replace_controller_load_controllers_result(self, _):
+    def replace_controller_load_controllers_result(
+        self, controllers: List[ControllerModel]
+    ):
         """Populate the controller combo box with the fetched data."""
-        site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
-        self.populate_replace_controller_controllers(site_id)
+        self.populate_replace_controller_controllers(controllers)
 
     def replace_controller_load_controllers_error(self, error):
         """Error handler for fetching the controllers thread."""
@@ -554,34 +579,32 @@ class Controller:
         self._view.ui.replaceControllerLoadingText.hide()
         self._view.ui.replaceControllerLoadingBar.hide()
 
-    def populate_replace_controller_controllers(self, site_id):
+    def populate_replace_controller_controllers(
+        self, controllers: List[ControllerModel]
+    ):
         """Populate the controller combo box for the selected site."""
         # Save the current item to restore the combo box selection later
         current_controller = (
             self._view.ui.replaceControllerControllersComboBox.currentData()
         )
         self._view.ui.replaceControllerControllersComboBox.clear()
-        try:
-            controllers = self._config.config["controllers"][site_id]
-        except KeyError:
-            controllers = []
-        if controllers:
-            for i in controllers:
-                self._view.ui.replaceControllerControllersComboBox.addItem(
-                    i["siteEntity"]["name"], userData=i["id"]
-                )
-            # Try to set the combo box selection to the previously selected item
-            index = self._view.ui.replaceControllerControllersComboBox.findData(
-                current_controller
-            )
-            if index >= 0:
-                self._view.ui.replaceControllerControllersComboBox.setCurrentIndex(
-                    index
-                )
-        else:
+        if not controllers:
             self._view.ui.replaceControllerControllersComboBox.addItem(
                 "No controllers found"
             )
+            return
+
+        controllers.sort(key=lambda c: c.name)
+        for i in controllers:
+            self._view.ui.replaceControllerControllersComboBox.addItem(
+                i.name, userData=i.id
+            )
+        # Try to set the combo box selection to the previously selected item
+        index = self._view.ui.replaceControllerControllersComboBox.findData(
+            current_controller
+        )
+        if index >= 0:
+            self._view.ui.replaceControllerControllersComboBox.setCurrentIndex(index)
 
     def replace_controller_download_and_flash(self):
         """Download the selected firmware image and flash it to the ESP."""
@@ -687,12 +710,18 @@ class Controller:
         self._view.ui.replaceControllerProgressBar.setValue(40)
 
         controller_id = self._view.ui.replaceControllerControllersComboBox.currentData()
-        site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
-        firmware_id = self._view.ui.replaceControllerFirmwaresComboBox.currentData()
-
-        worker = Worker(
-            self._server_model.update_controller, controller_id, site_id, firmware_id
+        controller = self._config.get_controller(controller_id)
+        if not controller:
+            self._view.notify(
+                "Controller not found in cache. Please clear cached data and try again.",
+                "Missing cached data",
+                "critical",
+            )
+            return
+        controller.firmware_image_id = (
+            self._view.ui.replaceControllerFirmwaresComboBox.currentData()
         )
+        worker = Worker(self._server_model.update_controller, controller)
         worker.signals.result.connect(self.replace_controller_update_result)
         worker.signals.error.connect(self.replace_controller_update_error)
         self.threadpool.start(worker)
@@ -702,16 +731,11 @@ class Controller:
         self.replace_controller_set_widgets_for_flashing(False)
         self.handle_error(error)
 
-    def replace_controller_update_result(self, controller):
+    def replace_controller_update_result(self, controller: ControllerModel):
         """After updating the controller, cycle its auth token."""
         self._view.ui.replaceControllerProgressBar.setValue(45)
 
-        controller_id = controller["id"]
-        site_id = self._view.ui.replaceControllerSitesComboBox.currentData()
-
-        worker = Worker(
-            self._server_model.cycle_controller_auth_token, controller_id, site_id
-        )
+        worker = Worker(self._server_model.cycle_controller_auth_token, controller.id)
         worker.signals.result.connect(self.replace_controller_cycle_token_result)
         worker.signals.error.connect(self.replace_controller_cycle_token_error)
         self.threadpool.start(worker)
@@ -721,7 +745,7 @@ class Controller:
         self.replace_controller_set_widgets_for_flashing(False)
         self.handle_error(error)
 
-    def replace_controller_cycle_token_result(self, controller):
+    def replace_controller_cycle_token_result(self, controller: ControllerModel):
         """After updating the controller's auth key, flash it."""
         self._view.ui.replaceControllerProgressText.setText("Flashing (4/4)")
         self._view.ui.replaceControllerProgressBar.setValue(50)
@@ -798,7 +822,7 @@ class Controller:
         else:
             pass
 
-    def handle_error(self, error):
+    def handle_error(self, error: WorkerError):
         """
         Handle errors raised by worker threads. Error handler. Use separate callbacks below to
         avoid double free segmentation error.
