@@ -355,8 +355,10 @@ class Controller:
         self._view.ui.addControllerProgressText.setText("Get Bootloader (2/4)")
         self.add_controller_set_progress_bar(30)
 
-        bootloader_id = firmware["bootloader"]["id"]
-        worker = Worker(self._server_model.download_bootloader_image, bootloader_id)
+        bootloader = firmware["bootloader"]
+        if not bootloader:
+            return self.add_controller_download_bootloader_result({})
+        worker = Worker(self._server_model.download_bootloader_image, bootloader["id"])
         worker.signals.progress.connect(
             self.add_controller_download_bootloader_progress
         )
@@ -689,8 +691,10 @@ class Controller:
         self._view.ui.replaceControllerProgressText.setText("Get Bootloader (2/4)")
         self.replace_controller_set_progress_bar(30)
 
-        bootloader_id = firmware["bootloader"]["id"]
-        worker = Worker(self._server_model.download_bootloader_image, bootloader_id)
+        bootloader = firmware["bootloader"]
+        if not bootloader:
+            return self.replace_controller_download_bootloader_result({})
+        worker = Worker(self._server_model.download_bootloader_image, bootloader["id"])
         worker.signals.progress.connect(
             self.replace_controller_download_bootloader_progress
         )

@@ -6,12 +6,14 @@ import sys
 from contextlib import redirect_stderr
 from distutils.dir_util import copy_tree
 from io import StringIO
+from pathlib import Path
 from typing import List
 
 import esptool
 
 from config import Config, ControllerModel
-from esp_idf import gen_esp32part, spiffsgen
+from esp_idf import gen_esp32part
+from littlefs import LittleFS, LittleFSError
 from server_model import ServerModel
 from wifi_model import WiFiModel
 from worker import WorkerError, WorkerSignals, WorkerWarning
@@ -60,15 +62,18 @@ class FlashModel:
     - 0x3D0000 - SPIFFS
     """
 
-    # The subtype of the partition in the partition table to be used for the SPIFFS image
-    _spiffs_partition_subtype = "spiffs"
-    # The directory from which the files are copied to create the SPIFFS image
-    _spiffs_source_dir = os.path.join(os.getcwd(), "spiffs")
+    # The subtype of the partition in the partition table to be used for the LittleFS image
+    _littlefs_partition_subtype = "spiffs"
+    # The directory from which the files are copied to create the LittleFS image
+    _littlefs_source_dir = os.path.join(os.getcwd(), "littlefs")
+    # The block size in bytes for the LittleFS image
+    _littlefs_block_size = 4096
 
     # The offset in bytes where the bootloader image should be flashed to
     _bootloader_image_offset = 4096  # 0x1000
 
-    # The offset in bytes where the partition image should be flashed to
+    # The offset in bytes of the partition image (valid for ESP32)
+    # https://docs.espressif.com/projects/esp8266-rtos-sdk/en/latest/api-guides/partition-tables.html
     _partition_image_offset = 32768  # 0x8000
 
     # The subtype of the partition in the partition table to be used for the firmware image
@@ -87,10 +92,10 @@ class FlashModel:
 
         cache_dir = config.dirs.user_cache_dir
 
-        # All files / dirs to create the SPIFFS image
-        self._spiffs_dir = os.path.join(cache_dir, "spiffs_dir")
-        self._spiffs_secret_path = os.path.join(self._spiffs_dir, "secrets.json")
-        self._spiffs_image_path = os.path.join(cache_dir, "spiffs.bin")
+        # All files / dirs to create the LittleFS image
+        self._littlefs_dir = os.path.join(cache_dir, "littlefs")
+        self._littlefs_secret_path = os.path.join(self._littlefs_dir, "secrets.json")
+        self._littlefs_image_path = os.path.join(cache_dir, "littlefs.bin")
 
         # All files / dirs to create the partition image
         self._partitions_csv_path = os.path.join(cache_dir, "partitions.csv")
@@ -106,17 +111,24 @@ class FlashModel:
             controller.partition_table_id
         )
         partitions = json.loads(partition_table["table"])
-        spiffs_partition = next(i for i in partitions if i["name"] == "spiffs")
-        spiffs_size = spiffs_partition["size"]
+        # Partition type is "spiffs"
+        # https://docs.platformio.org/en/latest/platforms/espressif32.html#uploading-files-to-file-system
+        littlefs_partition = next(
+            i for i in partitions if i["name"] == "spiffs" or i["name"] == "littlefs"
+        )
+        # The size of the LittleFS partition in bytes
+        littlefs_size = littlefs_partition["size"]
         self._create_partition_image(partitions)
-        self._create_spiffs_image(spiffs_size, wifi_aps, controller)
+        self._create_littlefs_image(littlefs_size, wifi_aps, controller)
 
         firmware_image = self._server_model.get_firmware_image(
             controller.firmware_image_id
         )
-        bootloader_image = self._server_model.get_bootloader_image(
-            firmware_image["bootloader"]["id"]
-        )
+        bootloader_image: dict | None = None
+        if bootloader := firmware_image.get("bootloader"):
+            bootloader_image = self._server_model.get_bootloader_image(
+                bootloader["id"]
+            )
         self._flash_controller(
             partitions, firmware_image, bootloader_image, progress_callback
         )
@@ -148,17 +160,17 @@ class FlashModel:
             # Catch the stderr to log errors
             with redirect_stderr(stderr):
                 gen_esp32part.main()
-        except SystemExit as err:
+        except SystemExit:
             logging.error(stderr)
             raise WorkerWarning("Error while generating the partitions image.")
         finally:
             # Restore the original cmdline arguments
             sys.argv = original_argv
 
-    def _create_spiffs_image(
+    def _create_littlefs_image(
         self, image_size: int, wifi_aps: List[WiFiModel.AP], controller: ControllerModel
-    ):
-        """Generate a SPIFFS image."""
+    ) -> None:
+        """Generate a LittleFS image."""
 
         try:
             # Create the dict with the secrets to be flashed
@@ -169,35 +181,43 @@ class FlashModel:
                 "ws_token": controller.auth_token,
                 "core_domain": self._server_model.core_domain,
                 "secure_url": self._server_model.is_core_url_secure,
+                "name": controller.name,
             }
-            # Make a directory to place all files in for the SPIFFS image
-            os.makedirs(self._spiffs_dir, exist_ok=True)
-            # Store the secret dict as a json file
-            with open(self._spiffs_secret_path, "w+") as secret_file:
+            # Make a directory to place all files in for the LittleFS image
+            os.makedirs(self._littlefs_dir, exist_ok=True)
+            # Store the secret dict as a json file. Overwrite file if one exists
+            with open(self._littlefs_secret_path, "w+") as secret_file:
                 json.dump(secrets, secret_file)
             # Copy over other files to be added to the SPIFFS image
-            copy_tree(self._spiffs_source_dir, self._spiffs_dir)
+            copy_tree(self._littlefs_source_dir, self._littlefs_dir)
 
-            # Prepare to run the SPIFFS generator. Save the cmdline args to be restored
-            original_argv = sys.argv
-            sys.argv = ["", str(image_size), self._spiffs_dir, self._spiffs_image_path]
-            stderr = StringIO()
-            # Handle the exit exception, that is thrown on errors
-            try:
-                # Capture the stderr output to log errors
-                with redirect_stderr(stderr):
-                    spiffsgen.main()
-            except SystemExit as err:
-                # Abort the flash process if unable to create the SPIFFS image
-                logging.error(stderr)
-                raise WorkerWarning("Error while generating the SPIFFS image.")
-            finally:
-                # Restore the original cmdline args
-                sys.argv = original_argv
+            # Ensure that the image size is a multiple of the block size
+            if image_size % self._littlefs_block_size:
+                raise WorkerError(f"Image size ({image_size} bytes) is not a multiple of the block size ({self._littlefs_block_size})")
+            block_count = int(image_size / self._littlefs_block_size)
+            # fs = LittleFS(block_size=self._littlefs_block_size, block_count=block_count)
+            fs = LittleFS(block_size=8192, block_count=125, name_max=32)
+            # Copy all files from the littlefs folder to the LittleFS image
+            pathlist = Path(self._littlefs_dir).glob('**/*')
+            for path in pathlist:
+                relative_path = path.relative_to(self._littlefs_dir)
+                if path.is_dir():
+                    fs.mkdir(str(relative_path))
+                    continue
+                with path.open("rb") as source, fs.open(str(relative_path), "wb") as target:
+                    target.write(source.read())
+            for root, dirs, files in fs.walk("."):
+                print(f"root {root} dirs {dirs} files {files}")
+            # Clear if it exists and then save the LittleFS image to the file
+            Path(self._littlefs_image_path).unlink(missing_ok=True)
+            with open(self._littlefs_image_path, "wb") as f:
+                f.write(fs.context.buffer)
+        except (LittleFSError, OSError, ValueError) as err:
+            raise WorkerError(f"Error while generating LittleFS image: {type(err)}: {err}")
         finally:
             # Try to delete the created secret file
             try:
-                os.remove(self._spiffs_secret_path)
+                os.remove(self._littlefs_secret_path)
             except FileNotFoundError:
                 pass
 
@@ -205,7 +225,7 @@ class FlashModel:
         self,
         partitions: dict,
         firmware: dict,
-        bootloader: dict,
+        bootloader: dict | None,
         progress: WorkerSignals,
     ):
         """Flash the controller with the generate images."""
@@ -215,56 +235,69 @@ class FlashModel:
             raise WorkerError(
                 "Firmware image could not be found. Please refresh the cached files."
             )
-        bootloader_image_path = self._server_model.get_image_path(bootloader)
-        if not os.path.isfile(bootloader_image_path):
-            logging.error(
-                f"Could not find bootloader image at: {bootloader_image_path}"
+        if bootloader:
+            bootloader_image_path = self._server_model.get_image_path(bootloader)
+            if not os.path.isfile(bootloader_image_path):
+                logging.error(
+                    f"Could not find bootloader image at: {bootloader_image_path}"
+                )
+                raise WorkerError(
+                    "Bootloader image could not be found. Please refresh the cached files."
+                )
+            firmware_partition = next(
+                i for i in partitions if i["subtype"] == self._firmware_partition_subtype
             )
-            raise WorkerError(
-                "Bootloader image could not be found. Please refresh the cached files."
+            littlefs_partition = next(
+                i for i in partitions if i["subtype"] == self._littlefs_partition_subtype
             )
-        firmware_partition = next(
-            i for i in partitions if i["subtype"] == self._firmware_partition_subtype
-        )
-        spiffs_partition = next(
-            i for i in partitions if i["subtype"] == self._spiffs_partition_subtype
-        )
-        otadata_partition = next(
-            i
-            for i in partitions
-            if i["type"] == self._otadata_partition_type
-            and i["subtype"] == self._otadata_partition_subtype
-        )
-        # Erase the OTA data partition
-        esptool_erase_otadata_args = [
-            "--baud",
-            str(self._esptool_baud_rate),
-            "erase_region",
-            str(otadata_partition["offset"]),
-            str(otadata_partition["size"]),
-        ]
-        # Flash the partition table, firmware and SPIFFS image
-        # WORKAROUND: Place the SPIFFS flash command before the image flash command
+            otadata_partition = next(
+                i
+                for i in partitions
+                if i["type"] == self._otadata_partition_type
+                and i["subtype"] == self._otadata_partition_subtype
+            )
+            # Erase the OTA data partition
+            esptool_erase_otadata_args = [
+                "--baud",
+                str(self._esptool_baud_rate),
+                "erase_region",
+                str(otadata_partition["offset"]),
+                str(otadata_partition["size"]),
+            ]
+        # Flash the partition table, firmware and LittleFS image
+        # WORKAROUND: Place the LittleFS flash command before the image flash command
         esptool_flash_args = [
             "--baud",
             str(self._esptool_baud_rate),
-            "write_flash",
-            str(self._partition_image_offset),
-            self._partitions_image_path,
-            str(self._bootloader_image_offset),
-            bootloader_image_path,
-            str(spiffs_partition["offset"]),
-            self._spiffs_image_path,
-            str(firmware_partition["offset"]),
-            firmware_image_path,
+            "write_flash"
         ]
+        if bootloader:
+            esptool_flash_args.extend([
+                str(self._partition_image_offset),
+                self._partitions_image_path,
+                str(self._bootloader_image_offset),
+                bootloader_image_path,
+                str(littlefs_partition["offset"]),
+                self._littlefs_image_path,
+                str(firmware_partition["offset"]),
+                firmware_image_path,
+            ])
+        else:
+            esptool_flash_args.extend([
+                "0x0",
+                firmware_image_path,
+            ])
+            
+        
         # Capture stdout to track progress. stderr to get error messages
         sys.stdout = EsptoolOutputHandler(progress)
         stderr = StringIO()
         try:
             with redirect_stderr(stderr):
-                esptool.main(esptool_erase_otadata_args)
+                if bootloader:
+                    esptool.main(esptool_erase_otadata_args)
                 esptool.main(esptool_flash_args)
+                esptool.main(["--baud", str(self._esptool_baud_rate), "write_flash", "0x00300000", self._littlefs_image_path,])
         except SystemExit as err:
             logging.error(stderr)
             raise WorkerError("Failed to flash the controller. Please try again.")

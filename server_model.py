@@ -28,16 +28,12 @@ class ServerModel:
     _oauth_client_id = "flasher"
     _oauth_base_url = "https://auth.staging.inamata.co"
     _oauth_realm = "inamata"
-    _oauth_device_path = (
-        f"/auth/realms/{_oauth_realm}/protocol/openid-connect/auth/device"
-    )
-    _oauth_token_path = f"/auth/realms/{_oauth_realm}/protocol/openid-connect/token"
-    _openid_config_path = (
-        f"/auth/realms/{_oauth_realm}/.well-known/openid-configuration"
-    )
+    _oauth_device_path = f"/realms/{_oauth_realm}/protocol/openid-connect/auth/device"
+    _oauth_token_path = f"/realms/{_oauth_realm}/protocol/openid-connect/token"
+    _openid_config_path = f"/realms/{_oauth_realm}/.well-known/openid-configuration"
     _openid_profile_keys = ["name", "email", "given_name", "family_name"]
     _access_token_audience = ["core-service", "account"]
-    _refresh_token_audience = f"{_oauth_base_url}/auth/realms/{_oauth_realm}"
+    _refresh_token_audience = f"{_oauth_base_url}/realms/{_oauth_realm}"
 
     _default_partition_table_name = "min_spiffs"
     _default_partition_table_id = ""
@@ -61,7 +57,9 @@ class ServerModel:
         """Log in to the DeviceStacc server and get an auth token."""
 
         data = {"client_id": self._oauth_client_id, "scope": "offline_access"}
-        headers = {"content-type": "application/x-www-form-urlencoded"}
+        headers = {
+            "content-type": "application/x-www-form-urlencoded",
+        }
         response = self._server_request(self._oauth_device_url, data, headers=headers)
         device_auth = response.json()
         # Open the web browser so that the user can log in and authorize the request
@@ -170,7 +168,7 @@ class ServerModel:
                 allControllers(site: "{site_id}") {{
                     pageInfo {{ hasNextPage }}
                     edges {{ node {{
-                        id, name, authToken {{ key }}, controllerTypeId
+                        id, name, controllerTypeId
                         partitionTableId, firmwareImageId, siteId
                     }} }}
                 }}
@@ -596,7 +594,7 @@ class ServerModel:
             updated = self._refresh_access_token()
             if not updated:
                 raise WorkerWarning("Access has expired. Please log in again.")
-        headers = {**headers, "Authorization": f"Token {self._oauth_access_token}"}
+        headers = {**headers, "Authorization": f"Bearer {self._oauth_access_token}"}
         return self._server_request(url, data, headers)
 
     def _server_request(
@@ -803,5 +801,5 @@ class ServerModel:
             controller_type_id=data["controllerTypeId"],
             firmware_image_id=data["firmwareImageId"],
             partition_table_id=data["partitionTableId"],
-            auth_token=data["authToken"]["key"] if data["authToken"] else None,
+            auth_token=data["authToken"]["key"] if data.get("authToken") else None,
         )

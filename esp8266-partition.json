@@ -1,0 +1,42 @@
+[
+  {
+    "name": "nvs",
+    "size": 20480,
+    "type": "data",
+    "flags": "",
+    "offset": 36864,
+    "subtype": "nvs"
+  },
+  {
+    "name": "otadata",
+    "size": 8192,
+    "type": "data",
+    "flags": "",
+    "offset": 57344,
+    "subtype": "ota"
+  },
+  {
+    "name": "app0",
+    "size": 983040,
+    "type": "app",
+    "flags": "",
+    "offset": 65536,
+    "subtype": "ota_0"
+  },
+  {
+    "name": "app1",
+    "size": 983040,
+    "type": "app",
+    "flags": "",
+    "offset": 1048576,
+    "subtype": "ota_1"
+  },
+  {
+    "name": "littlefs",
+    "size": 2162688,
+    "type": "data",
+    "flags": "",
+    "offset": 2031616,
+    "subtype": "spiffs"
+  }
+]

@@ -19,6 +19,13 @@ Open a terminal, run the following code,  **logout** and then back in again for 
 
     sudo usermod -a -G dialout $USER
 
+On Ubuntu with Wayland, add `export QT_QPA_PLATFORM=xcb` to fix window borders.
+
+To package the app see:
+- https://github.com/taunoe/tauno-serial-plotter
+- https://github.com/jordansissel/fpm/
+- https://www.pythonguis.com/tutorials/packaging-pyqt5-applications-linux-pyinstaller/
+
 ## Future Features
 
 This is a list of features that would be useful and show the tool's current limitations
