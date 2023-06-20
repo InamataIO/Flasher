@@ -8,29 +8,25 @@ microcontrollers and registering their authentication token on the server.
 
 __author__ = "Moritz Ulmer"
 __license__ = "apache-2.0"
-__version__ = "0.2.1"
-__date__ = "21.03.2022"
+__version__ = "0.3.0"
+__date__ = "20.06.2023"
 __maintainer__ = "Moritz Ulmer"
 __email__ = "moritz@silentwind.eu "
 __status__ = "Development"
 
-import argparse
-import logging
 import os
-import platform
 import sys
 
 # Change the current dir to the temporary one created by PyInstaller
 try:
     os.chdir(sys._MEIPASS)
-except:
+except AttributeError:
     pass
 
-# Needed for Wayland applications
-if platform.system() == "posix":
-    os.environ["QT_QPA_PLATFORM"] = "xcb"
-
+import argparse
 import ctypes
+import logging
+import platform
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import QApplication
@@ -79,6 +75,7 @@ def main():
         wifi_model=wifi_model,
         view=view,
         config=config,
+        app=inamata_flasher,
     )
     view.show()
     sys.exit(inamata_flasher.exec())

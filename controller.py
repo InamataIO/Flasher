@@ -1,8 +1,9 @@
 import platform
 from typing import List
 
-from PySide6.QtCore import QThreadPool, QUrl
-from PySide6.QtGui import QCloseEvent, QDesktopServices
+from PySide6.QtCore import QCoreApplication, QThreadPool, QUrl, Slot
+from PySide6.QtGui import QCloseEvent, QDesktopServices, QKeySequence, QShortcut
+from PySide6.QtWidgets import QMenu
 
 from config import Config, ControllerModel
 from flash_model import FlashModel
@@ -23,16 +24,19 @@ class Controller:
         wifi_model: WiFiModel,
         view: MainView,
         config: Config,
+        app: QCoreApplication,
     ):
         self._server_model = server_model
         self._flash_model = flash_model
         self._wifi_model = wifi_model
         self._view = view
         self._config = config
+        self._app = app
 
         self.threadpool = QThreadPool()
         self._connect_signals()
         self._connect_model_views()
+        self._connect_shortcuts()
         self._page_after_add_wifi = None
         self._page_before_add_wifi = None
         view.change_page(view.Pages.LOGIN)
@@ -47,7 +51,11 @@ class Controller:
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
         self._view.ui.signUpButton.clicked.connect(self.sign_up)
-        self._view.ui.clearDataButton.clicked.connect(self.clear_data)
+        #   Login system menu
+        self.loginSystemMenu = QMenu()
+        self.loginSystemMenu.addAction("Clear data", self.clear_data)
+        self.loginSystemMenu.addAction("Open system settings", self.to_system_settings)
+        self._view.ui.loginSystemButton.setMenu(self.loginSystemMenu)
 
         # Welcome Page
         self._view.ui.welcomeAddControllerButton.clicked.connect(self.to_add_controller)
@@ -56,7 +64,7 @@ class Controller:
         )
         self._view.ui.welcomeManageWiFiButton.clicked.connect(self.to_manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
-        self._view.ui.welcomeUsername.setText(self._config.users_name)
+        self.set_welcome_username(self._config.users_name)
 
         # Add Controller Page
         self._view.ui.addControllerFlashButton.clicked.connect(
@@ -92,11 +100,36 @@ class Controller:
         self._view.ui.manageWiFiRemoveButton.clicked.connect(self.remove_wifi_ap)
         self._view.ui.manageWiFiBackButton.clicked.connect(self.to_welcome_page)
 
+        # System Settings Page
+        self._view.ui.systemSettingsCancelButton.clicked.connect(
+            self.back_from_system_settings
+        )
+        self._view.ui.systemSettingsSaveButton.clicked.connect(
+            self.system_settings_save
+        )
+        self._view.ui.systemSettingsRestoreDefaultsButton.clicked.connect(
+            self.system_settings_restore_defaults
+        )
+        self._view.ui.systemSettingsServerComboBox.currentIndexChanged.connect(
+            self.system_settings_server_selected
+        )
+        self._view.ui.systemSettingsCoreServerLineEdit.editingFinished.connect(
+            self.system_settings_core_server_edited
+        )
+        self._view.ui.systemSettingsAuthServerLineEdit.editingFinished.connect(
+            self.system_settings_auth_server_edited
+        )
+
     def _connect_model_views(self):
         """Connect models to the appropriate views."""
         self._view.ui.apListView.setModel(self._wifi_model)
         self._view.ui.addControllerAPListView.setModel(self._wifi_model)
         self._view.ui.replaceControllerAPListView.setModel(self._wifi_model)
+
+    def _connect_shortcuts(self):
+        """Connect shortcuts."""
+        self.quit_shortcut = QShortcut(QKeySequence("Ctrl+Q"), self._view.ui)
+        self.quit_shortcut.activated.connect(self._app.quit)
 
     def to_driver_install(self):
         """Open the driver installation web page."""
@@ -105,10 +138,19 @@ class Controller:
     ##########################
     # Login Page Functionality
 
+    def handle_login_page(self):
+        """Set the selected server text."""
+        server_name = self._server_model.server_name
+        if server_name == self._server_model.dev_server_name:
+            server_urls = self._server_model.server_urls
+            server_name = f"{server_name}\n{server_urls.core_base_url} / {server_urls.oauth_base_url}"
+        self._view.ui.loginSelectedServerText.setText(server_name)
+
     def log_in(self):
         """Log the user in and save the auth token."""
         self._view.ui.loginLoadingText.show()
         self._view.ui.loginLoadingBar.show()
+        self._view.ui.loginSelectedServerText.hide()
         worker = Worker(self._server_model.log_in)
         worker.signals.result.connect(self.log_in_result)
         worker.signals.error.connect(self.log_in_error)
@@ -120,13 +162,14 @@ class Controller:
         name = self._config.config.get("name")
         if not name:
             name = self._config.config.get("username")
-        self._view.ui.welcomeUsername.setText(name)
+        self.set_welcome_username(name)
         self._view.change_page(self._view.Pages.WELCOME)
 
     def log_in_finished(self):
         """After the login attempt, hide the loading widgets."""
         self._view.ui.loginLoadingText.hide()
         self._view.ui.loginLoadingBar.hide()
+        self._view.ui.loginSelectedServerText.show()
 
     def log_in_error(self, error):
         """Error handler for the login thread."""
@@ -136,9 +179,12 @@ class Controller:
         QDesktopServices.openUrl(QUrl("https://app.staging.inamata.co/"))
 
     def clear_data(self):
+        self._server_model.restore_dev_server_urls()
+        self._server_model.server_urls = self._server_model.default_server
         self._server_model.log_out()
         self._wifi_model.remove_all_aps()
         self._config.clear_stored_data()
+        self.handle_login_page()
         self._view.notify(
             "Cleared secrets, configurations and cached data.", "Cleared data"
         )
@@ -146,6 +192,7 @@ class Controller:
     def auto_log_in(self):
         self._view.ui.loginLoadingText.show()
         self._view.ui.loginLoadingBar.show()
+        self._view.ui.loginSelectedServerText.hide()
         worker = Worker(self._server_model.try_access_token_refresh)
         worker.signals.result.connect(self.auto_log_in_result)
         worker.signals.error.connect(self.auto_log_in_error)
@@ -159,17 +206,23 @@ class Controller:
         name = self._config.config.get("name")
         if not name:
             name = self._config.config.get("username")
-        self._view.ui.welcomeUsername.setText(name)
+        self.set_welcome_username(name)
         self._view.change_page(self._view.Pages.WELCOME)
 
     def auto_log_in_finished(self):
         """After the auto login attempt, hide the loading widgets."""
         self._view.ui.loginLoadingText.hide()
         self._view.ui.loginLoadingBar.hide()
+        self._view.ui.loginSelectedServerText.show()
 
     def auto_log_in_error(self, error):
         """Error handler for the auto login thread."""
         self.handle_error(error)
+
+    def to_system_settings(self):
+        """Open select server dialog."""
+        self._page_before_system_settings = self._view.current_page()
+        self._view.change_page(self._view.Pages.SYSTEM_SETTINGS)
 
     ############################
     # Welcome Page Functionality
@@ -182,7 +235,7 @@ class Controller:
         self._view.change_page(self._view.Pages.LOGIN)
 
     def to_add_controller(self):
-        """Request to switch to the add controller page. Go to add wifi if none exist."""
+        """Request to go to add controller page. Go to add wifi if none exist."""
         if self._wifi_model.ap_count():
             self._view.change_page(self._view.Pages.ADD_CONTROLLER)
         else:
@@ -191,7 +244,7 @@ class Controller:
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
     def to_replace_controller(self):
-        """Request to switch to the replace controller page. Go to add wifi if none exist."""
+        """Request to go to replace controller page. Go to add wifi if none exist."""
         if self._wifi_model.ap_count():
             self._view.change_page(self._view.Pages.REPLACE_CONTROLLER)
         else:
@@ -200,13 +253,17 @@ class Controller:
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
     def to_manage_wifi(self):
-        """Request to switch to the mange page. Go to add wifi if none exist."""
+        """Request to go to the mange page. Go to add wifi if none exist."""
         if self._wifi_model.ap_count():
             self._view.change_page(self._view.Pages.MANAGE_WIFI)
         else:
             self._page_after_add_wifi = self._view.Pages.MANAGE_WIFI
             self._page_before_add_wifi = self._view.Pages.WELCOME
             self._view.change_page(self._view.Pages.ADD_WIFI)
+
+    def set_welcome_username(self, username: str) -> None:
+        text = f"{self._server_model.server_name.capitalize()}: {username}"
+        self._view.ui.welcomeUsername.setText(text)
 
     #############################
     # Add WiFi Page Functionality
@@ -258,7 +315,7 @@ class Controller:
             self.threadpool.start(worker)
 
     def handle_add_controller_page_result(self, _):
-        """Populate the combo boxes with the fetched data for the add controller page."""
+        """Populate the combo boxes with the fetched data for add controller page."""
         # Update the site combo box and retain the currently selected item
         current_site = self._view.ui.addControllerSitesComboBox.currentData()
         self._view.ui.addControllerSitesComboBox.clear()
@@ -270,7 +327,8 @@ class Controller:
                 self._view.ui.addControllerSitesComboBox.setCurrentIndex(index)
         if not self._view.ui.addControllerSitesComboBox.count():
             self._view.notify(
-                "No sites found. Visit <a href='https://app.inamata.co' style='color: #ccc'>app.inamata.co</a> to create new sites.",
+                "No sites found. Visit <a href='https://app.inamata.co'"
+                " style='color: #ccc'>app.inamata.co</a> to create new sites.",
                 "No Sites Found",
             )
 
@@ -321,7 +379,8 @@ class Controller:
         if not self._view.ui.addControllerSitesComboBox.currentData():
             message = (
                 "Please select a site or reload if none are available."
-                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
+                " If the problem persists please update the Inamata Flasher tool or"
+                " contact your administrator."
             )
             self._view.notify(message, "Missing Input")
             return False
@@ -481,8 +540,8 @@ class Controller:
             self._view.ui.addControllerProgressBar.setValue(limited_progress)
             self._view.ui.addControllerProgressBar.setRange(0, 100)
 
-    ##############################
-    # Replace controller functionality
+    #######################################
+    # Replace Controller Page Functionality
 
     def handle_replace_controller_page(self):
         """Fetch data and populate the combo boxes for the replace controller page."""
@@ -813,6 +872,83 @@ class Controller:
             self._view.ui.replaceControllerProgressBar.setRange(0, 100)
 
     ##############################
+    # System Settings Page functionality
+
+    def handle_system_settings_page(self):
+        self.system_settings_dev_server_urls = self._server_model.dev_server_urls
+        if not self._view.ui.systemSettingsServerComboBox.count():
+            for i in self._server_model.known_server_urls.keys():
+                self._view.ui.systemSettingsServerComboBox.addItem(
+                    i.capitalize(), userData=i
+                )
+        index = self._view.ui.systemSettingsServerComboBox.findData(
+            self._server_model.server_name
+        )
+        self._view.ui.systemSettingsServerComboBox.setCurrentIndex(index)
+
+    def back_from_system_settings(self):
+        if self._page_before_system_settings:
+            self._view.change_page(self._page_before_system_settings)
+            self._page_before_system_settings = None
+        else:
+            self._view.change_page(self._view.Pages.LOGIN)
+
+    def system_settings_save(self):
+        """Save server settings."""
+        index = self._view.ui.systemSettingsServerComboBox.currentIndex()
+        server_name = self._view.ui.systemSettingsServerComboBox.itemData(index)
+        if server_name == self._server_model.dev_server_name:
+            new_server_urls = ServerModel.ServerUrls(
+                core_base_url=self._view.ui.systemSettingsCoreServerLineEdit.text(),
+                oauth_base_url=self._view.ui.systemSettingsAuthServerLineEdit.text(),
+            )
+            if new_server_urls != self._server_model.server_urls:
+                self._server_model.server_urls = new_server_urls
+                self._config.clear_cached_data()
+        elif server_name != self._server_model.server_name:
+            self._server_model.server_urls = server_name
+            self._config.clear_cached_data()
+        self.back_from_system_settings()
+
+    def system_settings_restore_defaults(self) -> None:
+        """Restore system defaults."""
+        self._server_model.restore_dev_server_urls()
+        self._server_model.server_urls = self._server_model.default_server
+        self.back_from_system_settings()
+
+    @Slot()
+    def system_settings_server_selected(self, index):
+        """Update core and auth line edits."""
+        server_name = self._view.ui.systemSettingsServerComboBox.itemData(index)
+        if not server_name:
+            return
+
+        is_dev = server_name == "dev"
+        core_line_edit = self._view.ui.systemSettingsCoreServerLineEdit
+        auth_line_edit = self._view.ui.systemSettingsAuthServerLineEdit
+
+        core_line_edit.setEnabled(is_dev)
+        auth_line_edit.setEnabled(is_dev)
+        if is_dev:
+            server_urls = self.system_settings_dev_server_urls
+        else:
+            server_urls = self._server_model.known_server_urls[server_name]
+        core_line_edit.setText(server_urls.core_base_url)
+        auth_line_edit.setText(server_urls.oauth_base_url)
+
+    @Slot()
+    def system_settings_core_server_edited(self):
+        self.system_settings_dev_server_urls.core_base_url = (
+            self._view.ui.systemSettingsCoreServerLineEdit.text()
+        )
+
+    @Slot()
+    def system_settings_auth_server_edited(self):
+        self.system_settings_dev_server_urls.oauth_base_url = (
+            self._view.ui.systemSettingsAuthServerLineEdit.text()
+        )
+
+    ##############################
     # Miscellaneous functionality
 
     def to_welcome_page(self):
@@ -821,14 +957,16 @@ class Controller:
 
     def page_changed(self, index: int):
         """Called when the page of the stacked widget changes"""
-        if index == self._view.Pages.LOGIN[1]:
+        if index == self._view.Pages.LOGIN.value[1]:
+            self.handle_login_page()
+        elif index == self._view.Pages.WELCOME.value[1]:
             pass
-        elif index == self._view.Pages.WELCOME[1]:
-            pass
-        elif index == self._view.Pages.ADD_CONTROLLER[1]:
+        elif index == self._view.Pages.ADD_CONTROLLER.value[1]:
             self.handle_add_controller_page()
-        elif index == self._view.Pages.REPLACE_CONTROLLER[1]:
+        elif index == self._view.Pages.REPLACE_CONTROLLER.value[1]:
             self.handle_replace_controller_page()
+        elif index == self._view.Pages.SYSTEM_SETTINGS.value[1]:
+            self.handle_system_settings_page()
         else:
             pass
 
@@ -847,6 +985,7 @@ class Controller:
     def handle_close(self, event: QCloseEvent):
         """Save the config on close."""
         self._wifi_model.save_to_config()
+        self._server_model.save_to_config()
         if self._config.config:
             self._config.save_config()
         event.accept()

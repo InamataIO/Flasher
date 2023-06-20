@@ -1,6 +1,14 @@
-![Inamata Flasher](./images/header-logo.png)
+# Inamata Flasher
 
 Flash the firmware onto an ESP32 and register it with the server.
+
+## Start
+
+1. Do the [driver setup](#driver-setup-instructions)
+3. In a terminal run `pipenv install --dev`
+2. Run `./start.sh`
+
+## Screenshots
 
 | Windows Screenshots                                 | Linux Screenshots                                      |
 | ----------------------------------------------------| ------------------------------------------------------ |
@@ -18,8 +26,6 @@ Download and install the [CP210x USB to UART Bridge driver][4] for [silabs.com][
 Open a terminal, run the following code,  **logout** and then back in again for the changes to take effect.
 
     sudo usermod -a -G dialout $USER
-
-On Ubuntu with Wayland, add `export QT_QPA_PLATFORM=xcb` to fix window borders.
 
 To package the app see:
 - https://github.com/taunoe/tauno-serial-plotter

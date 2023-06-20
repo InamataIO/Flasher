@@ -1,4 +1,5 @@
 import sys
+from enum import Enum
 from typing import Callable, List, Union
 
 from PySide6.QtCore import QEvent, QFile, QIODevice, QSize
@@ -12,13 +13,14 @@ page_2_file = "page2.ui"
 
 
 class MainView(QMainWindow):
-    class Pages:
+    class Pages(Enum):
         LOGIN = ["loginPage", -1]
         WELCOME = ["welcomePage", -1]
         REPLACE_CONTROLLER = ["replaceControllerPage", -1]
         ADD_CONTROLLER = ["addControllerPage", -1]
         ADD_WIFI = ["addWiFiPage", -1]
         MANAGE_WIFI = ["manageWiFiPage", -1]
+        SYSTEM_SETTINGS = ["systemSettingsPage", -1]
 
         @classmethod
         def all(cls) -> List:
@@ -51,20 +53,26 @@ class MainView(QMainWindow):
             QMessageBox.critical(self.ui, title, message)
 
     def change_page(self, page: Union[str, List]):
-        """Change the stack page to the specified page"""
+        """Change the stack page to the specified page."""
         if isinstance(page, str):
             # Search for the page widget by name and use the index set during init
-            index = next([i[1] for i in self.Pages.all() if i[0] == page])
+            index = next([i.value[1] for i in self.Pages if i.value[0] == page])
         else:
-            index = page[1]
+            index = page.value[1]
         self.ui.stackedWidget.setCurrentIndex(index)
+
+    def current_page(self) -> Pages | None:
+        """Return the current page."""
+        next(
+            i for i in self.Pages if self.ui.stackedWidget.currentIndex() == i.value[1]
+        )
 
     def _set_page_indexes(self):
         """Find the indexes for the named pages in the stacked widget."""
-        for i in self.Pages.all():
-            page = self.ui.findChild(QWidget, i[0])
+        for i in self.Pages:
+            page = self.ui.findChild(QWidget, i.value[0])
             index = self.ui.stackedWidget.indexOf(page)
-            i[1] = index
+            i.value[1] = index
 
     def _set_font(self):
         """Set the font used by the UI."""

@@ -49,7 +49,7 @@ class WiFiModel(QAbstractListModel):
 
     def remove_all_aps(self):
         self.aps = []
-        self._config.config.pop("wifi_aps")
+        self._config.config.pop("wifi_aps", None)
 
     def get_ap(self, index: QModelIndex):
         """Get the AP at the specified index."""
@@ -61,4 +61,4 @@ class WiFiModel(QAbstractListModel):
         if wifi_aps:
             self._config.config["wifi_aps"] = wifi_aps
         else:
-            self._config.config.pop("wifi_aps")
+            self._config.config.pop("wifi_aps", None)

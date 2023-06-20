@@ -110,7 +110,7 @@ class FlashModel:
         partition_table = self._server_model.get_partition_table(
             controller.partition_table_id
         )
-        partitions = json.loads(partition_table["table"])
+        partitions = partition_table["table"]
         # Partition type is "spiffs"
         # https://docs.platformio.org/en/latest/platforms/espressif32.html#uploading-files-to-file-system
         littlefs_partition = next(
@@ -126,9 +126,7 @@ class FlashModel:
         )
         bootloader_image: dict | None = None
         if bootloader := firmware_image.get("bootloader"):
-            bootloader_image = self._server_model.get_bootloader_image(
-                bootloader["id"]
-            )
+            bootloader_image = self._server_model.get_bootloader_image(bootloader["id"])
         self._flash_controller(
             partitions, firmware_image, bootloader_image, progress_callback
         )
@@ -193,18 +191,22 @@ class FlashModel:
 
             # Ensure that the image size is a multiple of the block size
             if image_size % self._littlefs_block_size:
-                raise WorkerError(f"Image size ({image_size} bytes) is not a multiple of the block size ({self._littlefs_block_size})")
+                raise WorkerError(
+                    f"Image size ({image_size} bytes) is not a multiple of the block size ({self._littlefs_block_size})"
+                )
             block_count = int(image_size / self._littlefs_block_size)
             # fs = LittleFS(block_size=self._littlefs_block_size, block_count=block_count)
             fs = LittleFS(block_size=8192, block_count=125, name_max=32)
             # Copy all files from the littlefs folder to the LittleFS image
-            pathlist = Path(self._littlefs_dir).glob('**/*')
+            pathlist = Path(self._littlefs_dir).glob("**/*")
             for path in pathlist:
                 relative_path = path.relative_to(self._littlefs_dir)
                 if path.is_dir():
                     fs.mkdir(str(relative_path))
                     continue
-                with path.open("rb") as source, fs.open(str(relative_path), "wb") as target:
+                with path.open("rb") as source, fs.open(
+                    str(relative_path), "wb"
+                ) as target:
                     target.write(source.read())
             for root, dirs, files in fs.walk("."):
                 print(f"root {root} dirs {dirs} files {files}")
@@ -213,7 +215,9 @@ class FlashModel:
             with open(self._littlefs_image_path, "wb") as f:
                 f.write(fs.context.buffer)
         except (LittleFSError, OSError, ValueError) as err:
-            raise WorkerError(f"Error while generating LittleFS image: {type(err)}: {err}")
+            raise WorkerError(
+                f"Error while generating LittleFS image: {type(err)}: {err}"
+            )
         finally:
             # Try to delete the created secret file
             try:
@@ -245,10 +249,14 @@ class FlashModel:
                     "Bootloader image could not be found. Please refresh the cached files."
                 )
             firmware_partition = next(
-                i for i in partitions if i["subtype"] == self._firmware_partition_subtype
+                i
+                for i in partitions
+                if i["subtype"] == self._firmware_partition_subtype
             )
             littlefs_partition = next(
-                i for i in partitions if i["subtype"] == self._littlefs_partition_subtype
+                i
+                for i in partitions
+                if i["subtype"] == self._littlefs_partition_subtype
             )
             otadata_partition = next(
                 i
@@ -266,29 +274,28 @@ class FlashModel:
             ]
         # Flash the partition table, firmware and LittleFS image
         # WORKAROUND: Place the LittleFS flash command before the image flash command
-        esptool_flash_args = [
-            "--baud",
-            str(self._esptool_baud_rate),
-            "write_flash"
-        ]
+        esptool_flash_args = ["--baud", str(self._esptool_baud_rate), "write_flash"]
         if bootloader:
-            esptool_flash_args.extend([
-                str(self._partition_image_offset),
-                self._partitions_image_path,
-                str(self._bootloader_image_offset),
-                bootloader_image_path,
-                str(littlefs_partition["offset"]),
-                self._littlefs_image_path,
-                str(firmware_partition["offset"]),
-                firmware_image_path,
-            ])
+            esptool_flash_args.extend(
+                [
+                    str(self._partition_image_offset),
+                    self._partitions_image_path,
+                    str(self._bootloader_image_offset),
+                    bootloader_image_path,
+                    str(littlefs_partition["offset"]),
+                    self._littlefs_image_path,
+                    str(firmware_partition["offset"]),
+                    firmware_image_path,
+                ]
+            )
         else:
-            esptool_flash_args.extend([
-                "0x0",
-                firmware_image_path,
-            ])
-            
-        
+            esptool_flash_args.extend(
+                [
+                    "0x0",
+                    firmware_image_path,
+                ]
+            )
+
         # Capture stdout to track progress. stderr to get error messages
         sys.stdout = EsptoolOutputHandler(progress)
         stderr = StringIO()
@@ -297,8 +304,16 @@ class FlashModel:
                 if bootloader:
                     esptool.main(esptool_erase_otadata_args)
                 esptool.main(esptool_flash_args)
-                esptool.main(["--baud", str(self._esptool_baud_rate), "write_flash", "0x00300000", self._littlefs_image_path,])
-        except SystemExit as err:
+                esptool.main(
+                    [
+                        "--baud",
+                        str(self._esptool_baud_rate),
+                        "write_flash",
+                        "0x00300000",
+                        self._littlefs_image_path,
+                    ]
+                )
+        except SystemExit:
             logging.error(stderr)
             raise WorkerError("Failed to flash the controller. Please try again.")
         finally:

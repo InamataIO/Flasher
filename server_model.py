@@ -1,8 +1,11 @@
+import base64
+import dataclasses
 import hashlib
-import json
 import logging
 import os
+import uuid
 import webbrowser
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from functools import cached_property
 from time import sleep
@@ -22,29 +25,46 @@ from worker import WorkerError, WorkerInformation, WorkerWarning
 class ServerModel:
     """Used to login to the Inamata server."""
 
-    _core_base_url = "https://core.staging.inamata.co"
+    @dataclass
+    class ServerUrls:
+        core_base_url: str
+        oauth_base_url: str
+
     _core_graphql_path = "/graphql/"
 
     _oauth_client_id = "flasher"
-    _oauth_base_url = "https://auth.staging.inamata.co"
     _oauth_realm = "inamata"
     _oauth_device_path = f"/realms/{_oauth_realm}/protocol/openid-connect/auth/device"
     _oauth_token_path = f"/realms/{_oauth_realm}/protocol/openid-connect/token"
     _openid_config_path = f"/realms/{_oauth_realm}/.well-known/openid-configuration"
     _openid_profile_keys = ["name", "email", "given_name", "family_name"]
     _access_token_audience = ["core-service", "account"]
-    _refresh_token_audience = f"{_oauth_base_url}/realms/{_oauth_realm}"
+
+    @property
+    def _refresh_token_audience(self) -> str:
+        return f"{self.server_urls.oauth_base_url}/realms/{self._oauth_realm}"
 
     _default_partition_table_name = "min_spiffs"
     _default_partition_table_id = ""
 
+    _known_servers = {
+        "staging": ServerUrls(
+            core_base_url="https://core.staging.inamata.co",
+            oauth_base_url="https://auth.staging.inamata.co",
+        ),
+        "production": ServerUrls(
+            core_base_url="https://core.inamata.co",
+            oauth_base_url="https://auth.inamata.co",
+        ),
+    }
+
     @property
     def core_domain(self) -> str:
-        return urlparse(self._core_base_url).hostname
+        return urlparse(self.server_urls.core_base_url).hostname
 
     @property
     def is_core_url_secure(self) -> str:
-        return urlparse(self._core_base_url).scheme == "https"
+        return urlparse(self.server_urls.core_base_url).scheme == "https"
 
     def __init__(self, config: Config):
         self._config: Config = config
@@ -52,9 +72,88 @@ class ServerModel:
         self._oauth_access_token_data_cache: Dict = {}
         self._oauth_refresh_token_cache: str = ""
         self._oauth_refresh_token_data_cache: Dict = {}
+        self._server_name: str = self.default_server
+        self._load_server_config()
+
+    @property
+    def default_server(self) -> str:
+        return "staging"
+
+    @property
+    def default_dev_server_urls(self) -> ServerUrls:
+        return self.ServerUrls(
+            core_base_url="http://localhost:8000",
+            oauth_base_url="http://localhost:8080",
+        )
+
+    @property
+    def server_name(self) -> str:
+        return self._server_name
+
+    @property
+    def known_server_urls(self) -> dict[str, ServerUrls]:
+        return self._known_servers
+
+    @property
+    def server_urls(self) -> ServerUrls:
+        return self._known_servers[self._server_name]
+
+    @server_urls.setter
+    def server_urls(self, value: str | ServerUrls) -> None:
+        """If server urls change, clear token and cached credentials."""
+        match value:
+            case str():
+                self._server_name = value
+            case self.ServerUrls():
+                self._server_name = self.dev_server_name
+                self._known_servers[self.dev_server_name] = value
+            case _ as variable_type:
+                logging.error(f"Unknown type: {variable_type}")
+                return
+        self.log_out()
+
+    @property
+    def dev_server_urls(self) -> ServerUrls:
+        return dataclasses.replace(self._known_servers[self.dev_server_name])
+
+    @property
+    def dev_server_name(self) -> str:
+        return "dev"
+
+    def restore_dev_server_urls(self) -> None:
+        self._known_servers["dev"] = self.default_dev_server_urls
+
+    def save_to_config(self) -> None:
+        """Save server URLs to config if not the default."""
+        if (
+            self._known_servers["dev"] == self.default_dev_server_urls
+            and self.server_name == self.default_server
+        ):
+            return
+        server_config = {
+            "dev_urls": {
+                "core_base_url": self._known_servers["dev"].core_base_url,
+                "oauth_base_url": self._known_servers["dev"].oauth_base_url,
+            },
+            "server_name": self.server_name,
+        }
+        self._config.config["server"] = server_config
+
+    def _load_server_config(self) -> None:
+        """Load server URLs from config."""
+        server_config = self._config.config.get("server", {})
+        if server_name := server_config.get("server_name"):
+            self._server_name = server_name
+        if dev_urls := server_config.get("dev_urls"):
+            self._known_servers["dev"] = self.ServerUrls(
+                core_base_url=dev_urls["core_base_url"],
+                oauth_base_url=dev_urls["oauth_base_url"],
+            )
+        else:
+            self.restore_dev_server_urls()
 
     def log_in(self, **kwargs) -> None:
-        """Log in to the DeviceStacc server and get an auth token."""
+        """Log in to the Inamata server and get an auth token."""
 
         data = {"client_id": self._oauth_client_id, "scope": "offline_access"}
         headers = {
@@ -123,7 +222,7 @@ class ServerModel:
                         id, name
                     } }
                 }
-                allControllerTypes(isGlobal: true, name: "ESP32") {
+                allControllerTypes(filters: {isGlobal: true, name: {exact: "ESP32"}}) {
                     edges { node {
                         id, name, isGlobal
                     } }
@@ -165,7 +264,7 @@ class ServerModel:
         data = {
             "query": f"""
             {{
-                allControllers(site: "{site_id}") {{
+                allControllers(filters: {{site: {{id: "{site_id}"}} }}) {{
                     pageInfo {{ hasNextPage }}
                     edges {{ node {{
                         id, name, controllerTypeId
@@ -206,7 +305,8 @@ class ServerModel:
             "query": f"""
             {{
                 allControllerPartitionTables(
-                    name: "{partition_table_name}", isGlobal: true, first: 1
+                    filters: {{ isGlobal: true, name: {{exact: "{partition_table_name}"}} }},
+                    first: 1
                 ) {{
                     edges {{ node {{
                         id, name, table
@@ -263,34 +363,37 @@ class ServerModel:
     ) -> ControllerModel:
         """Create and register a controller on the server."""
         partition_table = self.get_default_partition_table()
+        controller_id = base64.b64encode(
+            f"ControllerGQLNode:{uuid.uuid4()}".encode()
+        ).decode()
         data = {
             "query": """
             mutation createController($input: CreateControllerInput!) {
                 createController(input: $input) {
-                    controller {
+                    ... on ControllerGQLNode {
                         id, name, authToken { key }, controllerTypeId
                         partitionTableId, firmwareImageId, siteId
                     }
                 }
             }
             """,
-            "variables": json.dumps(
-                {
-                    "input": {
-                        "name": name,
-                        "site": site_id,
-                        "controllerType": controller_type_id,
-                        "partitionTable": partition_table["id"],
-                        "firmwareImage": firmware_image_id,
-                    }
+            "variables": {
+                "input": {
+                    "name": name,
+                    "controllerId": controller_id,
+                    "siteId": site_id,
+                    "controllerTypeId": controller_type_id,
+                    "partitionTableId": partition_table["id"],
+                    "firmwareImageId": firmware_image_id,
                 }
-            ),
+            },
         }
+        print(data)
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
-        controller_data = output["data"]["createController"]["controller"]
+        controller_data = output["data"]["createController"]
         controller = self.parse_controller(controller_data)
         self._config.cache_controllers([controller])
         return controller
@@ -302,21 +405,18 @@ class ServerModel:
         data = {
             "query": """
             mutation updateController($input: UpdateControllerInput!) {
-                updateController(input: $input) { success }
+                updateController(input: $input) { ... on Success { success } }
             }
             """,
-            "variables": json.dumps(
-                {
-                    "input": {
-                        "name": controller.name,
-                        "site": controller.site_id,
-                        "controller": controller.id,
-                        "controllerType": controller.controller_type_id,
-                        "partitionTable": controller.partition_table_id,
-                        "firmwareImage": controller.firmware_image_id,
-                    }
+            "variables": {
+                "input": {
+                    "controllerId": controller.id,
+                    "name": controller.name,
+                    "controllerTypeId": controller.controller_type_id,
+                    "partitionTableId": controller.partition_table_id,
+                    "firmwareImageId": controller.firmware_image_id,
                 }
-            ),
+            },
         }
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
@@ -333,11 +433,11 @@ class ServerModel:
             "query": """
             mutation cycleControllerAuthToken($input: CycleControllerAuthTokenInput!) {
                 cycleControllerAuthToken(input: $input) {
-                    controllerAuthToken { key }
+                    ... on ControllerAuthTokenGQLNode { key }
                 }
             }
             """,
-            "variables": json.dumps({"input": {"controller": controller_id}}),
+            "variables": {"input": {"controllerId": controller_id}},
         }
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
@@ -348,7 +448,7 @@ class ServerModel:
             raise WorkerInformation(
                 "Could not find the controller. Please reload the controller data."
             )
-        key = output["data"]["cycleControllerAuthToken"]["controllerAuthToken"]["key"]
+        key = output["data"]["cycleControllerAuthToken"]["key"]
         controller.auth_token = key
         self._config.cache_controllers([controller])
         return controller
@@ -358,10 +458,10 @@ class ServerModel:
         data = {
             "query": """
             mutation deleteController($input: DeleteControllerInput!) {
-                deleteController(input: $input) { success }
+                deleteController(input: $input) { ... on Success { success } }
             }
             """,
-            "variables": json.dumps({"input": {"controller": controller_id}}),
+            "variables": {"input": {"controllerId": controller_id}},
         }
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
@@ -570,7 +670,7 @@ class ServerModel:
         self._config.config["username"] = username
         try:
             keyring.set_password(self._config.app_name, username, refresh_token)
-        except KeyringError as err:
+        except KeyringError:
             # If the system keyring is broken, do not restrict remaining functionality
             logging.warn("Failed to store refresh token in system keyring")
 
@@ -580,6 +680,8 @@ class ServerModel:
         self._oauth_access_token_data_cache = {}
         self._oauth_refresh_token_cache = ""
         self._oauth_refresh_token_data_cache = {}
+        self.__dict__.pop("_jwks_client", None)
+        self.__dict__.pop("_openid_config", None)
         if username := self._config.config.get("username"):
             try:
                 keyring.delete_password(self._config.app_name, username)
@@ -595,12 +697,13 @@ class ServerModel:
             if not updated:
                 raise WorkerWarning("Access has expired. Please log in again.")
         headers = {**headers, "Authorization": f"Bearer {self._oauth_access_token}"}
-        return self._server_request(url, data, headers)
+        return self._server_request(url, json=data, headers=headers)
 
     def _server_request(
         self,
         url: str,
-        data: Dict[str, str],
+        data: Dict[str, str] | None = None,
+        json: Dict[str, str] | None = None,
         headers: Optional[Dict[str, str]] = None,
         raise_for_status: Optional[bool] = True,
     ) -> requests.Response:
@@ -608,7 +711,9 @@ class ServerModel:
         if not headers:
             headers = self._default_headers
         try:
-            response = requests.post(url, data, headers=headers, timeout=10)
+            response = requests.post(
+                url, data=data, json=json, headers=headers, timeout=10
+            )
             if raise_for_status:
                 response.raise_for_status()
         except requests.exceptions.HTTPError as err:
@@ -707,7 +812,7 @@ class ServerModel:
             return False
         try:
             credential = keyring.get_credential(self._config.app_name, username)
-        except KeyringError as err:
+        except KeyringError:
             return False
         if not credential:
             return False
@@ -756,15 +861,15 @@ class ServerModel:
 
     @property
     def _oauth_device_url(self) -> str:
-        return f"{self._oauth_base_url}{self._oauth_device_path}"
+        return f"{self.server_urls.oauth_base_url}{self._oauth_device_path}"
 
     @property
     def _oauth_token_url(self) -> str:
-        return f"{self._oauth_base_url}{self._oauth_token_path}"
+        return f"{self.server_urls.oauth_base_url}{self._oauth_token_path}"
 
     @cached_property
     def _openid_config(self) -> Dict[str, str]:
-        url = f"{self._oauth_base_url}{self._openid_config_path}"
+        url = f"{self.server_urls.oauth_base_url}{self._openid_config_path}"
         return requests.get(url, self._default_headers).json()
 
     @cached_property
@@ -774,11 +879,11 @@ class ServerModel:
 
     @property
     def _graphql_url(self) -> str:
-        return f"{self._core_base_url}{self._core_graphql_path}"
+        return f"{self.server_urls.core_base_url}{self._core_graphql_path}"
 
     @property
     def _default_headers(self) -> Dict[str, str]:
-        parsed_core_url = urlparse(self._core_base_url)
+        parsed_core_url = urlparse(self.server_urls.core_base_url)
         return {"Host": parsed_core_url.netloc}
 
     @staticmethod

@@ -1,0 +1,14 @@
+[tool.ruff]
+# Flake8 F, pycodestyle E and W, mccabe complexity C90, isort I
+select = ["F", "E", "W", "C90", "I"]
+# E501: line too long, E999: Syntax error (no match-case support)
+ignore = ["E501", "E999"]
+
+exclude = []
+
+# Assume Python 3.10.
+target-version = "py310"
+
+[tool.ruff.mccabe]
+max-complexity = 13
+

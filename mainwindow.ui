@@ -45,9 +45,9 @@ QLabel {
 }
 
 #centralWidget, QMessageBox {
-  background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #620890, stop:1 #d33479);
+  background-color: qlineargradient(spread:pad, x1:0, y1:1, x2:1, y2:0, stop:0 #004563, stop:1 #48a1b7);
 }
-#header, #welcomeHeader, #replaceHeader, #addHeader, #addWiFiHeader, #manageWiFiHeader {
+#header, #welcomeHeader, #replaceHeader, #addHeader, #addWiFiHeader, #manageWiFiHeader, #systemSettingsHeader {
   margin: 20px;
   font-size: 35px;
 }
@@ -61,7 +61,7 @@ QLabel {
   margin-top: 8px;
 }
 
-#welcomeUsername, #welcomeVersion {
+#welcomeUsername, #welcomeVersion, #loginSelectedServerText {
   color: #ccc;
 }</string>
   </property>
@@ -76,7 +76,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>6</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -114,7 +114,6 @@ QLabel {
              <font>
               <family>Lato</family>
               <pointsize>60</pointsize>
-              <weight>50</weight>
               <italic>false</italic>
               <bold>false</bold>
              </font>
@@ -254,9 +253,22 @@ QLabel {
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_10">
           <item>
-           <widget class="QPushButton" name="clearDataButton">
+           <widget class="QPushButton" name="loginSystemButton">
             <property name="text">
-             <string>Clear data</string>
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="preferences-system">
+              <normaloff>.</normaloff>.</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="flat">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -287,6 +299,13 @@ QLabel {
             </property>
             <property name="value">
              <number>-1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="loginSelectedServerText">
+            <property name="text">
+             <string>TextLabel</string>
             </property>
            </widget>
           </item>
@@ -1261,6 +1280,96 @@ multi-selection</string>
            <widget class="QPushButton" name="manageWiFiBackButton">
             <property name="text">
              <string>Back</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="systemSettingsPage">
+       <layout class="QVBoxLayout" name="verticalLayout_13">
+        <item>
+         <widget class="QLabel" name="systemSettingsHeader">
+          <property name="text">
+           <string>System Settings</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QFormLayout" name="formLayout">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_10">
+            <property name="text">
+             <string>Server set</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QComboBox" name="systemSettingsServerComboBox"/>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="systemSettingsCoreServerLineEdit">
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="systemSettingsAuthServerLineEdit"/>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_16">
+            <property name="text">
+             <string>Core server</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_17">
+            <property name="text">
+             <string>Auth server</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QPushButton" name="systemSettingsRestoreDefaultsButton">
+            <property name="text">
+             <string>Restore defaults</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer_16">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item>
+           <widget class="QPushButton" name="systemSettingsSaveButton">
+            <property name="text">
+             <string>Save</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="systemSettingsCancelButton">
+            <property name="text">
+             <string>Cancel</string>
             </property>
            </widget>
           </item>
