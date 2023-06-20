@@ -66,6 +66,7 @@ Run the following command to create a PyInstaller distributable:
     pipenv shell
     pyinstaller main.spec
 
+The standalone executeable can be found in `dist/inamata_flasher`
 
 [1]: screenshots/windows.md
 [2]: screenshots/linux.md

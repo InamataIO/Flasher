@@ -19,7 +19,7 @@ a = Analysis(
         ("images/icon_32.png", "images"),
         ("images/icon_16.png", "images"),
         ("fonts/Lato-Regular.ttf", "fonts"),
-        ("spiffs/root_cas.pem", "spiffs"),
+        ("littlefs/root_cas.pem", "littlefs"),
     ],
     hiddenimports=["PySide2.QtXml"],
     hookspath=[],
