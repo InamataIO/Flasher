@@ -13,7 +13,7 @@ Flash the firmware onto an ESP32 and register it with the server.
 | Windows Screenshots                                 | Linux Screenshots                                      |
 | ----------------------------------------------------| ------------------------------------------------------ |
 | ![Windows Welcome](screenshots/windows_welcome.png) | ![Linux Welcome](screenshots/linux_add_controller.png) |
-| Welcome page for Windows 10 → [more pages][1]       | Add controller page for Ubuntu 20.04 → [more pages][2] |
+| Welcome page for Windows 10 → [more pages][1]       | Add controller page for Ubuntu 22.04 → [more pages][2] |
 
 ## Driver Setup Instructions
 
@@ -68,7 +68,18 @@ Run the following command to create a PyInstaller distributable:
 
 The standalone executeable can be found in `dist/inamata_flasher`
 
+## Known Issues
+
+### Linux Wayland Crash
+
+The session can be crashed when using Linux Wayland with mutter version <=42.5. This occurs when opening a dropdown / combo box and closing it by clicking outside the dropdown menu. This can be mitigated by one of the following:
+
+- setting `QT_QPA_PLATFORM=xcb` in the environment variables
+- using X11
+- upgrading mutter in Ubuntu 22.04 through the [proposed packages][5]
+
 [1]: screenshots/windows.md
 [2]: screenshots/linux.md
 [3]: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
 [4]: https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
+[5]: https://wiki.ubuntu.com/Testing/EnableProposed

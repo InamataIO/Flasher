@@ -9,3 +9,5 @@
 ![Linux Add Controller](./linux_add_controller.png)
 
 ![Linux Replace Controller](./linux_replace_controller.png)
+
+![Linux System Settings](./linux_system_settings.png)
