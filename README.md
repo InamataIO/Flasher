@@ -58,6 +58,8 @@ After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing ce
 
 The following instructions are useful to set up the [code signing key](https://stackoverflow.com/a/64499199/6783666) and install the [code signing tool](https://stackoverflow.com/questions/31869552/how-to-install-signtool-exe-for-windows-10).
 
+A workaround is to preemptively submit the file for verification: https://stackoverflow.com/questions/48946680/how-to-avoid-the-windows-defender-smartscreen-prevented-an-unrecognized-app-fro/66582477#66582477
+
 ### Linux
 
 Run the following command to create a PyInstaller distributable:

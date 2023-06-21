@@ -388,7 +388,6 @@ class ServerModel:
                 }
             },
         }
-        print(data)
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
@@ -661,9 +660,9 @@ class ServerModel:
 
         # Cache the tokens and their decoded data, to be access via propery functions
         self._oauth_access_token_cache = access_token
-        self._oauth_access_token_data_cache = self._decode_access_token(access_token)
+        self._oauth_access_token_data_cache = self._decode_access_token(access_token, True)
         self._oauth_refresh_token_cache = refresh_token
-        self._oauth_refresh_token_data_cache = self._decode_refresh_token(refresh_token)
+        self._oauth_refresh_token_data_cache = self._decode_refresh_token(refresh_token, True)
 
         # Store the refresh token for future application starts
         username = self._oauth_access_token_data["preferred_username"]
@@ -737,7 +736,7 @@ class ServerModel:
 
     def _decode_refresh_token(self, token, raise_error: bool = False) -> Optional[Dict]:
         try:
-            data = jwt.decode(token, options={"verify_signature": False})
+            data = jwt.decode(token, options={"verify_signature": False}, leeway=60)
         except jwt.InvalidTokenError as err:
             if raise_error:
                 raise err
@@ -759,6 +758,7 @@ class ServerModel:
                 public_key,
                 audience=self._access_token_audience,
                 algorithms=self._openid_config["id_token_signing_alg_values_supported"],
+                leeway=60,
             )
         except jwt.InvalidTokenError as err:
             if raise_error:
@@ -798,9 +798,12 @@ class ServerModel:
             self._oauth_token_url, data, headers=headers, raise_for_status=False
         )
         if not response.ok:
-            logging.warn("Failed to refresh access token")
+            logging.warn(f"Failed refreshing access token: {response.content}")
             return False
         tokens = response.json()
+        if error := tokens.get("error"):
+            logging.warning(f"Failed refreshing access token: {error} {tokens.get('error_description')}")
+            return False
         self._save_credentials(tokens["access_token"], tokens["refresh_token"])
         self._store_token_profile(self._oauth_access_token_data)
         logging.info("Successfully refreshed the access token")
