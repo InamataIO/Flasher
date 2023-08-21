@@ -189,14 +189,21 @@ class FlashModel:
             # Copy over other files to be added to the SPIFFS image
             copy_tree(self._littlefs_source_dir, self._littlefs_dir)
 
-            # Ensure that the image size is a multiple of the block size
-            if image_size % self._littlefs_block_size:
-                raise WorkerError(
-                    f"Image size ({image_size} bytes) is not a multiple of the block size ({self._littlefs_block_size})"
+            # ESP32's have a separate partition table, ESP8266's is integrated in the firmware
+            if controller.partition_table_id:
+                # Ensure that the image size is a multiple of the block size
+                if image_size % self._littlefs_block_size:
+                    raise WorkerError(
+                        f"Image size ({image_size} bytes) is not a multiple of the block size ({self._littlefs_block_size})"
+                    )
+                block_count = int(image_size / self._littlefs_block_size)
+                fs = LittleFS(
+                    block_size=self._littlefs_block_size, block_count=block_count
                 )
-            block_count = int(image_size / self._littlefs_block_size)
-            # fs = LittleFS(block_size=self._littlefs_block_size, block_count=block_count)
-            fs = LittleFS(block_size=8192, block_count=125, name_max=32)
+            else:
+                # Create the file system for the ESP8266
+                fs = LittleFS(block_size=8192, block_count=125, name_max=32)
+
             # Copy all files from the littlefs folder to the LittleFS image
             pathlist = Path(self._littlefs_dir).glob("**/*")
             for path in pathlist:

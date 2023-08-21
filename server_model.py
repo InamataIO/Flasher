@@ -331,7 +331,7 @@ class ServerModel:
         self._cache_partition_table(partition_table_id, partition_tables[0])
         return partition_tables[0]
 
-    def get_partition_table(self, partition_table_id: dict) -> dict:
+    def get_partition_table(self, partition_table_id: str) -> dict:
         """Gets the partition table for a given controller."""
         if partition_table := self._get_cached_partition_table(partition_table_id):
             return partition_table
@@ -606,7 +606,7 @@ class ServerModel:
             file_hash = ""
         return sha3_512_hash == file_hash
 
-    def _get_cached_partition_table(self, partition_table_id) -> dict:
+    def _get_cached_partition_table(self, partition_table_id: str) -> dict:
         """Try to get the cached partition table. Empty dict on cache miss."""
         try:
             partition_table = self._config.config["partitionTables"][partition_table_id]
@@ -660,9 +660,13 @@ class ServerModel:
 
         # Cache the tokens and their decoded data, to be access via propery functions
         self._oauth_access_token_cache = access_token
-        self._oauth_access_token_data_cache = self._decode_access_token(access_token, True)
+        self._oauth_access_token_data_cache = self._decode_access_token(
+            access_token, True
+        )
         self._oauth_refresh_token_cache = refresh_token
-        self._oauth_refresh_token_data_cache = self._decode_refresh_token(refresh_token, True)
+        self._oauth_refresh_token_data_cache = self._decode_refresh_token(
+            refresh_token, True
+        )
 
         # Store the refresh token for future application starts
         username = self._oauth_access_token_data["preferred_username"]
@@ -802,7 +806,9 @@ class ServerModel:
             return False
         tokens = response.json()
         if error := tokens.get("error"):
-            logging.warning(f"Failed refreshing access token: {error} {tokens.get('error_description')}")
+            logging.warning(
+                f"Failed refreshing access token: {error} {tokens.get('error_description')}"
+            )
             return False
         self._save_credentials(tokens["access_token"], tokens["refresh_token"])
         self._store_token_profile(self._oauth_access_token_data)
