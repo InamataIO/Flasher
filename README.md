@@ -70,6 +70,10 @@ Run the following command to create a PyInstaller distributable:
 
 The standalone executeable can be found in `dist/inamata_flasher`
 
+## Dependency Updates
+
+When updating `littlefs-python` ensure that the generated LittleFS image matches or is lower than that supported by the firmware. The [Arduino-ESP32 GitHub repo][6] has the version currently used by the firmware. On [littlefs-python's pypi page][7] the compatible versions are listed.
+
 ## Known Issues
 
 ### Linux Wayland Crash
@@ -85,3 +89,5 @@ The session can be crashed when using Linux Wayland with mutter version <=42.5. 
 [3]: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
 [4]: https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
 [5]: https://wiki.ubuntu.com/Testing/EnableProposed
+[6]: https://github.com/espressif/arduino-esp32/blob/master/libraries/LittleFS/library.properties
+[7]: https://pypi.org/project/littlefs-python/

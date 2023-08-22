@@ -224,7 +224,7 @@ class FlashModel:
         except (LittleFSError, OSError, ValueError) as err:
             raise WorkerError(
                 f"Error while generating LittleFS image: {type(err)}: {err}"
-            )
+            ) from err
         finally:
             # Try to delete the created secret file
             try:
@@ -289,10 +289,10 @@ class FlashModel:
                     self._partitions_image_path,
                     str(self._bootloader_image_offset),
                     bootloader_image_path,
-                    str(littlefs_partition["offset"]),
-                    self._littlefs_image_path,
                     str(firmware_partition["offset"]),
                     firmware_image_path,
+                    str(littlefs_partition["offset"]),
+                    self._littlefs_image_path,
                 ]
             )
         else:
@@ -311,15 +311,6 @@ class FlashModel:
                 if bootloader:
                     esptool.main(esptool_erase_otadata_args)
                 esptool.main(esptool_flash_args)
-                esptool.main(
-                    [
-                        "--baud",
-                        str(self._esptool_baud_rate),
-                        "write_flash",
-                        "0x00300000",
-                        self._littlefs_image_path,
-                    ]
-                )
         except SystemExit:
             logging.error(stderr)
             raise WorkerError("Failed to flash the controller. Please try again.")
