@@ -207,6 +207,10 @@ class FlashModel:
             # Copy all files from the littlefs folder to the LittleFS image
             pathlist = Path(self._littlefs_dir).glob("**/*")
             for path in pathlist:
+                # Workaround as lfs.cpython-310-x86_64-linux-gnu.so is copied into the
+                # littlefs folder by pyinstaller
+                if str(path).endswith(".so"):
+                    continue
                 relative_path = path.relative_to(self._littlefs_dir)
                 if path.is_dir():
                     fs.mkdir(str(relative_path))
