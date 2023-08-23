@@ -8,8 +8,8 @@ microcontrollers and registering their authentication token on the server.
 
 __author__ = "Moritz Ulmer"
 __license__ = "apache-2.0"
-__version__ = "0.3.1"
-__date__ = "21.06.2023"
+__version__ = "0.4.3"
+__date__ = "23.08.2023"
 __maintainer__ = "Moritz Ulmer"
 __email__ = "moritz@silentwind.eu "
 __status__ = "Development"
