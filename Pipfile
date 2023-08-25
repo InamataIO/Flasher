@@ -20,6 +20,8 @@ black = "~=23.3"
 ipdb = "0.13.13"
 pyinstaller = "~=5.12"
 pip-check = "~=2.8"
+# Used for linting tests
+ruff = "~=0.0.282"
 
 [requires]
 python_version = "3.10"

@@ -1,0 +1,136 @@
+name: inamata-flasher
+summary: A microcontroller flasher for the Inamata IoT platform
+description: |
+      Flash the Inamata firmware on microcontrollers (ESP32) and register them
+      on the Inamata IoT platform. Allows preconfiguring WiFi connections,
+      naming the device selecting the firmware to be used.
+version: git
+grade: devel
+confinement: strict
+base: core22
+architectures:
+ - build-on: amd64
+#  - build-on: [arm64, armhf, amd64]
+
+apps:
+  inamata-flasher:
+    command: bin/inamata-flasher
+    extensions: [gnome]
+    plugs:
+      - home
+      - desktop
+      - desktop-legacy
+      - network
+      - network-bind
+      - password-manager-service
+      - removable-media
+      - raw-usb
+      - serial-port
+      - x11
+
+parts:
+  inamata-flasher:
+    plugin: python
+    source: .
+#    source: https://github.com/InamataCo/Flasher.git
+    stage-packages:
+      - libpulse0
+      - libxcomposite1
+      - libxdamage1
+      - libasound2
+      - libxcb-image0
+      - libxcb-keysyms1
+      - libxcb-render-util0
+      - libxcb-render0
+      - libxcb-shape0
+      - libxcb-xkb1
+      - libxkbcommon-x11-0
+      - libgstreamer1.0-0
+      # - libgstreamer-gl1.0-0
+      # - libasound2
+      # - libatk1.0-0
+      - libcairo2
+      - libcairo-gobject2
+      - libcups2
+      - libmysqlclient21
+      - libodbc2
+      # - libdrm2
+      # - libegl1
+      # - libegl-mesa0
+      # - libglx-mesa0
+      # - libgl1-mesa-dri
+      - libxkbfile1
+      # - libsmime3
+      # - libplds4
+      # - libplc4
+      # - libfreetype6
+      - libgtk-3-0
+      - libgdk-pixbuf2.0-0
+      # - libgl1
+      - libfontconfig1
+      # - libglvnd0
+      # - libglx0
+      # - libgtk-3-0
+      # - libharfbuzz0b
+      # - libjpeg8
+      # - liblcms2-2
+      # - libnspr4
+      - libnss3
+      # - libodbc1
+      - libpango-1.0-0
+      - libpangocairo-1.0-0
+      # - libpng16-16
+      - libpq5
+      # - libqt6pdfquick6
+      # - libqt6quick6
+      # - qml6-module-qtqml
+      # - qml6-module-qtquick
+      # - qml6-module-qtmultimedia
+      # - python3-pyqt5.qtquick
+      # - python3-pyside2.qtquick
+      # - python3-pyside2.qtqml
+      # - libpulse-mainloop-glib0
+      # - librsvg2-2
+      - libspeechd2
+      # - libwayland-client0
+      - libwayland-cursor0
+      # - libwayland-egl1
+      - libwayland-server0
+      - libx11-6
+      # - libqt6core6
+      # - libqt6gui6
+      # - libqt6qml6
+      # - libqt6quick6
+      # - libx11-xcb1
+      # - libxau6
+      # - libxcb1
+      # - libxcb-glx0
+      - libxcb-icccm4
+      # - libxcb-image0
+      # - libxcb-keysyms1
+      # - libxcb-render0
+      # - libxcb-render-util0
+      # - libxcb-shm0
+      # - libxcb-sync1
+      # - libxcb-xfixes0
+      # - libxcb-xinerama0
+      # - libxcb-xkb1
+      # - libxcomposite1
+      # - libxcursor1
+      # - libxdamage1
+      # - libxdmcp6
+      # - libxext6
+      # - libxfixes3
+      - libxi6
+      - libxkbcommon0
+      # - libxkbcommon-x11-0
+      # - libxml2
+      - libxrandr2
+      - libxrender1
+      # - libxslt1.1
+      - libxtst6
+      # - qt6-wayland
+      # - qtwayland5
+      # - python3-pyside2.qtcore
+      # - python3-pyside2.qtgui
+      # - python3-pyside2.qtwidgets

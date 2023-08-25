@@ -12,6 +12,7 @@ from time import sleep
 from typing import Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
+import jeepney
 import jwt
 import keyring
 import requests
@@ -20,6 +21,8 @@ from semantic_version import Version
 
 from config import Config, ControllerModel, SiteModel
 from worker import WorkerError, WorkerInformation, WorkerWarning
+
+SNAP_PASSWORD_MANAGER_SERVICE_ERROR = "Snap not connected to password-manager-service. Run: snap connect inamata-flasher:password-manager-service"
 
 
 class ServerModel:
@@ -39,6 +42,7 @@ class ServerModel:
     _openid_config_path = f"/realms/{_oauth_realm}/.well-known/openid-configuration"
     _openid_profile_keys = ["name", "email", "given_name", "family_name"]
     _access_token_audience = ["core-service", "account"]
+    _keyring_disabled = False
 
     @property
     def _refresh_token_audience(self) -> str:
@@ -671,11 +675,17 @@ class ServerModel:
         # Store the refresh token for future application starts
         username = self._oauth_access_token_data["preferred_username"]
         self._config.config["username"] = username
+        if self._keyring_disabled:
+            logging.warning("Not saving password as Keyring was disabled")
+            return
         try:
             keyring.set_password(self._config.app_name, username, refresh_token)
         except KeyringError:
             # If the system keyring is broken, do not restrict remaining functionality
             logging.warn("Failed to store refresh token in system keyring")
+        except jeepney.wrappers.DBusErrorResponse:
+            logging.exception(SNAP_PASSWORD_MANAGER_SERVICE_ERROR)
+            self._keyring_disabled = True
 
     def _clear_credentials(self) -> None:
         """Clear the username and auth token"""
@@ -686,10 +696,16 @@ class ServerModel:
         self.__dict__.pop("_jwks_client", None)
         self.__dict__.pop("_openid_config", None)
         if username := self._config.config.get("username"):
+            if self._keyring_disabled:
+                logging.warning("Not deleting password as Keyring was disabled")
+                return
             try:
                 keyring.delete_password(self._config.app_name, username)
             except PasswordDeleteError:
                 pass
+            except jeepney.wrappers.DBusErrorResponse:
+                logging.exception(SNAP_PASSWORD_MANAGER_SERVICE_ERROR)
+                self._keyring_disabled = True
 
     def _auth_server_request(self, url, data, headers=None):
         """Make a GraphQL server request with the cached auth token."""
@@ -816,13 +832,19 @@ class ServerModel:
         return True
 
     def _load_stored_refresh_token(self) -> bool:
+        if self._keyring_disabled:
+            return False
         username = self._config.config.get("username")
         if not username:
             return False
+        credential = None
         try:
             credential = keyring.get_credential(self._config.app_name, username)
         except KeyringError:
-            return False
+            pass
+        except jeepney.wrappers.DBusErrorResponse:
+            logging.exception(SNAP_PASSWORD_MANAGER_SERVICE_ERROR)
+            self._keyring_disabled = True
         if not credential:
             return False
         refresh_token = credential.password
