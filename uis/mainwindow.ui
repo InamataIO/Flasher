@@ -61,7 +61,7 @@ QLabel {
   margin-top: 8px;
 }
 
-#welcomeUsername, #welcomeVersion, #loginSelectedServerText {
+#welcomeUsername, #welcomeVersion, #loginVersion, #loginSelectedServerText {
   color: #ccc;
 }</string>
   </property>
@@ -76,7 +76,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>6</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -303,11 +303,28 @@ QLabel {
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="loginSelectedServerText">
-            <property name="text">
-             <string>TextLabel</string>
-            </property>
-           </widget>
+           <layout class="QVBoxLayout" name="verticalLayout_12">
+            <item>
+             <widget class="QLabel" name="loginVersion">
+              <property name="text">
+               <string>Version</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="loginSelectedServerText">
+              <property name="text">
+               <string>Selected Server</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <spacer name="horizontalSpacer_12">
@@ -340,7 +357,7 @@ QLabel {
              <string/>
             </property>
             <property name="pixmap">
-             <pixmap>images/inamata_logo_white_128.png</pixmap>
+             <pixmap>../images/inamata_logo_white_128.png</pixmap>
             </property>
             <property name="scaledContents">
              <bool>true</bool>
@@ -1393,8 +1410,6 @@ multi-selection</string>
   <tabstop>addControllerBackButton</tabstop>
   <tabstop>addWiFiBackPushButton</tabstop>
  </tabstops>
- <resources>
-  <include location="qt_resource.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

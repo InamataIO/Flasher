@@ -6,14 +6,6 @@ Inamata Flasher is a tool for flashing the Inamata controller firmware on ESP32
 microcontrollers and registering their authentication token on the server.
 """
 
-__author__ = "Moritz Ulmer"
-__license__ = "apache-2.0"
-__version__ = "0.4.3"
-__date__ = "23.08.2023"
-__maintainer__ = "Moritz Ulmer"
-__email__ = "moritz@silentwind.eu "
-__status__ = "Development"
-
 import os
 import sys
 
@@ -37,6 +29,8 @@ from flash_model import FlashModel
 from main_view import MainView
 from server_model import ServerModel
 from wifi_model import WiFiModel
+
+__version__ = "0.4.5"
 
 
 def main():
@@ -64,8 +58,8 @@ def main():
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     inamata_flasher = QApplication(sys.argv)
 
-    view = MainView(__version__)
     config = Config()
+    view = MainView(version=__version__, config=config)
     server_model = ServerModel(config=config)
     flash_model = FlashModel(server_model=server_model, config=config)
     wifi_model = WiFiModel(config=config)

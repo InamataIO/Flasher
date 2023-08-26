@@ -3,13 +3,11 @@ from enum import Enum
 from typing import Callable, List, Union
 
 from PySide6.QtCore import QEvent, QFile, QIODevice, QSize
-from PySide6.QtGui import QCloseEvent, QFont, QFontDatabase, QIcon
+from PySide6.QtGui import QCloseEvent, QFont, QFontDatabase, QIcon, QPixmap
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QWidget
 
-### Settings
-main_window_file = "mainwindow.ui"
-page_2_file = "page2.ui"
+from config import Config
 
 
 class MainView(QMainWindow):
@@ -28,21 +26,27 @@ class MainView(QMainWindow):
 
     close_callback: Callable[[QCloseEvent], None] = None
 
-    def __init__(self, version: str):
+    def __init__(self, version: str, config: Config):
         super().__init__()
-        ui_file = QFile(main_window_file)
+
+        self._config = config
+        ui_path = self._config.uis_folder / "mainwindow.ui"
+        ui_file = QFile(str(ui_path))
         if not ui_file.open(QIODevice.ReadOnly):
-            print(f"Cannot open {main_window_file}: {ui_file.errorString()}")
+            print(f"Cannot open {ui_path}: {ui_file.errorString()}")
             sys.exit(-1)
         self.ui = QUiLoader().load(ui_file)
         ui_file.close()
         self.ui.welcomeVersion.setText(version)
+        self.ui.loginVersion.setText(version)
         self.setCentralWidget(self.ui)
         self.setWindowTitle("Inamata Flasher")
         self._set_font()
         self._set_page_indexes()
         self._hide_disabled_widgets()
         self._add_app_icon()
+        pixmap = QPixmap(str(self._config.images_folder / "inamata_logo_white_128.png"))
+        self.ui.inamata_logo.setPixmap(pixmap)
 
     def notify(self, message, title, level="information"):
         if level == "information":
@@ -76,8 +80,9 @@ class MainView(QMainWindow):
 
     def _set_font(self):
         """Set the font used by the UI."""
-        id = QFontDatabase.addApplicationFont("./fonts/Lato-Regular.ttf")
-        _fontstr = QFontDatabase.applicationFontFamilies(id)[0]
+        font_file = self._config.fonts_folder / "Lato-Regular.ttf"
+        font_id = QFontDatabase.addApplicationFont(str(font_file))
+        _fontstr = QFontDatabase.applicationFontFamilies(font_id)[0]
         _font = QFont(_fontstr, 16)
         self.setFont(_font)
 
@@ -97,13 +102,14 @@ class MainView(QMainWindow):
 
     def _add_app_icon(self):
         """Add a window app icon that is also used in the task bar."""
+        folder = self._config.images_folder
         app_icon = QIcon()
-        app_icon.addFile("images/icon_512.png", QSize(512, 512))
-        app_icon.addFile("images/icon_256.png", QSize(256, 256))
-        app_icon.addFile("images/icon_128.png", QSize(128, 128))
-        app_icon.addFile("images/icon_64.png", QSize(64, 64))
-        app_icon.addFile("images/icon_32.png", QSize(32, 32))
-        app_icon.addFile("images/icon_16.png", QSize(16, 16))
+        app_icon.addFile(str(folder / "icon_512.png"), QSize(512, 512))
+        app_icon.addFile(str(folder / "icon_256.png"), QSize(256, 256))
+        app_icon.addFile(str(folder / "icon_128.png"), QSize(128, 128))
+        app_icon.addFile(str(folder / "icon_64.png"), QSize(64, 64))
+        app_icon.addFile(str(folder / "icon_32.png"), QSize(32, 32))
+        app_icon.addFile(str(folder / "icon_16.png"), QSize(16, 16))
         self.setWindowIcon(app_icon)
 
     def eventFilter(self, watched, event):

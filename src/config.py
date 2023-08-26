@@ -1,10 +1,11 @@
 import json
 import logging
 import os
-import pathlib
 import shutil
 from dataclasses import dataclass, field
+from functools import cached_property
 from json import JSONDecodeError
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from appdirs import AppDirs
@@ -36,12 +37,17 @@ class Config:
 
     def __init__(self):
         """Load the config from file in the platform-specific config folder."""
-        pathlib.Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
+        Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
         self._config_path = os.path.join(self.dirs.user_config_dir, "config.json")
         logging.info("Config path: %s", self._config_path)
         logging.info("Cache dir: %s", self.dirs.user_cache_dir)
         self.config = self.load_config()
         self._init_cache()
+
+        self.uis_folder = self.root_folder / "uis"
+        self.fonts_folder = self.root_folder / "fonts"
+        self.images_folder = self.root_folder / "images"
+        self.littlefs_folder = self.root_folder / "littlefs_partition"
 
     @property
     def users_name(self) -> str:
@@ -51,6 +57,14 @@ class Config:
         elif username := self.config.get("username"):
             return username
         return ""
+
+    @cached_property
+    def root_folder(self):
+        if (Path(__file__).parent / "uis").exists():
+            root_folder = Path(__file__).parent
+        else:
+            root_folder = Path(__file__).parent.parent
+        return root_folder
 
     def cache_controllers(self, controllers: List[ControllerModel]) -> None:
         """Save controllers to cache."""
@@ -87,7 +101,7 @@ class Config:
 
     def save_config(self) -> None:
         """Overwrites the config file."""
-        pathlib.Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
+        Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
         with open(self._config_path, "w") as file:
             json.dump(self.config, file)
 

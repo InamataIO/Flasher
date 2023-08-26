@@ -18,7 +18,6 @@
 
 import argparse
 import os
-import sys
 
 from littlefs import LittleFS
 

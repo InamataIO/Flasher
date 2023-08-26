@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=0.4.4
+Type=Application
+Name=Inamata Flasher
+Comment=A microcontroller flasher for the Inamata IoT platform
+Exec=inamata-flasher
+Icon=${SNAP}/meta/gui/inamata-flasher.svg
+MimeType=image/x-svg;

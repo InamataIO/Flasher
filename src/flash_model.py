@@ -10,10 +10,10 @@ from pathlib import Path
 from typing import List
 
 import esptool
+from littlefs import LittleFS, LittleFSError
 
 from config import Config, ControllerModel
 from esp_idf import gen_esp32part
-from littlefs import LittleFS, LittleFSError
 from server_model import ServerModel
 from wifi_model import WiFiModel
 from worker import WorkerError, WorkerSignals, WorkerWarning
@@ -64,8 +64,6 @@ class FlashModel:
 
     # The subtype of the partition in the partition table to be used for the LittleFS image
     _littlefs_partition_subtype = "spiffs"
-    # The directory from which the files are copied to create the LittleFS image
-    _littlefs_source_dir = os.path.join(os.getcwd(), "littlefs")
     # The block size in bytes for the LittleFS image
     _littlefs_block_size = 4096
 
@@ -91,6 +89,9 @@ class FlashModel:
         self._config = config
 
         cache_dir = config.dirs.user_cache_dir
+
+        # The directory from which the files are copied to create the LittleFS image
+        self._littlefs_source_dir = self._config.littlefs_folder
 
         # All files / dirs to create the LittleFS image
         self._littlefs_dir = os.path.join(cache_dir, "littlefs")
@@ -220,7 +221,7 @@ class FlashModel:
                 ) as target:
                     target.write(source.read())
             for root, dirs, files in fs.walk("."):
-                print(f"root {root} dirs {dirs} files {files}")
+                logging.info(f"LittleFS: root {root} dirs {dirs} files {files}")
             # Clear if it exists and then save the LittleFS image to the file
             Path(self._littlefs_image_path).unlink(missing_ok=True)
             with open(self._littlefs_image_path, "wb") as f:

@@ -40,6 +40,8 @@ class Controller:
         self._page_after_add_wifi = None
         self._page_before_add_wifi = None
         view.change_page(view.Pages.LOGIN)
+        # Call login page handler if change_page does not result in a page change
+        self.handle_login_page()
         self.auto_log_in()
 
     def _connect_signals(self):
