@@ -47,6 +47,20 @@ This is a list of features that would be useful and show the tool's current limi
 
 Push the final version, create a new release on Github, create a distributable binary for each platform and upload the releases to the Github release.
 
+### Bump Version Numbers
+
+Bump the version number in the following files
+
+- [snap/snapcraft.yaml](snap/snapcraft.yaml)
+- [src/main.py](src/main.py)
+- [pyproject.toml](pyproject.toml)
+
+Tag the commit with
+
+```bash
+git tag v<version number>
+```
+
 ### Windows
 
 After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing certificate, run the following commands:
