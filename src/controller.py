@@ -53,12 +53,12 @@ class Controller:
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
         self._view.ui.signUpButton.clicked.connect(self.sign_up)
+        self._view.ui.loginHelpIconButton.clicked.connect(self.show_help_dialog)
         #   Login system menu
         self.loginSystemMenu = QMenu()
         self.loginSystemMenu.addAction("Clear data", self.clear_data)
         self.loginSystemMenu.addAction("Open system settings", self.to_system_settings)
         self._view.ui.loginSystemIconButton.setMenu(self.loginSystemMenu)
-        self._view.ui.loginHelpIconButton.clicked.connect(self.show_help_dialog)
 
         # Welcome Page
         self._view.ui.welcomeAddControllerButton.clicked.connect(self.to_add_controller)

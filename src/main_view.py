@@ -1,3 +1,4 @@
+import platform
 import sys
 from enum import Enum
 from typing import Callable, List, Union
@@ -45,8 +46,7 @@ class MainView(QMainWindow):
         self._set_page_indexes()
         self._hide_disabled_widgets()
         self._add_app_icon()
-        pixmap = QPixmap(str(self._config.images_folder / "inamata_logo_white_128.png"))
-        self.ui.inamata_logo.setPixmap(pixmap)
+        self._set_button_icons()
 
     def notify(self, message, title, level="information"):
         if level == "information":
@@ -111,6 +111,20 @@ class MainView(QMainWindow):
         app_icon.addFile(str(folder / "icon_32.png"), QSize(32, 32))
         app_icon.addFile(str(folder / "icon_16.png"), QSize(16, 16))
         self.setWindowIcon(app_icon)
+
+    def _set_button_icons(self):
+        """For Windows, use custom button icons."""
+        pixmap = QPixmap(str(self._config.images_folder / "inamata_logo_white_128.png"))
+        self.ui.loginInamataLogo.setPixmap(pixmap)
+
+        # Built-in theme icons are not available on Windows
+        if platform.system() == "Windows":
+            dir = self._config.images_folder
+            settings_icon = QPixmap(str(dir / "setting-line-icon.png"))
+            self.ui.loginSystemIconButton.setIcon(settings_icon)
+            help_icon = QPixmap(str(dir / "question-mark-line-icon.png"))
+            self.ui.loginHelpIconButton.setIcon(help_icon)
+            self.ui.welcomeHelpIconButton.setIcon(help_icon)
 
     def eventFilter(self, watched, event):
         """Catch the close event to save settings."""

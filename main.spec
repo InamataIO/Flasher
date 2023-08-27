@@ -18,6 +18,8 @@ a = Analysis(
         ("images/icon_64.png", "images"),
         ("images/icon_32.png", "images"),
         ("images/icon_16.png", "images"),
+        ("images/question-mark-line-icon.png", "images"),
+        ("images/setting-line-icon.png", "images"),
         ("fonts/Lato-Regular.ttf", "fonts"),
         ("littlefs_partition/root_cas.pem", "littlefs_partition"),
     ],

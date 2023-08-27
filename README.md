@@ -99,10 +99,10 @@ git push --tags
 
 After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing certificate, run the following commands:
 
-    pipenv install -d
-    pipenv shell
+    poetry install
+    poetry shell
     pyinstaller main.spec
-    signtool.exe sign /tr http://timestamp.sectigo.com/ /td sha256 /fd sha256 /a C:\path\to\inamata_flasher.exe
+    # signtool.exe sign /tr http://timestamp.sectigo.com/ /td sha256 /fd sha256 /a C:\path\to\inamata_flasher.exe
 
 The following instructions are useful to set up the [code signing key](https://stackoverflow.com/a/64499199/6783666) and install the [code signing tool](https://stackoverflow.com/questions/31869552/how-to-install-signtool-exe-for-windows-10).
 
@@ -112,8 +112,8 @@ A workaround is to preemptively submit the file for verification: https://stacko
 
 Run the following command to create a PyInstaller distributable:
 
-    pipenv install -d
-    pipenv shell
+    poetry install
+    poetry shell
     pyinstaller main.spec
 
 The standalone executeable can be found in `dist/inamata_flasher`

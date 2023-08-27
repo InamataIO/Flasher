@@ -376,7 +376,7 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QLabel" name="inamata_logo">
+           <widget class="QLabel" name="loginInamataLogo">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>

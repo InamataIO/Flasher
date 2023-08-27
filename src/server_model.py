@@ -12,12 +12,17 @@ from time import sleep
 from typing import Callable, Dict, List, Optional
 from urllib.parse import urlparse
 
-import jeepney
 import jwt
 import keyring
 import requests
 from keyring.errors import KeyringError, PasswordDeleteError
 from semantic_version import Version
+
+try:
+    from jeepney.wrappers import DBusErrorResponse
+except ImportError:
+    class DBusErrorResponse(Exception):
+        pass
 
 from config import Config, ControllerModel, SiteModel
 from worker import WorkerError, WorkerInformation, WorkerWarning
@@ -683,7 +688,7 @@ class ServerModel:
         except KeyringError:
             # If the system keyring is broken, do not restrict remaining functionality
             logging.warn("Failed to store refresh token in system keyring")
-        except jeepney.wrappers.DBusErrorResponse:
+        except DBusErrorResponse:
             logging.exception(SNAP_PASSWORD_MANAGER_SERVICE_ERROR)
             self._keyring_disabled = True
 
@@ -703,7 +708,7 @@ class ServerModel:
                 keyring.delete_password(self._config.app_name, username)
             except PasswordDeleteError:
                 pass
-            except jeepney.wrappers.DBusErrorResponse:
+            except DBusErrorResponse:
                 logging.exception(SNAP_PASSWORD_MANAGER_SERVICE_ERROR)
                 self._keyring_disabled = True
 
@@ -842,7 +847,7 @@ class ServerModel:
             credential = keyring.get_credential(self._config.app_name, username)
         except KeyringError:
             pass
-        except jeepney.wrappers.DBusErrorResponse:
+        except DBusErrorResponse:
             logging.exception(SNAP_PASSWORD_MANAGER_SERVICE_ERROR)
             self._keyring_disabled = True
         if not credential:
