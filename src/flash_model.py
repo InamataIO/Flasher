@@ -10,13 +10,26 @@ from pathlib import Path
 from typing import List
 
 import esptool
+import serial.tools.list_ports as list_ports
 from littlefs import LittleFS, LittleFSError
+from serial.tools.list_ports_common import ListPortInfo
 
 from config import Config, ControllerModel
 from esp_idf import gen_esp32part
 from server_model import ServerModel
 from wifi_model import WiFiModel
 from worker import WorkerError, WorkerSignals, WorkerWarning
+
+FLASHING_FAILED_ERROR = """Flashing failed
+1. Check that the microcontroller is plugged in
+2. For Snaps (Ubuntu Store) enable serial port access
+ - Run in a terminal: snap connect inamata-flasher:raw-usb
+ - Restart the app
+3. Open a bug report or ask for support in the forum.
+
+https://github.com/InamataCo/Flasher
+https://www.inamata.co
+"""
 
 
 class EsptoolOutputHandler:
@@ -101,6 +114,9 @@ class FlashModel:
         # All files / dirs to create the partition image
         self._partitions_csv_path = os.path.join(cache_dir, "partitions.csv")
         self._partitions_image_path = os.path.join(cache_dir, "partitions.bin")
+
+    def get_serial_ports(self) -> list[ListPortInfo]:
+        return list_ports.comports()
 
     def flash_controller(
         self, controller: ControllerModel, wifi_aps: List[WiFiModel.AP], **kwargs
@@ -316,9 +332,9 @@ class FlashModel:
                 if bootloader:
                     esptool.main(esptool_erase_otadata_args)
                 esptool.main(esptool_flash_args)
-        except SystemExit:
+        except Exception as err:
             logging.error(stderr)
-            raise WorkerError("Failed to flash the controller. Please try again.")
+            raise WorkerError(FLASHING_FAILED_ERROR) from err
         finally:
             # Restore the stdout after flashing
             sys.stdout = sys.__stdout__

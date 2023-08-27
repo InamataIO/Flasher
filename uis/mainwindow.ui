@@ -34,6 +34,10 @@ QPushButton {
   font-size: 16px;
   padding: 8px;
 }
+/*QAbstractButton[objectName$=&quot;IconButton&quot;] {
+  border : 0;
+  background-color: rgba(255, 255, 255, 0);
+}*/
 QLabel {
   font-size: 16px;
   color: white;
@@ -61,7 +65,8 @@ QLabel {
   margin-top: 8px;
 }
 
-#welcomeUsername, #welcomeVersion, #loginVersion, #loginSelectedServerText {
+#welcomeUsername, #welcomeVersion, #loginVersion, #loginSelectedServerText,
+#replaceControllerSerialPortsText, #addControllerSerialPortsText {
   color: #ccc;
 }</string>
   </property>
@@ -253,13 +258,44 @@ QLabel {
         <item>
          <layout class="QHBoxLayout" name="horizontalLayout_10">
           <item>
-           <widget class="QPushButton" name="loginSystemButton">
+           <widget class="QPushButton" name="loginSystemIconButton">
+            <property name="maximumSize">
+             <size>
+              <width>48</width>
+              <height>16777215</height>
+             </size>
+            </property>
             <property name="text">
              <string/>
             </property>
             <property name="icon">
              <iconset theme="preferences-system">
               <normaloff>.</normaloff>.</iconset>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="loginHelpIconButton">
+            <property name="maximumSize">
+             <size>
+              <width>40</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="system-help"/>
             </property>
             <property name="iconSize">
              <size>
@@ -599,7 +635,7 @@ QLabel {
              <string>hello@inamata.co</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
             </property>
            </widget>
           </item>
@@ -622,7 +658,29 @@ QLabel {
              <string>0.2.1</string>
             </property>
             <property name="alignment">
-             <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="welcomeHelpIconButton">
+            <property name="styleSheet">
+             <string notr="true"/>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="system-help"/>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>24</width>
+              <height>24</height>
+             </size>
+            </property>
+            <property name="flat">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -810,6 +868,13 @@ multi-selection</string>
             </property>
             <property name="value">
              <number>-1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="replaceControllerSerialPortsText">
+            <property name="text">
+             <string>Serial ports</string>
             </property>
            </widget>
           </item>
@@ -1027,6 +1092,13 @@ multi-selection</string>
             </property>
             <property name="value">
              <number>-1</number>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="addControllerSerialPortsText">
+            <property name="text">
+             <string>Serial ports</string>
             </property>
            </widget>
           </item>

@@ -57,7 +57,8 @@ class Controller:
         self.loginSystemMenu = QMenu()
         self.loginSystemMenu.addAction("Clear data", self.clear_data)
         self.loginSystemMenu.addAction("Open system settings", self.to_system_settings)
-        self._view.ui.loginSystemButton.setMenu(self.loginSystemMenu)
+        self._view.ui.loginSystemIconButton.setMenu(self.loginSystemMenu)
+        self._view.ui.loginHelpIconButton.clicked.connect(self.show_help_dialog)
 
         # Welcome Page
         self._view.ui.welcomeAddControllerButton.clicked.connect(self.to_add_controller)
@@ -66,6 +67,7 @@ class Controller:
         )
         self._view.ui.welcomeManageWiFiButton.clicked.connect(self.to_manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
+        self._view.ui.welcomeHelpIconButton.clicked.connect(self.show_help_dialog)
         self.set_welcome_username(self._config.users_name)
 
         # Add Controller Page
@@ -178,7 +180,7 @@ class Controller:
         self.handle_error(error)
 
     def sign_up(self):
-        QDesktopServices.openUrl(QUrl("https://app.staging.inamata.co/"))
+        QDesktopServices.openUrl(QUrl("https://app.inamata.co/"))
 
     def clear_data(self):
         self._server_model.restore_dev_server_urls()
@@ -308,6 +310,7 @@ class Controller:
         if self._config.has_cached_sites():
             self.handle_add_controller_page_result(None)
         else:
+            self._view.ui.addControllerSerialPortsText.hide()
             self._view.ui.addControllerLoadingText.show()
             self._view.ui.addControllerLoadingBar.show()
             worker = Worker(self._server_model.get_site_and_firmware_data)
@@ -348,6 +351,10 @@ class Controller:
             if index:
                 self._view.ui.addControllerFirmwaresComboBox.setCurrentIndex(index)
 
+        # Update the found serial ports
+        text = self.get_found_serial_ports_text()
+        self._view.ui.addControllerSerialPortsText.setText(text)
+
     def handle_add_controller_page_error(self, error):
         """Error handler for the add controller data fetch thread."""
         self.handle_error(error)
@@ -356,6 +363,7 @@ class Controller:
         """Hide the loading widgets for the add controller page."""
         self._view.ui.addControllerLoadingText.hide()
         self._view.ui.addControllerLoadingBar.hide()
+        self._view.ui.addControllerSerialPortsText.show()
 
     def add_controller_reload(self):
         """Clear the cached data and repopulate the combo boxes."""
@@ -550,6 +558,7 @@ class Controller:
         if self._config.has_cached_sites():
             self.handle_replace_controller_page_result(None)
         else:
+            self._view.ui.replaceControllerSerialPortsText.hide()
             self._view.ui.replaceControllerLoadingText.show()
             self._view.ui.replaceControllerLoadingBar.show()
             worker = Worker(self._server_model.get_site_and_firmware_data)
@@ -598,6 +607,9 @@ class Controller:
             if index >= 0:
                 self._view.ui.replaceControllerFirmwaresComboBox.setCurrentIndex(index)
 
+        text = self.get_found_serial_ports_text()
+        self._view.ui.replaceControllerSerialPortsText.setText(text)
+
     def handle_replace_controller_page_error(self, error):
         """Error handler for the replace controller data fetch thread."""
         self.handle_error(error)
@@ -606,6 +618,7 @@ class Controller:
         """Hide the loading widgets for the replace controller page."""
         self._view.ui.replaceControllerLoadingText.hide()
         self._view.ui.replaceControllerLoadingBar.hide()
+        self._view.ui.replaceControllerSerialPortsText.show()
 
     def replace_controller_reload(self):
         """Clear cached data and repopulate the combo boxes on the replace controller page."""
@@ -623,6 +636,7 @@ class Controller:
 
     def replace_controller_load_controllers(self, site_id):
         """Fetch available controllers for the selected site."""
+        self._view.ui.replaceControllerSerialPortsText.hide()
         self._view.ui.replaceControllerLoadingText.show()
         self._view.ui.replaceControllerLoadingBar.show()
         worker = Worker(self._server_model.get_controller_data, site_id)
@@ -647,6 +661,7 @@ class Controller:
         """Hide the loading widgets on the replace controller page."""
         self._view.ui.replaceControllerLoadingText.hide()
         self._view.ui.replaceControllerLoadingBar.hide()
+        self._view.ui.replaceControllerSerialPortsText.show()
 
     def populate_replace_controller_controllers(
         self, controllers: List[ControllerModel]
@@ -991,3 +1006,29 @@ class Controller:
         if self._config.config:
             self._config.save_config()
         event.accept()
+
+    def show_help_dialog(self) -> str:
+        """Show the help dialog."""
+        title = "Help"
+        contents = """1. For Snaps (Ubuntu Store) enable serial port access
+ - Run in a terminal: snap connect inamata-flasher:raw-usb
+ - Restart the app
+2. For Snaps (Ubuntu Store) allow saving login (optional)
+ - Run in a terminal: snap connect inamata-flasher:password-manager-service
+ - Restart the app
+3. Additional information and support
+ - https://github.com/InamataCo/Flasher
+ - https://www.inamata.co"""
+        self._view.notify(contents, title, "information")
+
+    def get_found_serial_ports_text(self) -> str:
+        """Get the UI text for found serial ports."""
+        serial_ports = self._flash_model.get_serial_ports()
+        if not serial_ports:
+            text = "No serial ports found"
+        else:
+            text = f"Found {len(serial_ports)} serial port:"
+        for port in serial_ports:
+            text = text + "\n" if text else text
+            text = text + port.device
+        return text
