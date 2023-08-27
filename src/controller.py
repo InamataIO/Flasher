@@ -137,7 +137,9 @@ class Controller:
 
     def to_driver_install(self):
         """Open the driver installation web page."""
-        QDesktopServices.openUrl(QUrl("https://app.inamata.co"))
+        QDesktopServices.openUrl(
+            QUrl("https://github.com/InamataCo/Flasher#driver-setup-instructions")
+        )
 
     ##########################
     # Login Page Functionality

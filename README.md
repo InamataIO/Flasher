@@ -1,19 +1,56 @@
+![Apache2.0](https://img.shields.io/github/license/InamataCo/Flasher)
+![GitHub tag (with filter)](https://img.shields.io/github/v/tag/InamataCo/Flasher)
+![Linux Support](https://img.shields.io/badge/OS-Linux-dark_green)
+![Windows Support](https://img.shields.io/badge/OS-Windows-dark_green)
+
+[![Inamata Logo](images/inamata_logo.png)][10]
+
 # Inamata Flasher
 
-Flash the firmware onto an ESP32 and register it with the server.
+Flash the firmware onto an ESP32 and register it with the server. Released for the [Inamata IoT platform][10].
+
+## Download
+
+[![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-white.svg)](https://snapcraft.io/inamata-flasher)
+
+For Windows download the [latest release][8].
+
+For Linux use the [Snap download][9] to receive automatic updates.
+
+The app is available from the following sources:
+
+|              | GitHub Release | Snap Store | Source |
+| ------------ | -------------- | ---------- | ------ |
+| **Linux**    | Yes            | Yes        | Yes    |
+| **Windows**  | Yes            | No         | Yes    |
+| **Packaged** | PyInstaller    | Snap       | No     |
 
 ## Start
 
 1. Do the [driver setup](#driver-setup-instructions)
-3. In a terminal run `pipenv install --dev`
-2. Run `./start.sh`
+2. In a terminal run `pipenv install --dev`
+3. Run `./start.sh`
 
 ## Screenshots
 
 | Windows Screenshots                                 | Linux Screenshots                                      |
-| ----------------------------------------------------| ------------------------------------------------------ |
+| --------------------------------------------------- | ------------------------------------------------------ |
 | ![Windows Welcome](screenshots/windows_welcome.png) | ![Linux Welcome](screenshots/linux_add_controller.png) |
 | Welcome page for Windows 10 → [more pages][1]       | Add controller page for Ubuntu 22.04 → [more pages][2] |
+
+## Snap Setup Instructions
+
+Snap isolates apps so it requires explicit permission to access USB devices to flash microcontrollers as well as optionally saving the authentication token. Run the following commands in a terminal:
+
+```
+snap connect inamata-flasher:raw-usb
+```
+
+Optionally, to enable saving the authentication token between restarts:
+
+```
+snap connect inamata-flasher:password-manager-service
+```
 
 ## Driver Setup Instructions
 
@@ -23,14 +60,9 @@ Download and install the [CP210x USB to UART Bridge driver][4] for [silabs.com][
 
 ### Linux
 
-Open a terminal, run the following code,  **logout** and then back in again for the changes to take effect.
+Open a terminal, run the following code, **logout** and then back in again for the changes to take effect.
 
     sudo usermod -a -G dialout $USER
-
-To package the app see:
-- https://github.com/taunoe/tauno-serial-plotter
-- https://github.com/jordansissel/fpm/
-- https://www.pythonguis.com/tutorials/packaging-pyqt5-applications-linux-pyinstaller/
 
 ## Future Features
 
@@ -45,7 +77,7 @@ This is a list of features that would be useful and show the tool's current limi
 
 ## Release Process
 
-Push the final version, create a new release on Github, create a distributable binary for each platform and upload the releases to the Github release.
+Push the final version (with updated version numbers), create a new release on Github, create a distributable binary for each platform and upload the releases to the Github release.
 
 ### Bump Version Numbers
 
@@ -59,6 +91,8 @@ Tag the commit with
 
 ```bash
 git tag v<version number>
+git push
+git push --tags
 ```
 
 ### Windows
@@ -105,3 +139,6 @@ The session can be crashed when using Linux Wayland with mutter version <=42.5. 
 [5]: https://wiki.ubuntu.com/Testing/EnableProposed
 [6]: https://github.com/espressif/arduino-esp32/blob/master/libraries/LittleFS/library.properties
 [7]: https://pypi.org/project/littlefs-python/
+[8]: https://github.com/InamataCo/Flasher/releases/latest
+[9]: https://snapcraft.io/inamata-flasher
+[10]: https://www.inamata.co

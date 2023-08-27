@@ -17,7 +17,7 @@ description: |
   Optional:
     sudo snap connect inamata-flasher:password-manager-service
 license: Apache-2.0
-version: 0.4.7
+version: 0.4.8
 grade: stable
 confinement: strict
 base: core22
@@ -51,35 +51,3 @@ parts:
     plugin: python
     source: .
     #    source: https://github.com/InamataCo/Flasher.git
-    stage-packages:
-      - libxcomposite1
-      - libxdamage1
-      - libxcb-image0
-      - libxcb-keysyms1
-      - libxcb-render-util0
-      - libxcb-render0
-      - libxcb-shape0
-      - libxcb-xkb1
-      - libxkbcommon-x11-0
-      - libgstreamer1.0-0
-      - libcairo2
-      - libcairo-gobject2
-      - libcups2
-      - libodbc2
-      - libxkbfile1
-      - libgtk-3-0
-      - libgdk-pixbuf2.0-0
-      - libfontconfig1
-      - libnss3
-      - libpango-1.0-0
-      - libpangocairo-1.0-0
-      - libspeechd2
-      - libwayland-cursor0
-      - libwayland-server0
-      - libx11-6
-      - libxcb-icccm4
-      - libxi6
-      - libxkbcommon0
-      - libxrandr2
-      - libxrender1
-      - libxtst6

@@ -9,7 +9,7 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ("mainwindow.ui", "."),
+        ("uis/mainwindow.ui", "uis"),
         ("images/inamata_logo_white_128.png", "images"),
         ("images/icon_512.ico", "images"),
         ("images/icon_512.png", "images"),
@@ -19,7 +19,7 @@ a = Analysis(
         ("images/icon_32.png", "images"),
         ("images/icon_16.png", "images"),
         ("fonts/Lato-Regular.ttf", "fonts"),
-        ("littlefs/root_cas.pem", "littlefs"),
+        ("littlefs_partition/root_cas.pem", "littlefs_partition"),
     ],
     hiddenimports=["PySide2.QtXml"],
     hookspath=[],
