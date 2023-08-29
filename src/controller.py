@@ -32,6 +32,8 @@ class Controller:
         self._view = view
         self._config = config
         self._app = app
+        # Check the user's local permissions once on startup
+        self._checked_permissions = False
 
         self.threadpool = QThreadPool()
         self._connect_signals()
@@ -151,6 +153,7 @@ class Controller:
             server_urls = self._server_model.server_urls
             server_name = f"{server_name}\n{server_urls.core_base_url} / {server_urls.oauth_base_url}"
         self._view.ui.loginSelectedServerText.setText(server_name)
+        self._check_permissions()
 
     def log_in(self):
         """Log the user in and save the auth token."""
@@ -232,6 +235,10 @@ class Controller:
 
     ############################
     # Welcome Page Functionality
+
+    def handle_welcome_page(self):
+        """Check user permissions once."""
+        self._check_permissions()
 
     def log_out(self):
         """Log the user out and clear the password and auth token."""
@@ -979,7 +986,7 @@ class Controller:
         if index == self._view.Pages.LOGIN.value[1]:
             self.handle_login_page()
         elif index == self._view.Pages.WELCOME.value[1]:
-            pass
+            self.handle_welcome_page()
         elif index == self._view.Pages.ADD_CONTROLLER.value[1]:
             self.handle_add_controller_page()
         elif index == self._view.Pages.REPLACE_CONTROLLER.value[1]:
@@ -1022,6 +1029,19 @@ class Controller:
  - https://github.com/InamataCo/Flasher
  - https://www.inamata.co"""
         self._view.notify(contents, title, "information")
+
+    def _check_permissions(self) -> None:
+        """Run the permission checks."""
+        if self._checked_permissions:
+            return
+        self._checked_permissions = True
+        worker = Worker(self._flash_model.check_permissions)
+        worker.signals.result.connect(self._handle_check_permissions_result)
+        self.threadpool.start(worker)
+
+    def _handle_check_permissions_result(self, error: str) -> None:
+        if error:
+            self._view.notify(error, "Permission error", "warning")
 
     def get_found_serial_ports_text(self) -> str:
         """Get the UI text for found serial ports."""

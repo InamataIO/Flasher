@@ -2,6 +2,7 @@ import csv
 import json
 import logging
 import os
+import platform
 import sys
 from contextlib import redirect_stderr
 from distutils.dir_util import copy_tree
@@ -20,6 +21,9 @@ from server_model import ServerModel
 from wifi_model import WiFiModel
 from worker import WorkerError, WorkerSignals, WorkerWarning
 
+if platform.system() == "Linux":
+    import grp
+
 SNAP_FLASHING_FAILED_ERROR = """Flashing failed
 1. Check that the microcontroller is plugged in
 2. For Snaps (Ubuntu Store) enable serial port access
@@ -36,6 +40,19 @@ FLASHING_FAILED_ERROR = """Flashing failed
 
 https://github.com/InamataCo/Flasher
 https://www.inamata.co"""
+
+LINUX_DIALOUT_GROUP_ERROR = """User is missing permissions
+1. Add the user to the dialout group (access serial ports)
+  - Run in a terminal: sudo usermod -a -G dialout $USER
+2. Log out and back in again"""
+
+
+SNAP_LISTING_COM_PORTS_FAILED = """Listing COM / serial ports failed
+For Snap installations:
+ - Run in a terminal: snap connect inamata-flasher:raw-usb
+ - Restart the app"""
+
+LISTING_COM_PORTS_FAILED = """Error when listing COM ports:"""
 
 
 class EsptoolOutputHandler:
@@ -122,7 +139,24 @@ class FlashModel:
         self._partitions_image_path = os.path.join(cache_dir, "partitions.bin")
 
     def get_serial_ports(self) -> list[ListPortInfo]:
-        return list_ports.comports()
+        try:
+            return list_ports.comports()
+        except TypeError as err:
+            if self._config.is_snap:
+                logging.warning(f"{SNAP_LISTING_COM_PORTS_FAILED}\n\n{err}")
+            else:
+                logging.warning(f"{LISTING_COM_PORTS_FAILED}\n\n{err}")
+        except Exception as err:
+            logging.warning(f"{LISTING_COM_PORTS_FAILED}\n\n{err}")
+        return []
+
+    def check_permissions(self, **kwargs) -> str:
+        """Returns an error string if permissions are missing."""
+        if platform.system() == "Linux":
+            groups = [grp.getgrgid(g).gr_name for g in os.getgroups()]
+            if "dialout" not in groups:
+                return LINUX_DIALOUT_GROUP_ERROR
+        return ""
 
     def flash_controller(
         self, controller: ControllerModel, wifi_aps: List[WiFiModel.AP], **kwargs
