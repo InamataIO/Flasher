@@ -49,6 +49,8 @@ class Config:
         self.images_folder = self.root_folder / "images"
         self.littlefs_folder = self.root_folder / "littlefs_partition"
 
+        self.is_snap = bool(os.getenv("SNAP"))
+
     @property
     def users_name(self) -> str:
         """Tries to return the user's name, else their username or a blank string."""

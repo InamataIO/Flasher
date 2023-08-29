@@ -20,7 +20,7 @@ from server_model import ServerModel
 from wifi_model import WiFiModel
 from worker import WorkerError, WorkerSignals, WorkerWarning
 
-FLASHING_FAILED_ERROR = """Flashing failed
+SNAP_FLASHING_FAILED_ERROR = """Flashing failed
 1. Check that the microcontroller is plugged in
 2. For Snaps (Ubuntu Store) enable serial port access
  - Run in a terminal: snap connect inamata-flasher:raw-usb
@@ -28,8 +28,14 @@ FLASHING_FAILED_ERROR = """Flashing failed
 3. Open a bug report or ask for support in the forum.
 
 https://github.com/InamataCo/Flasher
-https://www.inamata.co
-"""
+https://www.inamata.co"""
+
+FLASHING_FAILED_ERROR = """Flashing failed
+1. Check that the microcontroller is plugged in
+2. Open a bug report or ask for support in the forum.
+
+https://github.com/InamataCo/Flasher
+https://www.inamata.co"""
 
 
 class EsptoolOutputHandler:
@@ -334,7 +340,12 @@ class FlashModel:
                 esptool.main(esptool_flash_args)
         except Exception as err:
             logging.error(stderr)
-            raise WorkerError(FLASHING_FAILED_ERROR) from err
+            raise WorkerError(self._get_flash_error_msg(err)) from err
         finally:
             # Restore the stdout after flashing
             sys.stdout = sys.__stdout__
+
+    def _get_flash_error_msg(self, err: Exception) -> str:
+        if self._config.is_snap:
+            return SNAP_FLASHING_FAILED_ERROR + "\n\n" + str(err)
+        return FLASHING_FAILED_ERROR + "\n\n" + str(err)
