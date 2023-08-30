@@ -14,9 +14,9 @@ Push the final version (with updated version numbers), create a new release on G
 
 Bump the version number in the following files
 
-- [snap/snapcraft.yaml](snap/snapcraft.yaml)
-- [src/main.py](src/main.py)
-- [pyproject.toml](pyproject.toml)
+- [snap/snapcraft.yaml](../snap/snapcraft.yaml)
+- [src/main.py](../src/main.py)
+- [pyproject.toml](../pyproject.toml)
 
 Tag the commit with
 

@@ -1,8 +1,18 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+from pathlib import Path
 
 block_cipher = None
 
+site_packages_data = [
+    "pexpect/bashrc.sh", # Possibly unneeded
+    "esptool/targets/stub_flasher/", # Required
+    "espefuse/efuse_defs/", # Required
+    "certifi", # Possibly unneeded
+]
+site_packages_path = Path(os.getenv("VIRTUAL_ENV")) / "lib/python3.10/site-packages/"
+bundled_site_packages_data = [
+    (str(site_packages_path / path), str(Path(path))) for path in site_packages_data
+]
 
 a = Analysis(
     ["src/main.py"],
@@ -22,6 +32,7 @@ a = Analysis(
         ("images/setting-line-icon.png", "images"),
         ("fonts/Lato-Regular.ttf", "fonts"),
         ("littlefs_partition/root_cas.pem", "littlefs_partition"),
+        *bundled_site_packages_data,
     ],
     hiddenimports=["PySide2.QtXml"],
     hookspath=[],
