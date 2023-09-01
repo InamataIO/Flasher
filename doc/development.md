@@ -17,6 +17,8 @@ Bump the version number in the following files
 - [snap/snapcraft.yaml](../snap/snapcraft.yaml)
 - [src/main.py](../src/main.py)
 - [pyproject.toml](../pyproject.toml)
+- [publish/main.iss](../publish/main.iss)
+- [file_version_info.txt](../publish/windows/file_version_info.txt)
 
 Tag the commit with
 
@@ -25,6 +27,8 @@ git tag v<version number>
 git push
 git push --tags
 ```
+
+The `version.h` and `version.rc` files are currently not used. They were used to sign binaries but this has currently been discontinued.
 
 ### Windows
 

@@ -1,0 +1,2 @@
+# Ignore windows file endings (are converted by Git on commit)
+disable=SC1017
