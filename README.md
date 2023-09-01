@@ -9,17 +9,24 @@
 
 Flash the firmware onto an ESP32 and register it with the server. Released for the [Inamata IoT platform][10].
 
-Docs: [Development](doc/development.md) | [Known Issues](doc/known_issues.md)
+[Screenshots](#screenshots) | [Driver Setup](#driver-setup-instructions) | [Development](doc/development.md) | [Known Issues](doc/known_issues.md)
 
 ## Download
 
+[![Git it for Windows 10](images/windows_download_badge.png)][11]
 [![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-white.svg)](https://snapcraft.io/inamata-flasher)
 
-For Windows download the [latest release][8] (executables at the end).
+### Windows
+
+For Windows download the [latest setup installer][11].
 
 - Start (double-click) the downloaded file
 - Click `More info`
 - Click `Run anyway`
+
+Alternatively, download the [latest standalone executable][8] from GitHub releases.
+
+### Linux
 
 For Linux use the [Snap download][9] to receive automatic updates. After installing it, run the [snap setup instructions](#snap-setup-instructions).
 
@@ -29,20 +36,20 @@ For Linux use the [Snap download][9] to receive automatic updates. After install
   - sudo snap connect inamata-flasher:password-manager-service
 - Logout and back in again
 
-Alternatively for Linux, download the [latest release][9] from GitHub.
+Alternatively, download the [latest standalone executable][8] from GitHub releases.
 
 - In a terminal run
   - chmod +x <path-to-file>
   - sudo usermod -a -G dialout $USER
 - Start (double-click) the downloaded file
 
-The app is available from the following sources:
+The app is available via the following packages:
 
-|              | GitHub Release | Snap Store | Source |
-| ------------ | -------------- | ---------- | ------ |
-| **Linux**    | Yes            | Yes        | Yes    |
-| **Windows**  | Yes            | No         | Yes    |
-| **Packaged** | PyInstaller    | Snap       | No     |
+|              | GitHub Release | Snap Store | Installer  | Source |
+| ------------ | -------------- | ---------- | ---------- | ------ |
+| **Linux**    | Yes            | Yes        | No         | Yes    |
+| **Windows**  | Yes            | No         | Yes        | Yes    |
+| **Packager** | PyInstaller    | Snap       | Inno Setup | None   |
 
 ## Screenshots
 
@@ -97,3 +104,4 @@ This is a list of features that would be useful and show the tool's current limi
 [8]: https://github.com/InamataCo/Flasher/releases/latest
 [9]: https://snapcraft.io/inamata-flasher
 [10]: https://www.inamata.co
+[11]: https://github.com/InamataCo/Flasher/releases/latest/download/inamata_flasher_setup.exe
