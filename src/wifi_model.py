@@ -12,8 +12,10 @@ class WiFiModel(QAbstractListModel):
             self.ssid: str = ssid
             self.password: str = password
 
-        def __str__(self):
-            return f"{self.ssid}:{self.password}"
+        def __str__(self) -> str:
+            if self.password:
+                return f"{self.ssid}:{'•'*len(self.password)}"
+            return f"{self.ssid}"
 
     def __init__(self, config: Config, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -28,13 +30,13 @@ class WiFiModel(QAbstractListModel):
             ap = self.aps[index.row()]
             return str(ap)
 
-    def rowCount(self, parent=QtCore.QModelIndex()):
+    def rowCount(self, parent=QtCore.QModelIndex()) -> int:
         return len(self.aps)
 
-    def ap_count(self):
+    def ap_count(self) -> int:
         return len(self.aps)
 
-    def add_ap(self, ssid, password):
+    def add_ap(self, ssid, password) -> None:
         self.beginInsertRows(QModelIndex(), self.rowCount(), self.rowCount())
         # Remove existing AP if it has the same SSID
         new_aps = [i for i in self.aps if i.ssid != ssid]
@@ -42,20 +44,20 @@ class WiFiModel(QAbstractListModel):
         self.aps = new_aps
         self.endInsertRows()
 
-    def remove_ap(self, row):
+    def remove_ap(self, row) -> None:
         self.beginRemoveRows(QModelIndex(), row, row)
         self.aps.pop(row)
         self.endRemoveRows()
 
-    def remove_all_aps(self):
+    def remove_all_aps(self) -> None:
         self.aps = []
         self._config.config.pop("wifi_aps", None)
 
-    def get_ap(self, index: QModelIndex):
+    def get_ap(self, index: QModelIndex) -> AP:
         """Get the AP at the specified index."""
         return self.aps[index.row()]
 
-    def save_to_config(self):
+    def save_to_config(self) -> None:
         """Save the current APs to the config"""
         wifi_aps = [{"ssid": i.ssid, "password": i.password} for i in self.aps]
         if wifi_aps:

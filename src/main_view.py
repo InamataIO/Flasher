@@ -18,6 +18,7 @@ class MainView(QMainWindow):
         REPLACE_CONTROLLER = ["replaceControllerPage", -1]
         ADD_CONTROLLER = ["addControllerPage", -1]
         ADD_WIFI = ["addWiFiPage", -1]
+        UPDATE_WIFI = ["updateWiFiPage", -1]
         MANAGE_WIFI = ["manageWiFiPage", -1]
         SYSTEM_SETTINGS = ["systemSettingsPage", -1]
 
@@ -88,7 +89,6 @@ class MainView(QMainWindow):
 
     def _hide_disabled_widgets(self):
         """Preemptively hide disabled widgets."""
-        self.ui.manageWiFiEditButton.hide()
         self.ui.loginLoadingText.hide()
         self.ui.loginLoadingBar.hide()
         self.ui.addControllerLoadingText.hide()

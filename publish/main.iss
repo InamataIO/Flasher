@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "Inamata Flasher"
-#define MyAppVersion "0.4.11"
+#define MyAppVersion "0.5.0"
 #define MyAppPublisher "Silent Wind GmbH"
 #define MyAppURL "https://www.inamata.co"
 #define MyAppExeName "inamata_flasher.exe"

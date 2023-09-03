@@ -31,7 +31,10 @@ package_linux() {
   echo "../dist/$PYINSTALLER_TARGET_NAME"
 
   echo "Building the Snapcraft package"
+  CWD=$PWD
+  cd ..
   snapcraft
+  cd "$CWD"
 }
 
 package_windows() {

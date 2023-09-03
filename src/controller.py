@@ -36,11 +36,12 @@ class Controller:
         self._checked_permissions = False
 
         self.threadpool = QThreadPool()
-        self._connect_signals()
         self._connect_model_views()
+        self._connect_signals()
         self._connect_shortcuts()
         self._page_after_add_wifi = None
         self._page_before_add_wifi = None
+        self._update_wifi_selected_ap = None
         view.change_page(view.Pages.LOGIN)
         # Call login page handler if change_page does not result in a page change
         self.handle_login_page()
@@ -101,10 +102,24 @@ class Controller:
         self._view.ui.addWiFiSubmitPushButton.clicked.connect(self.add_wifi_ap)
         self._view.ui.addWiFiBackPushButton.clicked.connect(self.back_from_add_wifi)
 
+        # Update WiFi Page
+        self._view.ui.updateWiFiBackPushButton.clicked.connect(
+            self.back_from_update_wifi
+        )
+        self._view.ui.updateWiFiSubmitPushButton.clicked.connect(
+            self.update_wifi_ap_details
+        )
+
         # Manage WiFi Page
         self._view.ui.manageWiFiAddButton.clicked.connect(self.manage_wifi_to_add_wifi)
         self._view.ui.manageWiFiRemoveButton.clicked.connect(self.remove_wifi_ap)
         self._view.ui.manageWiFiBackButton.clicked.connect(self.to_welcome_page)
+        self._view.ui.manageWiFiEditButton.clicked.connect(
+            self.manage_wifi_to_update_wifi
+        )
+        self._view.ui.apListView.selectionModel().selectionChanged.connect(
+            self.manage_wifi_ap_selected
+        )
 
         # System Settings Page
         self._view.ui.systemSettingsCancelButton.clicked.connect(
@@ -301,15 +316,55 @@ class Controller:
     ################################
     # Manage WiFi Page Functionality
 
+    def handle_manage_wifi_page(self):
+        """Disable edit button until entry selected."""
+        indexes = self._view.ui.apListView.selectedIndexes()
+        self._view.ui.manageWiFiEditButton.setEnabled(bool(indexes))
+        self._view.ui.manageWiFiRemoveButton.setEnabled(bool(indexes))
+
+    def manage_wifi_ap_selected(self, *_):
+        """Handle selection changed."""
+        self._view.ui.manageWiFiEditButton.setEnabled(True)
+        self._view.ui.manageWiFiRemoveButton.setEnabled(True)
+
     def manage_wifi_to_add_wifi(self):
         self._page_before_add_wifi = self._view.Pages.MANAGE_WIFI
         self._page_after_add_wifi = self._view.Pages.MANAGE_WIFI
         self._view.change_page(self._view.Pages.ADD_WIFI)
 
+    def manage_wifi_to_update_wifi(self):
+        index = self._view.ui.apListView.selectedIndexes()[0]
+        self._update_wifi_selected_ap = self._wifi_model.get_ap(index)
+        self._view.change_page(self._view.Pages.UPDATE_WIFI)
+
     def remove_wifi_ap(self):
         """Remove the currently selected WiFi AP."""
         if indexes := self._view.ui.apListView.selectedIndexes():
             self._wifi_model.remove_ap(indexes[0].row())
+
+    ######################################
+    # Update WiFi controller functionality
+
+    def handle_update_wifi_page(self):
+        """Populate the line edit fields for the current AP."""
+        self._view.ui.updateWiFiSSIDLineEdit.setText(self._update_wifi_selected_ap.ssid)
+        self._view.ui.updateWiFiPasswordLineEdit.setText(
+            self._update_wifi_selected_ap.password
+        )
+
+    def update_wifi_ap_details(self):
+        """Update the AP details and go back to the manage page."""
+        self._update_wifi_selected_ap.ssid = self._view.ui.updateWiFiSSIDLineEdit.text()
+        self._update_wifi_selected_ap.password = (
+            self._view.ui.updateWiFiPasswordLineEdit.text()
+        )
+        self._update_wifi_selected_ap = None
+        self._view.change_page(self._view.Pages.MANAGE_WIFI)
+
+    def back_from_update_wifi(self):
+        """Go back to manage wifi page."""
+        self._update_wifi_selected_ap = None
+        self._view.change_page(self._view.Pages.MANAGE_WIFI)
 
     ##############################
     # Add controller functionality
@@ -987,6 +1042,10 @@ class Controller:
             self.handle_login_page()
         elif index == self._view.Pages.WELCOME.value[1]:
             self.handle_welcome_page()
+        elif index == self._view.Pages.MANAGE_WIFI.value[1]:
+            self.handle_manage_wifi_page()
+        elif index == self._view.Pages.UPDATE_WIFI.value[1]:
+            self.handle_update_wifi_page()
         elif index == self._view.Pages.ADD_CONTROLLER.value[1]:
             self.handle_add_controller_page()
         elif index == self._view.Pages.REPLACE_CONTROLLER.value[1]:
