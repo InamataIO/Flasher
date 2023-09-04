@@ -17,7 +17,7 @@ description: |
   Optional:
     sudo snap connect inamata-flasher:password-manager-service
 license: Apache-2.0
-version: 0.5.0
+version: 0.5.1
 grade: stable
 confinement: strict
 base: core22
@@ -54,16 +54,12 @@ parts:
     stage-packages:
       - libcairo2
       - libcairo-gobject2
-      - libcups2
-      - libgstreamer1.0-0
-      - libodbc2
       - libgtk-3-0
-      - libgdk-pixbuf2.0-0
+      - libgdk-pixbuf-2.0-0
       - libfontconfig1
       - libnss3
       - libpango-1.0-0
       - libpangocairo-1.0-0
-      - libspeechd2
       - libwayland-cursor0
       - libwayland-server0
       - libx11-6
@@ -76,6 +72,7 @@ parts:
       - libxtst6
       - libxcomposite1
       - libxdamage1
+      - libxcb-cursor0
       - libxcb-image0
       - libxcb-keysyms1
       - libxcb-randr0
