@@ -1,5 +1,7 @@
 # Development Guide
 
+[[TOC]]
+
 ## Start
 
 1. Do the [driver setup](#driver-setup-instructions)
@@ -56,3 +58,10 @@ The standalone executeable can be found in `dist/inamata_flasher`
 ## Dependency Updates
 
 When updating `littlefs-python` ensure that the generated LittleFS image matches or is lower than that supported by the firmware. The [Arduino-ESP32 GitHub repo][6] has the version currently used by the firmware. On [littlefs-python's pypi page][7] the compatible versions are listed.
+
+## Debugging Crashes
+
+If the applications fails to start, two useful environment variables are
+
+- QT_QPA_PLATFORM=xcb or QT_QPA_PLATFORM=wayland
+- QPA_DEBUG_PLUGINS=1
