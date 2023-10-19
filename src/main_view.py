@@ -48,6 +48,7 @@ class MainView(QMainWindow):
         self._hide_disabled_widgets()
         self._add_app_icon()
         self._set_button_icons()
+        self.original_login_link_text = self.ui.loginLinkText.text()
 
     def notify(self, message, title, level="information"):
         if level == "information":
@@ -81,7 +82,7 @@ class MainView(QMainWindow):
 
     def _set_font(self):
         """Set the font used by the UI."""
-        font_file = self._config.fonts_folder / "Lato-Regular.ttf"
+        font_file = self._config.fonts_folder / "Roboto-Regular.ttf"
         font_id = QFontDatabase.addApplicationFont(str(font_file))
         _fontstr = QFontDatabase.applicationFontFamilies(font_id)[0]
         _font = QFont(_fontstr, 16)
@@ -91,6 +92,7 @@ class MainView(QMainWindow):
         """Preemptively hide disabled widgets."""
         self.ui.loginLoadingText.hide()
         self.ui.loginLoadingBar.hide()
+        self.ui.loginLinkText.hide()
         self.ui.addControllerLoadingText.hide()
         self.ui.addControllerLoadingBar.hide()
         self.ui.addControllerProgressText.hide()
@@ -114,17 +116,15 @@ class MainView(QMainWindow):
 
     def _set_button_icons(self):
         """For Windows, use custom button icons."""
-        pixmap = QPixmap(str(self._config.images_folder / "inamata_logo_white_128.png"))
-        self.ui.loginInamataLogo.setPixmap(pixmap)
+        pixmap = QPixmap(str(self._config.images_folder / "inamata_flasher_logo.png"))
+        self.ui.loginLogo.setPixmap(pixmap)
 
-        # Built-in theme icons are not available on Windows
-        if platform.system() == "Windows":
-            dir = self._config.images_folder
-            settings_icon = QPixmap(str(dir / "setting-line-icon.png"))
-            self.ui.loginSystemIconButton.setIcon(settings_icon)
-            help_icon = QPixmap(str(dir / "question-mark-line-icon.png"))
-            self.ui.loginHelpIconButton.setIcon(help_icon)
-            self.ui.welcomeHelpIconButton.setIcon(help_icon)
+        folder = self._config.images_folder
+        settings_icon = QPixmap(str(folder / "setting-line-icon.png"))
+        self.ui.loginSystemIconButton.setIcon(settings_icon)
+        help_icon = QPixmap(str(folder / "question-mark-line-icon.png"))
+        self.ui.loginHelpIconButton.setIcon(help_icon)
+        self.ui.welcomeHelpIconButton.setIcon(help_icon)
 
     def eventFilter(self, watched, event):
         """Catch the close event to save settings."""

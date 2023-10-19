@@ -140,6 +140,9 @@ class Controller:
         self._view.ui.systemSettingsAuthServerLineEdit.editingFinished.connect(
             self.system_settings_auth_server_edited
         )
+        self._view.ui.systemSettingsWebAppUrlLineEdit.editingFinished.connect(
+            self.system_settings_web_app_url_edited
+        )
 
     def _connect_model_views(self):
         """Connect models to the appropriate views."""
@@ -175,8 +178,12 @@ class Controller:
         self._view.ui.loginLoadingText.show()
         self._view.ui.loginLoadingBar.show()
         self._view.ui.loginSelectedServerText.hide()
+        self._view.ui.loginLinkText.show()
+        self._view.ui.loginButton.hide()
+        self._view.ui.signUpButton.hide()
         worker = Worker(self._server_model.log_in)
         worker.signals.result.connect(self.log_in_result)
+        worker.signals.state.connect(self.log_in_display_url)
         worker.signals.error.connect(self.log_in_error)
         worker.signals.finished.connect(self.log_in_finished)
         self.threadpool.start(worker)
@@ -189,10 +196,21 @@ class Controller:
         self.set_welcome_username(name)
         self._view.change_page(self._view.Pages.WELCOME)
 
+    def log_in_display_url(self, url: str):
+        """Show the URL to the web page that should have opened."""
+        text = (
+            "Open the following web page if it does not automatically open.\n" f"{url}"
+        )
+        self._view.ui.loginLinkText.setText(text)
+
     def log_in_finished(self):
         """After the login attempt, hide the loading widgets."""
         self._view.ui.loginLoadingText.hide()
         self._view.ui.loginLoadingBar.hide()
+        self._view.ui.loginLinkText.hide()
+        self._view.ui.loginLinkText.setText(self._view.original_login_link_text)
+        self._view.ui.loginButton.show()
+        self._view.ui.signUpButton.show()
         self._view.ui.loginSelectedServerText.show()
 
     def log_in_error(self, error):
@@ -200,7 +218,7 @@ class Controller:
         self.handle_error(error)
 
     def sign_up(self):
-        QDesktopServices.openUrl(QUrl("https://app.inamata.co/"))
+        QDesktopServices.openUrl(QUrl(self._server_model.sign_up_url))
 
     def clear_data(self):
         self._server_model.restore_dev_server_urls()
@@ -982,6 +1000,7 @@ class Controller:
             new_server_urls = ServerModel.ServerUrls(
                 core_base_url=self._view.ui.systemSettingsCoreServerLineEdit.text(),
                 oauth_base_url=self._view.ui.systemSettingsAuthServerLineEdit.text(),
+                web_app_base_url=self._view.ui.systemSettingsWebAppUrlLineEdit.text(),
             )
             if new_server_urls != self._server_model.server_urls:
                 self._server_model.server_urls = new_server_urls
@@ -1007,15 +1026,18 @@ class Controller:
         is_dev = server_name == "dev"
         core_line_edit = self._view.ui.systemSettingsCoreServerLineEdit
         auth_line_edit = self._view.ui.systemSettingsAuthServerLineEdit
+        web_app_line_edit = self._view.ui.systemSettingsWebAppUrlLineEdit
 
         core_line_edit.setEnabled(is_dev)
         auth_line_edit.setEnabled(is_dev)
+        web_app_line_edit.setEnabled(is_dev)
         if is_dev:
             server_urls = self.system_settings_dev_server_urls
         else:
             server_urls = self._server_model.known_server_urls[server_name]
         core_line_edit.setText(server_urls.core_base_url)
         auth_line_edit.setText(server_urls.oauth_base_url)
+        web_app_line_edit.setText(server_urls.web_app_base_url)
 
     @Slot()
     def system_settings_core_server_edited(self):
@@ -1027,6 +1049,12 @@ class Controller:
     def system_settings_auth_server_edited(self):
         self.system_settings_dev_server_urls.oauth_base_url = (
             self._view.ui.systemSettingsAuthServerLineEdit.text()
+        )
+
+    @Slot()
+    def system_settings_web_app_url_edited(self):
+        self.system_settings_dev_server_urls.web_app_base_url = (
+            self._view.ui.systemSettingsWebAppUrlLineEdit.text()
         )
 
     ##############################

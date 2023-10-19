@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>730</width>
-    <height>477</height>
+    <height>483</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -27,7 +27,7 @@
   </property>
   <property name="styleSheet">
    <string notr="true">* {
-  font-family: Lato;
+  font-family: Roboto;
   font-size: 16px;
 }
 QPushButton {
@@ -44,8 +44,8 @@ QLabel {
 }
 
 #loginForm_2 QPushButton {
-  font-size: 30px;
-  padding: 30px
+  font-size: 24px;
+  padding: 12px
 }
 
 #centralWidget, QMessageBox {
@@ -81,7 +81,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>7</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -114,20 +114,21 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QLabel" name="label">
-            <property name="font">
-             <font>
-              <family>Lato</family>
-              <pointsize>60</pointsize>
-              <italic>false</italic>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">font: 60pt</string>
+           <widget class="QLabel" name="loginLogo">
+            <property name="maximumSize">
+             <size>
+              <width>320</width>
+              <height>209</height>
+             </size>
             </property>
             <property name="text">
-             <string>Flasher</string>
+             <string/>
+            </property>
+            <property name="pixmap">
+             <pixmap>../images/inamata_flasher_logo.png</pixmap>
+            </property>
+            <property name="scaledContents">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -185,7 +186,7 @@ QLabel {
              </property>
              <property name="font">
               <font>
-               <family>Lato</family>
+               <family>Roboto</family>
                <pointsize>-1</pointsize>
               </font>
              </property>
@@ -193,7 +194,7 @@ QLabel {
               <string notr="true"/>
              </property>
              <property name="text">
-              <string>Log in</string>
+              <string>Login</string>
              </property>
              <property name="default">
               <bool>true</bool>
@@ -201,17 +202,17 @@ QLabel {
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_4">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
+            <widget class="QLabel" name="label">
+             <property name="minimumSize">
               <size>
-               <width>40</width>
-               <height>20</height>
+               <width>20</width>
+               <height>0</height>
               </size>
              </property>
-            </spacer>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
            </item>
            <item>
             <widget class="QPushButton" name="signUpButton">
@@ -223,6 +224,16 @@ QLabel {
              </property>
              <property name="text">
               <string>Sign up</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="loginLinkText">
+             <property name="text">
+              <string>A web page should automatically open.</string>
+             </property>
+             <property name="textInteractionFlags">
+              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
              </property>
             </widget>
            </item>
@@ -243,19 +254,6 @@ QLabel {
          </widget>
         </item>
         <item>
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
          <layout class="QHBoxLayout" name="horizontalLayout_10">
           <item>
            <widget class="QPushButton" name="loginSystemIconButton">
@@ -270,32 +268,6 @@ QLabel {
             </property>
             <property name="icon">
              <iconset theme="preferences-system">
-              <normaloff>.</normaloff>.</iconset>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>32</width>
-              <height>32</height>
-             </size>
-            </property>
-            <property name="flat">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="loginHelpIconButton">
-            <property name="maximumSize">
-             <size>
-              <width>40</width>
-              <height>16777215</height>
-             </size>
-            </property>
-            <property name="text">
-             <string/>
-            </property>
-            <property name="icon">
-             <iconset theme="system-help">
               <normaloff>.</normaloff>.</iconset>
             </property>
             <property name="iconSize">
@@ -377,26 +349,27 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QLabel" name="loginInamataLogo">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
+           <widget class="QPushButton" name="loginHelpIconButton">
             <property name="maximumSize">
              <size>
-              <width>102</width>
-              <height>47</height>
+              <width>56</width>
+              <height>16777215</height>
              </size>
             </property>
             <property name="text">
              <string/>
             </property>
-            <property name="pixmap">
-             <pixmap>../images/inamata_logo_white_128.png</pixmap>
+            <property name="icon">
+             <iconset theme="system-help">
+              <normaloff>.</normaloff>.</iconset>
             </property>
-            <property name="scaledContents">
+            <property name="iconSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="flat">
              <bool>true</bool>
             </property>
            </widget>
@@ -424,7 +397,7 @@ QLabel {
          <widget class="QLabel" name="welcomeHeader">
           <property name="font">
            <font>
-            <family>Lato</family>
+            <family>Roboto</family>
             <pointsize>-1</pointsize>
            </font>
           </property>
@@ -440,7 +413,7 @@ QLabel {
          <widget class="QLabel" name="welcomeSubHeader">
           <property name="font">
            <font>
-            <family>Lato</family>
+            <family>Roboto</family>
             <pointsize>-1</pointsize>
            </font>
           </property>
@@ -709,7 +682,7 @@ QLabel {
          <widget class="QLabel" name="replaceHeader">
           <property name="font">
            <font>
-            <family>Lato</family>
+            <family>Roboto</family>
             <pointsize>-1</pointsize>
            </font>
           </property>
@@ -930,7 +903,7 @@ multi-selection</string>
          <widget class="QLabel" name="addHeader">
           <property name="font">
            <font>
-            <family>Lato</family>
+            <family>Roboto</family>
             <pointsize>-1</pointsize>
            </font>
           </property>
@@ -1154,7 +1127,7 @@ multi-selection</string>
          <widget class="QLabel" name="addWiFiHeader">
           <property name="font">
            <font>
-            <family>Lato</family>
+            <family>Roboto</family>
             <pointsize>-1</pointsize>
            </font>
           </property>
@@ -1384,7 +1357,7 @@ multi-selection</string>
          <widget class="QLabel" name="manageWiFiHeader">
           <property name="font">
            <font>
-            <family>Lato</family>
+            <family>Roboto</family>
             <pointsize>-1</pointsize>
            </font>
           </property>
@@ -1533,6 +1506,16 @@ multi-selection</string>
              <string>Auth server</string>
             </property>
            </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QLabel" name="label_20">
+            <property name="text">
+             <string>Web app URL</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLineEdit" name="systemSettingsWebAppUrlLineEdit"/>
           </item>
          </layout>
         </item>

@@ -37,12 +37,15 @@ class WorkerSignals(QObject):
     progress
         int indicating % progress
 
+    state
+        str with state information
     """
 
     finished = Signal()
     error = Signal(tuple)
     result = Signal(object)
     progress = Signal(int)
+    state = Signal(str)
 
 
 class Worker(QRunnable):
@@ -70,6 +73,7 @@ class Worker(QRunnable):
 
         # Add the callback to our kwargs
         self.kwargs["progress_callback"] = self.signals.progress
+        self.kwargs["state_callback"] = self.signals.state
 
     @Slot()
     def run(self):

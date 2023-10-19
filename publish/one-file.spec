@@ -24,7 +24,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ("../uis/mainwindow.ui", "uis"),
-        ("../images/inamata_logo_white_128.png", "images"),
+        ("../images/inamata_flasher_logo.png", "images"),
         ("../images/icon_512.ico", "images"),
         ("../images/icon_512.png", "images"),
         ("../images/icon_256.png", "images"),
@@ -34,7 +34,7 @@ a = Analysis(
         ("../images/icon_16.png", "images"),
         ("../images/question-mark-line-icon.png", "images"),
         ("../images/setting-line-icon.png", "images"),
-        ("../fonts/Lato-Regular.ttf", "fonts"),
+        ("../fonts/Roboto-Regular.ttf", "fonts"),
         ("../littlefs_partition/root_cas.pem", "littlefs_partition"),
         *bundled_site_packages_data,
     ],

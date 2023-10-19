@@ -21,8 +21,10 @@ from semantic_version import Version
 try:
     from jeepney.wrappers import DBusErrorResponse
 except ImportError:
+
     class DBusErrorResponse(Exception):
         pass
+
 
 from config import Config, ControllerModel, SiteModel
 from worker import WorkerError, WorkerInformation, WorkerWarning
@@ -37,11 +39,15 @@ class ServerModel:
     class ServerUrls:
         core_base_url: str
         oauth_base_url: str
+        web_app_base_url: str
 
     _core_graphql_path = "/graphql/"
 
     _oauth_client_id = "flasher"
     _oauth_realm = "inamata"
+    _oauth_sign_up_path = (
+        f"/realms/{_oauth_realm}/protocol/openid-connect/registrations"
+    )
     _oauth_device_path = f"/realms/{_oauth_realm}/protocol/openid-connect/auth/device"
     _oauth_token_path = f"/realms/{_oauth_realm}/protocol/openid-connect/token"
     _openid_config_path = f"/realms/{_oauth_realm}/.well-known/openid-configuration"
@@ -60,10 +66,12 @@ class ServerModel:
         "staging": ServerUrls(
             core_base_url="https://core.staging.inamata.co",
             oauth_base_url="https://auth.staging.inamata.co",
+            web_app_base_url="https://app.staging.inamata.co",
         ),
         "production": ServerUrls(
             core_base_url="https://core.inamata.co",
             oauth_base_url="https://auth.inamata.co",
+            web_app_base_url="https://app.inamata.co",
         ),
     }
 
@@ -86,13 +94,14 @@ class ServerModel:
 
     @property
     def default_server(self) -> str:
-        return "staging"
+        return "production"
 
     @property
     def default_dev_server_urls(self) -> ServerUrls:
         return self.ServerUrls(
             core_base_url="http://localhost:8000",
             oauth_base_url="http://localhost:8080",
+            web_app_base_url="http://localhost:4200",
         )
 
     @property
@@ -129,6 +138,14 @@ class ServerModel:
     def dev_server_name(self) -> str:
         return "dev"
 
+    @property
+    def sign_up_url(self) -> str:
+        return (
+            f"{self.server_urls.oauth_base_url}{self._oauth_sign_up_path}"
+            "?client_id=web-app&response_type=code"
+            f"&redirect_uri={self.server_urls.web_app_base_url}"
+        )
+
     def restore_dev_server_urls(self) -> None:
         self._known_servers["dev"] = self.default_dev_server_urls
 
@@ -143,6 +160,7 @@ class ServerModel:
             "dev_urls": {
                 "core_base_url": self._known_servers["dev"].core_base_url,
                 "oauth_base_url": self._known_servers["dev"].oauth_base_url,
+                "web_app_base_url": self._known_servers["dev"].web_app_base_url,
             },
             "server_name": self.server_name,
         }
@@ -155,8 +173,9 @@ class ServerModel:
             self._server_name = server_name
         if dev_urls := server_config.get("dev_urls"):
             self._known_servers["dev"] = self.ServerUrls(
-                core_base_url=dev_urls["core_base_url"],
-                oauth_base_url=dev_urls["oauth_base_url"],
+                core_base_url=dev_urls.get("core_base_url", ""),
+                oauth_base_url=dev_urls.get("oauth_base_url", ""),
+                web_app_base_url=dev_urls.get("web_app_base_url", ""),
             )
         else:
             self.restore_dev_server_urls()
@@ -170,6 +189,9 @@ class ServerModel:
         }
         response = self._server_request(self._oauth_device_url, data, headers=headers)
         device_auth = response.json()
+        state_callback = kwargs.get("state_callback", None)
+        if state_callback:
+            state_callback.emit(device_auth["verification_uri_complete"])
         # Open the web browser so that the user can log in and authorize the request
         webbrowser.open(device_auth["verification_uri_complete"])
 
