@@ -35,6 +35,7 @@ class LocaleModel:
             return None
 
     def __init__(self, config: Config) -> None:
+        self._config = config
         self.locale = self._parse_locale(config)
         self.translator: QTranslator | None = None
 
@@ -67,12 +68,11 @@ class LocaleModel:
 
         # Set up custom translations
         translator = QTranslator(app)
-        translation_path = str(Path("translations/").resolve())
+        translation_path = str(self._config.translations_folder)
         if translator.load(self.locale, "mainwindow", "_", translation_path):
             app.installTranslator(translator)
 
         translator = QTranslator(app)
-        translation_path = str(Path("translations/").resolve())
         if translator.load(self.locale, "main", "_", translation_path):
             QCoreApplication.instance().installTranslator(translator)
 

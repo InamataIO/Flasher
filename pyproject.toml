@@ -14,7 +14,7 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
 ]
 description = "A microcontroller flasher for the Inamata IoT platform"
-include = ["fonts/*", "images/*", "uis/*", "littlefs_partition/*"]
+include = ["fonts/*", "images/*", "uis/*", "translations/*", "littlefs_partition/*"]
 license = "Apache-2.0"
 name = "inamata_flasher"
 packages = [{include = "esp_idf/..", from = "src"}]
