@@ -47,7 +47,9 @@ A workaround is to preemptively submit the file for verification: https://stacko
 
 ### Linux
 
-Run the following command to create a PyInstaller distributable:
+The `publish/build.sh` script will build a standalone PyInstaller as well as a Snap package. Attach the PyInstaller image to the GitHub release. For the Snap package, promote it on snapcraft.io to the release channel. After pushing to the candidate channel, start the Ubuntu 22.04, 20.04 and Kubuntu 22.04 VMs and start the app. Then logout and switch to the X or Wayland session. This should cover most distro dependent differences.
+
+To manually create a PyInstaller distributable, run the following commands:
 
     poetry install
     poetry shell
@@ -55,9 +57,29 @@ Run the following command to create a PyInstaller distributable:
 
 The standalone executeable can be found in `dist/inamata_flasher`
 
+To build and upload the Snap package to the release candidate run
+
+    snapcraft
+    snapcraft upload --release=candidate inamata-flasher_x.x.x_amd64.snap
+
 ## Dependency Updates
 
 When updating `littlefs-python` ensure that the generated LittleFS image matches or is lower than that supported by the firmware. The [Arduino-ESP32 GitHub repo][6] has the version currently used by the firmware. On [littlefs-python's pypi page][7] the compatible versions are listed.
+
+## Internationalization
+
+To translate strings, the Qt Linguist software is required. It can be installed as part of the Qt installer bundle or with the PySide6 Python package and then launched with the pyside6-linguist command.
+
+The translations are saved in `ts` and `qm` files in the `translations` folder. The `ts` files act as the source files which the `qm` are the compiled versions loaded by the application itself. The strings are collected from the `uis/*.ui` and `src/*.py` files and stored in the `mainwindow_*.ts` and `main_*.ts` files respectively. Once collected, they can be translated with the QtLinguist application. Save the translated strings and then compile them to be used by the application itself. The workflow for German is given by the following commands. For the other languages, replace them with their language codes.
+
+    pyside6-lupdate src/*.py -ts translations/main_de_DE.ts
+    pyside6-lupdate uis/mainwindow.ui -ts uis/mainwindow_de_DE.ts
+    
+    pyside6-linguist
+        Open the main_de_DE.ts and mainwindow_de_DE.ts files
+    
+    pyside6-lrelease translations/main_de_DE.ts -qm translations/main_de_DE.qm
+    pyside6-lrelease translations/mainwindow_de_DE.ts -qm translations/mainwindow_de_DE.qm
 
 ## Debugging Crashes
 

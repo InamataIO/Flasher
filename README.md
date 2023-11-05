@@ -9,7 +9,7 @@
 
 Flash the firmware onto an ESP32 and register it with the server. Released for the [Inamata IoT platform][10].
 
-[Screenshots](#screenshots) | [Driver Setup](#driver-setup-instructions) | [Development](doc/development.md) | [Known Issues](doc/known_issues.md)
+[Screenshots](#screenshots) | [Languages](#languages) | [Driver Setup](#driver-setup-instructions) | [Development](doc/development.md) | [Known Issues](doc/known_issues.md)
 
 ## Download
 
@@ -58,6 +58,16 @@ The app is available via the following packages:
 | ![Windows Welcome](screenshots/windows_welcome.png) | ![Linux Welcome](screenshots/linux_add_controller.png) |
 | Welcome page for Windows 10 → [more pages][1]       | Add controller page for Ubuntu 22.04 → [more pages][2] |
 
+## Languages
+
+The application is available in English 🇺🇸, German 🇩🇪 and French 🇫🇷 with Spanish 🇪🇸 and Chinese 🇨🇳 in the pipeline.
+
+The translations have been created with the help of translation software as well as a mixture of native and non-native speakers. If you find any translation errors, we'll gladly accept merge requests or an e-mail with the mistranslated strings. Instructions for translators are available in the [development doc](doc/development.md#Internationalization).
+
+| German                                                                  | French                                                                  |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| ![Linux Welcome Dark German](screenshots/linux_welcome_dark_german.png) | ![Linux Welcome Dark French](screenshots/linux_welcome_dark_french.png) |
+
 ## Snap Setup Instructions
 
 Snap isolates apps so it requires explicit permission to access USB devices to flash microcontrollers as well as optionally saving the authentication token. Run the following commands in a terminal:
@@ -103,5 +113,5 @@ This is a list of features that would be useful and show the tool's current limi
 [7]: https://pypi.org/project/littlefs-python/
 [8]: https://github.com/InamataCo/Flasher/releases/latest
 [9]: https://snapcraft.io/inamata-flasher
-[10]: https://www.inamata.co
+[10]: https://inamata.co
 [11]: https://github.com/InamataCo/Flasher/releases/latest/download/inamata_flasher_setup.exe

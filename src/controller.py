@@ -5,8 +5,10 @@ from PySide6.QtCore import QCoreApplication, QThreadPool, QUrl, Slot
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import QMenu
 
+from about_view import AboutView
 from config import Config, ControllerModel
 from flash_model import FlashModel
+from locale_model import LocaleModel
 from main_view import MainView
 from server_model import ServerModel
 from wifi_model import WiFiModel
@@ -22,6 +24,7 @@ class Controller:
         server_model: ServerModel,
         flash_model: FlashModel,
         wifi_model: WiFiModel,
+        locale_model: LocaleModel,
         view: MainView,
         config: Config,
         app: QCoreApplication,
@@ -29,6 +32,7 @@ class Controller:
         self._server_model = server_model
         self._flash_model = flash_model
         self._wifi_model = wifi_model
+        self._locale_model = locale_model
         self._view = view
         self._config = config
         self._app = app
@@ -56,12 +60,23 @@ class Controller:
         # Login Page
         self._view.ui.loginButton.clicked.connect(self.log_in)
         self._view.ui.signUpButton.clicked.connect(self.sign_up)
-        self._view.ui.loginHelpIconButton.clicked.connect(self.show_help_dialog)
-        #   Login system menu
-        self.loginSystemMenu = QMenu()
-        self.loginSystemMenu.addAction("Clear data", self.clear_data)
-        self.loginSystemMenu.addAction("Open system settings", self.to_system_settings)
-        self._view.ui.loginSystemIconButton.setMenu(self.loginSystemMenu)
+        #   Login menus
+        self.login_system_menu = QMenu()
+        clear_data_label = QCoreApplication.translate("main", "Clear local data")
+        self.login_system_menu.addAction(clear_data_label, self.clear_data)
+        open_settings_label = QCoreApplication.translate("main", "Open system settings")
+        self.login_system_menu.addAction(open_settings_label, self.to_system_settings)
+        self._view.ui.loginSystemIconButton.setMenu(self.login_system_menu)
+        self.login_locale_menu = QMenu()
+        for locale in LocaleModel.Locale:
+            self.login_locale_menu.addAction(
+                locale.label, lambda i=locale: self.set_locale(i)
+            )
+        self._view.ui.loginLocaleIconButton.setMenu(self.login_locale_menu)
+        self.login_help_menu = QMenu()
+        self.login_help_menu.addAction(self.setup_label, self.show_setup_window)
+        self.login_help_menu.addAction(AboutView.about_label(), self.show_about_window)
+        self._view.ui.loginHelpIconButton.setMenu(self.login_help_menu)
 
         # Welcome Page
         self._view.ui.welcomeAddControllerButton.clicked.connect(self.to_add_controller)
@@ -70,8 +85,20 @@ class Controller:
         )
         self._view.ui.welcomeManageWiFiButton.clicked.connect(self.to_manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
-        self._view.ui.welcomeHelpIconButton.clicked.connect(self.show_help_dialog)
         self.set_welcome_username(self._config.users_name)
+        #   Welcome menus
+        self.welcome_locale_menu = QMenu()
+        for locale in LocaleModel.Locale:
+            self.welcome_locale_menu.addAction(
+                locale.label, lambda i=locale: self.set_locale(i)
+            )
+        self._view.ui.welcomeLocaleIconButton.setMenu(self.welcome_locale_menu)
+        self.welcome_help_menu = QMenu()
+        self.welcome_help_menu.addAction(self.setup_label, self.show_setup_window)
+        self.welcome_help_menu.addAction(
+            AboutView.about_label(), self.show_about_window
+        )
+        self._view.ui.welcomeHelpIconButton.setMenu(self.welcome_help_menu)
 
         # Add Controller Page
         self._view.ui.addControllerFlashButton.clicked.connect(
@@ -198,10 +225,7 @@ class Controller:
 
     def log_in_display_url(self, url: str):
         """Show the URL to the web page that should have opened."""
-        text = (
-            "Open the following web page if it does not automatically open.\n" f"{url}"
-        )
-        self._view.ui.loginLinkText.setText(text)
+        self._view.ui.loginLinkText.setText(f"{self.open_url_label}\n{url}")
 
     def log_in_finished(self):
         """After the login attempt, hide the loading widgets."""
@@ -227,9 +251,8 @@ class Controller:
         self._wifi_model.remove_all_aps()
         self._config.clear_stored_data()
         self.handle_login_page()
-        self._view.notify(
-            "Cleared secrets, configurations and cached data.", "Cleared data"
-        )
+
+        self._view.notify(self.clear_local_data_message, self.clear_local_data_title)
 
     def auto_log_in(self):
         self._view.ui.loginLoadingText.show()
@@ -308,7 +331,11 @@ class Controller:
             self._view.change_page(self._view.Pages.ADD_WIFI)
 
     def set_welcome_username(self, username: str) -> None:
-        text = f"{self._server_model.server_name.capitalize()}: {username}"
+        # For the normal user, don't show the server name
+        if self._server_model.server_name != "production":
+            text = f"{self._server_model.server_name.capitalize()}: {username}"
+        else:
+            text = username
         self._view.ui.welcomeUsername.setText(text)
 
     #############################
@@ -413,11 +440,7 @@ class Controller:
             if index:
                 self._view.ui.addControllerSitesComboBox.setCurrentIndex(index)
         if not self._view.ui.addControllerSitesComboBox.count():
-            self._view.notify(
-                "No sites found. Visit <a href='https://app.inamata.co'"
-                " style='color: #ccc'>app.inamata.co</a> to create new sites.",
-                "No Sites Found",
-            )
+            self._view.notify(self.no_sites_found_message, self.no_sites_found_title)
 
         # Update the firmware combo box and retain the currently selected item
         current_firmware = self._view.ui.addControllerFirmwaresComboBox.currentData()
@@ -456,7 +479,9 @@ class Controller:
         """Download the selected firmware image and flash it to the ESP."""
         if not self.add_controller_is_flash_input_valid():
             return
-        self._view.ui.addControllerProgressText.setText("Get Firmware (1/4)")
+        self._view.ui.addControllerProgressText.setText(
+            f"{self.get_firmware_label} (1/4)"
+        )
         self.add_controller_set_widgets_for_flashing(True)
 
         firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
@@ -469,30 +494,16 @@ class Controller:
     def add_controller_is_flash_input_valid(self):
         """Checks the user input and returns true if it looks good."""
         if not self._view.ui.addControllerSitesComboBox.currentData():
-            message = (
-                "Please select a site or reload if none are available."
-                " If the problem persists please update the Inamata Flasher tool or"
-                " contact your administrator."
-            )
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_site_message, self.missing_input_title)
             return False
         if not self._view.ui.addControllerNameLineEdit.text():
-            message = "Please enter a name for the new controller."
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_name_message, self.missing_input_title)
             return False
         if not self._view.ui.addControllerAPListView.selectedIndexes():
-            message = (
-                "Please select one or more WiFi access points to be used by the controller."
-                " To add or change entries, go to the 'Manager WiFi' page."
-            )
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_wifi_message, self.missing_input_title)
             return False
         if not self._view.ui.addControllerFirmwaresComboBox.currentData():
-            message = (
-                "Please select a firmware version or reload if none are available."
-                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
-            )
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_firmware_message, self.missing_input_title)
             return False
         return True
 
@@ -503,7 +514,9 @@ class Controller:
 
     def add_controller_download_firmware_result(self, firmware: dict):
         """After completing the download, flash the controller."""
-        self._view.ui.addControllerProgressText.setText("Get Bootloader (2/4)")
+        self._view.ui.addControllerProgressText.setText(
+            f"{self.get_bootloader_label} (2/4)"
+        )
         self.add_controller_set_progress_bar(30)
 
         bootloader = firmware["bootloader"]
@@ -529,7 +542,9 @@ class Controller:
 
     def add_controller_download_bootloader_result(self, bootloader: dict):
         """After completing the bootloader download, register the controller."""
-        self._view.ui.addControllerProgressText.setText("Registering (3/4)")
+        self._view.ui.addControllerProgressText.setText(
+            f"{self.registering_label} (3/4)"
+        )
         self.add_controller_set_progress_bar(40)
 
         name = self._view.ui.addControllerNameLineEdit.text()
@@ -555,7 +570,7 @@ class Controller:
 
     def add_controller_register_result(self, controller):
         """After registering a new controller, start the flashing process."""
-        self._view.ui.addControllerProgressText.setText("Flashing (4/4)")
+        self._view.ui.addControllerProgressText.setText(f"{self.flashing_label} (4/4)")
         self.add_controller_set_progress_bar(50)
 
         # Get the WiFi APs selected in the QListView
@@ -563,10 +578,7 @@ class Controller:
         wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
 
         if platform.system() == "Windows":
-            self._view.notify(
-                "Please press and hold the boot button on the ESP32 until the flash process starts.",
-                "Enable Flash Mode",
-            )
+            self._view.notify(self.flash_mode_message, self.flash_mode_title)
 
         # Start a task to flash the controller
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
@@ -589,8 +601,9 @@ class Controller:
         self.add_controller_set_progress_bar(mapped_progress)
 
     def add_controller_flash_result(self, _):
-        message = "Successfully flashed the microcontroller."
-        self._view.notify(message, "Finished Flashing", "information")
+        self._view.notify(
+            self.flash_succeeded_message, self.flash_succeeded_title, "information"
+        )
 
     def add_controller_flash_error(self, error, controller):
         """Handle errors while flashing the controller."""
@@ -668,10 +681,7 @@ class Controller:
         else:
             self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.emit(0)
         if not self._view.ui.replaceControllerSitesComboBox.count():
-            self._view.notify(
-                "No sites found. Visit <a href='https://app.inamata.co' style='color: #ccc'>app.inamata.co</a> to create new sites.",
-                "No Sites Found",
-            )
+            self._view.notify(self.no_sites_found_message, self.no_sites_found_title)
 
         # Update the firmware combo box and retain the currently selected item
         current_firmware = (
@@ -756,7 +766,7 @@ class Controller:
         self._view.ui.replaceControllerControllersComboBox.clear()
         if not controllers:
             self._view.ui.replaceControllerControllersComboBox.addItem(
-                "No controllers found"
+                self.no_controllers_found_label
             )
             return
 
@@ -776,7 +786,9 @@ class Controller:
         """Download the selected firmware image and flash it to the ESP."""
         if not self.replace_controller_is_flash_input_valid():
             return
-        self._view.ui.replaceControllerProgressText.setText("Get Firmware (1/4)")
+        self._view.ui.replaceControllerProgressText.setText(
+            f"{self.get_firmware_label} (1/4)"
+        )
         self.replace_controller_set_widgets_for_flashing(True)
 
         firmware_id = self._view.ui.replaceControllerFirmwaresComboBox.currentData()
@@ -791,32 +803,16 @@ class Controller:
     def replace_controller_is_flash_input_valid(self) -> bool:
         """Checks the user input and returns true is it looks good."""
         if not self._view.ui.replaceControllerSitesComboBox.currentData():
-            message = (
-                "Please select a site or reload if none are available."
-                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
-            )
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_site_message, self.missing_input_title)
             return False
         if not self._view.ui.replaceControllerControllersComboBox.currentData():
-            message = (
-                "Please select a site or reload if none are available."
-                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
-            )
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_controller_message, self.missing_input_title)
             return False
         if not self._view.ui.replaceControllerAPListView.selectedIndexes():
-            message = (
-                "Please select one or more WiFi access points to be used by the controller."
-                " To add or change entries, go to the 'Manager WiFi' page."
-            )
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_wifi_message, self.missing_input_title)
             return False
         if not self._view.ui.replaceControllerFirmwaresComboBox.currentData():
-            message = (
-                "Please select a firmware version or reload if none are available."
-                " If the problem persists please update the Inamata Flasher tool or contact your administrator."
-            )
-            self._view.notify(message, "Missing Input")
+            self._view.notify(self.missing_firmware_message, self.missing_input_title)
             return False
         return True
 
@@ -846,7 +842,9 @@ class Controller:
 
     def replace_controller_download_firmware_result(self, firmware: dict):
         """After completing the download, flash the controller."""
-        self._view.ui.replaceControllerProgressText.setText("Get Bootloader (2/4)")
+        self._view.ui.replaceControllerProgressText.setText(
+            f"{self.get_bootloader_label} (2/4)"
+        )
         self.replace_controller_set_progress_bar(30)
 
         bootloader = firmware["bootloader"]
@@ -874,16 +872,16 @@ class Controller:
 
     def replace_controller_download_bootloader_result(self, bootloader_image: dict):
         """After completing the download, flash the controller."""
-        self._view.ui.replaceControllerProgressText.setText("Registering (3/4)")
+        self._view.ui.replaceControllerProgressText.setText(
+            f"{self.registering_label} (3/4)"
+        )
         self._view.ui.replaceControllerProgressBar.setValue(40)
 
         controller_id = self._view.ui.replaceControllerControllersComboBox.currentData()
         controller = self._config.get_controller(controller_id)
         if not controller:
             self._view.notify(
-                "Controller not found in cache. Please clear cached data and try again.",
-                "Missing cached data",
-                "critical",
+                self.missing_controller_message, self.missing_cache_title, "critical"
             )
             return
         controller.firmware_image_id = (
@@ -915,7 +913,9 @@ class Controller:
 
     def replace_controller_cycle_token_result(self, controller: ControllerModel):
         """After updating the controller's auth key, flash it."""
-        self._view.ui.replaceControllerProgressText.setText("Flashing (4/4)")
+        self._view.ui.replaceControllerProgressText.setText(
+            f"{self.flashing_label} (4/4)"
+        )
         self._view.ui.replaceControllerProgressBar.setValue(50)
 
         # Get the WiFi APs selected in the QListView
@@ -924,10 +924,7 @@ class Controller:
 
         # Notify the user to hold the flash (boot) button
         if platform.system() == "Windows":
-            self._view.notify(
-                "Please press and hold the boot button on the ESP32 until the flash process starts.",
-                "Enable Flash Mode",
-            )
+            self._view.notify(self.flash_mode_message, self.flash_mode_title)
 
         # Start a task to flash the controller
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
@@ -948,8 +945,10 @@ class Controller:
         self.replace_controller_set_progress_bar(mapped_progress)
 
     def replace_controller_flash_result(self, _) -> None:
-        message = "Successfully flashed the microcontroller."
-        self._view.notify(message, "Finished Flashing", "information")
+        """Displays that flashing has succeeded."""
+        self._view.notify(
+            self.flash_succeeded_message, self.flash_succeeded_title, "information"
+        )
 
     def replace_controller_flash_error(self, error: WorkerError) -> None:
         """Handle an error when flashing."""
@@ -1060,11 +1059,18 @@ class Controller:
     ##############################
     # Miscellaneous functionality
 
+    def set_locale(self, locale: LocaleModel.Locale):
+        self._config.config["locale"] = locale.code
+        self._view.notify(
+            self._locale_model.restart_app_message(locale),
+            self._locale_model.restart_app_title(locale),
+        )
+
     def to_welcome_page(self):
         """Switch to the welcome page."""
         self._view.change_page(self._view.Pages.WELCOME)
 
-    def page_changed(self, index: int):
+    def page_changed(self, index: int) -> None:
         """Called when the page of the stacked widget changes"""
         if index == self._view.Pages.LOGIN.value[1]:
             self.handle_login_page()
@@ -1080,8 +1086,6 @@ class Controller:
             self.handle_replace_controller_page()
         elif index == self._view.Pages.SYSTEM_SETTINGS.value[1]:
             self.handle_system_settings_page()
-        else:
-            pass
 
     def handle_error(self, error: WorkerError):
         """
@@ -1103,19 +1107,20 @@ class Controller:
             self._config.save_config()
         event.accept()
 
-    def show_help_dialog(self) -> str:
-        """Show the help dialog."""
-        title = "Help"
-        contents = """1. For Snaps (Ubuntu Store) enable serial port access
- - Run in a terminal: snap connect inamata-flasher:raw-usb
- - Restart the app
-2. For Snaps (Ubuntu Store) allow saving login (optional)
- - Run in a terminal: snap connect inamata-flasher:password-manager-service
- - Restart the app
-3. Additional information and support
- - https://github.com/InamataCo/Flasher
- - https://www.inamata.co"""
-        self._view.notify(contents, title, "information")
+    def show_setup_window(self) -> None:
+        """Show the help window."""
+        if self._config.is_snap:
+            contents = self.snap_help
+        elif platform.system() == "Linux":
+            contents = self.linux_help
+        else:
+            contents = self.windows_help
+        self._view.notify(contents, self.setup_label, "information")
+
+    def show_about_window(self) -> None:
+        """Show the about window."""
+        about_view = AboutView(self._view, self._config)
+        about_view.show()
 
     def _check_permissions(self) -> None:
         """Run the permission checks."""
@@ -1128,16 +1133,203 @@ class Controller:
 
     def _handle_check_permissions_result(self, error: str) -> None:
         if error:
-            self._view.notify(error, "Permission error", "warning")
+            self._view.notify(error, self.permission_error_title, "warning")
 
     def get_found_serial_ports_text(self) -> str:
         """Get the UI text for found serial ports."""
         serial_ports = self._flash_model.get_serial_ports()
-        if not serial_ports:
-            text = "No serial ports found"
-        else:
-            text = f"Found {len(serial_ports)} serial port:"
+        text = self.found_serial_port_label(len(serial_ports))
         for port in serial_ports:
             text = text + "\n" if text else text
             text = text + port.device
         return text
+
+    ##############################
+    # Translated text
+
+    @property
+    def about_label(self) -> str:
+        return QCoreApplication.translate("main", "About")
+
+    @property
+    def setup_label(self) -> str:
+        return QCoreApplication.translate("main", "Setup")
+
+    @property
+    def open_url_label(self) -> str:
+        return QCoreApplication.translate(
+            "main", "Open the following web page if it does not automatically open."
+        )
+
+    @property
+    def clear_local_data_title(self) -> str:
+        return QCoreApplication.translate("main", "Cleared local data")
+
+    @property
+    def clear_local_data_message(self) -> str:
+        return QCoreApplication.translate(
+            "Cleared secrets, configurations and cached data."
+        )
+
+    @property
+    def flash_mode_title(self) -> str:
+        return QCoreApplication.translate("main", "Enable Flash Mode")
+
+    @property
+    def flash_mode_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "After closing this message, please press and hold the boot button on the ESP32 until the flash process starts.",
+        )
+
+    @property
+    def flash_succeeded_title(self) -> str:
+        return QCoreApplication.translate("main", "Finished Flashing")
+
+    @property
+    def flash_succeeded_message(self) -> str:
+        return QCoreApplication.translate(
+            "main", "Successfully flashed the microcontroller"
+        )
+
+    @property
+    def no_sites_found_title(self) -> str:
+        return QCoreApplication.translate("main", "No Sites Found")
+
+    @property
+    def no_sites_found_message(self) -> str:
+        return QCoreApplication.translate(
+            "main", "No sites found. Use the web app to create new sites."
+        )
+
+    @property
+    def no_controllers_found_label(self) -> str:
+        return QCoreApplication.translate("main", "No controllers found")
+
+    @property
+    def missing_cache_title(self) -> str:
+        return QCoreApplication.translate("main", "Missing cached data")
+
+    @property
+    def missing_controller_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "Controller not found in cache. Please clear cached data and try again.",
+        )
+
+    @property
+    def get_firmware_label(self) -> str:
+        return QCoreApplication.translate("main", "Get Firmware")
+
+    @property
+    def get_bootloader_label(self) -> str:
+        return QCoreApplication.translate("main", "Get Bootloader")
+
+    @property
+    def registering_label(self) -> str:
+        return QCoreApplication.translate("main", "Registering")
+
+    @property
+    def flashing_label(self) -> str:
+        return QCoreApplication.translate("main", "Flashing")
+
+    @property
+    def missing_input_title(self) -> str:
+        return QCoreApplication.translate("main", "Missing Input")
+
+    @property
+    def missing_site_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "Please select a site or reload if none are available."
+            " If the problem persists please update the Inamata Flasher or contact your administrator.",
+        )
+
+    @property
+    def missing_name_message(self) -> str:
+        return QCoreApplication.translate(
+            "main", "Please enter a name for the new controller."
+        )
+
+    @property
+    def missing_wifi_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "Please select one or more WiFi connections to be used by the controller."
+            " To add or change entries, go to the 'Manage WiFi' page.",
+        )
+
+    @property
+    def missing_firmware_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "Please select a firmware version or reload if none are available."
+            " If the problem persists please update the Inamata Flasher or contact your administrator.",
+        )
+
+    @property
+    def permission_error_title(self) -> str:
+        return QCoreApplication.translate("main", "Permission error")
+
+    def found_serial_port_label(self, n: int) -> str:
+        if not n:
+            return QCoreApplication.translate("main", "No serial ports found")
+        if n == 1:
+            return QCoreApplication.translate("main", "Found 1 serial port:")
+        return QCoreApplication.translate("main", "Found %n serial ports:", "", n)
+
+    @property
+    def snap_help(self) -> str:
+        return QCoreApplication.translate(
+            "help",
+            """1. Enable serial port access (part 1)
+  - Run in a terminal: sudo usermod -a -G dialout $USER
+
+2. Log out and back in again (or restart)
+
+3. Enable serial port access (part 2)
+ - Run in a terminal: snap connect inamata-flasher:raw-usb
+ - Restart the app
+
+4. (Optional) Allow saving login
+ - Run in a terminal: snap connect inamata-flasher:password-manager-service
+ - Restart the app
+
+5. (Optional) Verify permissions
+ - Run in a terminal: snap connections inamata-flasher
+ - Run in a terminal: groups
+
+6. Additional information and support
+ - https://github.com/InamataCo/Flasher
+ - https://inamata.co/forum/""",
+        )
+
+    @property
+    def linux_help(self) -> str:
+        return QCoreApplication.translate(
+            "help",
+            """1. Enable serial port access
+  - Run in a terminal: sudo usermod -a -G dialout $USER
+
+2. Log out and back in again (or restart)
+
+3. (Optional) Verify permissions
+ - Run in a terminal: groups
+
+4. Additional information and support
+ - https://github.com/InamataCo/Flasher
+ - https://inamata.co/forum/""",
+        )
+
+    @property
+    def windows_help(self) -> str:
+        return QCoreApplication.translate(
+            "help",
+            """1. Install the serial driver (CP210x)
+  - https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
+  - https://github.com/InamataCo/Flasher#driver-setup-instructions
+
+2. Additional information and support
+ - https://github.com/InamataCo/Flasher
+ - https://inamata.co/forum/""",
+        )

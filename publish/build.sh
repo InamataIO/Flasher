@@ -63,6 +63,8 @@ SNAPCRAFT_FILE="../snap/snapcraft.yaml"
 INNO_FILE="../publish/main.iss"
 INFO_FILE="../publish/windows/file_version_info.txt"
 
+./compile_translations.sh
+
 # https://stackoverflow.com/questions/428109/extract-substring-in-bash
 tmp=$(grep '^version = ".*"$' "$PYPROJECT_FILE") || true
 tmp=${tmp#*\"}

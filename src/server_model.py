@@ -16,6 +16,7 @@ import jwt
 import keyring
 import requests
 from keyring.errors import KeyringError, PasswordDeleteError
+from PySide6.QtCore import QCoreApplication
 from semantic_version import Version
 
 try:
@@ -264,7 +265,7 @@ class ServerModel:
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
-            raise WorkerWarning("Error while getting site and firmware data.")
+            raise WorkerWarning(self.getting_site_firmware_error)
 
         # Store firmware image metadata. Sort them by their semantic version
         firmware_images = [
@@ -309,16 +310,12 @@ class ServerModel:
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
-            raise WorkerWarning("Error while getting controller data.")
+            raise WorkerWarning(self.getting_controller_error)
         results = output["data"]["allControllers"]
         if results["pageInfo"]["hasNextPage"]:
-            message = (
-                "Not all controllers for this site could be fetched. Please upgrade your Inamata"
-                "Flasher tool."
-            )
-            raise WorkerInformation(message)
+            raise WorkerInformation(self.too_many_controllers_error)
         if "edges" not in results:
-            return None
+            return []
         controllers = self.parse_controllers(results["edges"])
         self._config.cache_controllers(controllers)
         return controllers
@@ -350,12 +347,12 @@ class ServerModel:
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
-            raise WorkerWarning("Error while getting default partition table data.")
+            raise WorkerWarning(self.getting_default_partition_table_error)
         results = output["data"]["allControllerPartitionTables"]["edges"]
         partition_tables = [i["node"] for i in results]
         if not partition_tables:
             raise WorkerWarning(
-                f"Could not find default partition table ({partition_table_name})"
+                f"{self.default_partition_table_not_found_error} ({partition_table_name})"
             )
         partition_table_id = partition_tables[0]["id"]
         self._default_partition_table_id = partition_table_id
@@ -381,11 +378,11 @@ class ServerModel:
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
-            raise WorkerWarning("Error while getting partition table data.")
+            raise WorkerWarning(self.getting_partition_table_error)
         partition_table = output["data"]["controllerPartitionTable"]
         # Check if the partition table was found on the server
         if not partition_table:
-            raise WorkerWarning("Could not find partition table on server.")
+            raise WorkerWarning(self.partition_table_not_found_error)
         self._cache_partition_table(partition_table_id, partition_table)
         return partition_table
 
@@ -475,9 +472,7 @@ class ServerModel:
             raise WorkerWarning(errors[0]["message"])
         controller = self._config.get_controller(controller_id)
         if not controller:
-            raise WorkerInformation(
-                "Could not find the controller. Please reload the controller data."
-            )
+            raise WorkerInformation(self.controller_not_found_error)
         key = output["data"]["cycleControllerAuthToken"]["key"]
         controller.auth_token = key
         self._config.cache_controllers([controller])
@@ -500,9 +495,7 @@ class ServerModel:
         success = output["data"]["deleteController"]["success"]
         if not success:
             logging.warning(f"Failed deleting controller: {controller_id}")
-            raise WorkerWarning(
-                "Failed deleting controller. Check your permissions or contact your administrator."
-            )
+            raise WorkerWarning(self.deleting_controller_error)
 
     def get_username(self) -> str:
         return self._config.config.get("username", "")
@@ -516,9 +509,7 @@ class ServerModel:
         try:
             success = self._refresh_access_token()
         except WorkerError as err:
-            raise WorkerWarning(
-                "Failed connecting to the server. Check your internet connection or contact Inamata."
-            ) from err
+            raise WorkerWarning(self.auth_server_error) from err
         return success
 
     def download_firmware_image(self, firmware_id: str, **kwargs) -> dict:
@@ -532,9 +523,7 @@ class ServerModel:
                 kwargs.get("progress_callback", None),
             )
         except KeyError as err:
-            message = (
-                f"Error downloading firmware. Not all required metadata found ({err})."
-            )
+            message = f"{self.downloading_firmware_error} {err}"
             raise WorkerWarning(message)
         return firmware
 
@@ -558,8 +547,7 @@ class ServerModel:
                 kwargs.get("progress_callback", None),
             )
         except KeyError as err:
-            message = f"Error downloading bootloader. Not all required metadata found ({err})."
-            raise WorkerWarning(message)
+            raise WorkerWarning(f"{self.downloading_bootloader_error} {err}")
         return bootloader
 
     def get_bootloader_image(self, bootloader_image_id: str) -> dict:
@@ -600,9 +588,7 @@ class ServerModel:
                     logging.error(
                         f"Failed to download file (Error {response.status_code})"
                     )
-                    raise WorkerWarning(
-                        "Failed downloading the file. Try refreshing, check your internet connection or contact support."
-                    )
+                    raise WorkerWarning(self.download_failed_error)
             total_length = response.headers.get("content-length")
             # If the total length is unknown, skip notifying progress
             if total_length is None:
@@ -621,10 +607,7 @@ class ServerModel:
         # Check the file hash. Delete and inform the user if it fails
         if not self._is_file_valid(path, image["hashSha3_512"]):
             os.remove(path)
-            raise WorkerWarning(
-                "Checksum of downloaded file did not match. Please try another"
-                " version or contact support."
-            )
+            raise WorkerWarning(self.checksum_failed_error)
         return image
 
     @staticmethod
@@ -665,9 +648,7 @@ class ServerModel:
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
-            raise WorkerWarning(
-                "Error while refreshing the firmware URL. Please reload data."
-            )
+            raise WorkerWarning(self.refreshing_firmware_url_failed_error)
         firmware_image["file"] = output["data"]["firmwareImage"]["file"]
 
     def _refresh_bootloader_image_url(self, bootloader_image):
@@ -681,9 +662,7 @@ class ServerModel:
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
-            raise WorkerWarning(
-                "Error while refreshing the bootloader URL. Please reload data."
-            )
+            raise WorkerWarning(self.refreshing_bootloader_url_failed_error)
         bootloader_image["file"] = output["data"]["bootloaderImage"]["file"]
 
     def _save_credentials(self, access_token: str, refresh_token: str) -> None:
@@ -741,7 +720,7 @@ class ServerModel:
         if self._is_token_expired(self._oauth_access_token_data):
             updated = self._refresh_access_token()
             if not updated:
-                raise WorkerWarning("Access has expired. Please log in again.")
+                raise WorkerWarning(self.access_expired_error)
         headers = {**headers, "Authorization": f"Bearer {self._oauth_access_token}"}
         return self._server_request(url, json=data, headers=headers)
 
@@ -765,11 +744,7 @@ class ServerModel:
         except requests.exceptions.HTTPError as err:
             if err.response.status_code == 400 and err.request.url == self._graphql_url:
                 logging.warning(f"GraphQL error: {err.response.content}")
-                message = (
-                    "An error occured while requesting data from the server API."
-                    " Check that you're using an up-to-date version of the Inamata Flasher tool"
-                )
-                raise WorkerWarning(message) from err
+                raise WorkerWarning(self.server_request_error) from err
             raise WorkerWarning(str(err)) from err
         except requests.exceptions.ConnectionError as err:
             error_type = type(err.args[0]).__name__
@@ -834,6 +809,8 @@ class ServerModel:
         """Try to get a new access token with the refresh token.
 
         Returns true if the update was successful."""
+        if not self._oauth_refresh_token:
+            return False
         logging.debug("Refreshing the access token")
         headers = {"content-type": "application/x-www-form-urlencoded"}
         data = {
@@ -965,4 +942,122 @@ class ServerModel:
             firmware_image_id=data["firmwareImageId"],
             partition_table_id=data["partitionTableId"],
             auth_token=data["authToken"]["key"] if data.get("authToken") else None,
+        )
+
+    @property
+    def getting_site_firmware_error(self):
+        return QCoreApplication.translate(
+            "server", "Error while getting site and firmware data."
+        )
+
+    @property
+    def getting_controller_error(self):
+        return QCoreApplication.translate(
+            "server", "Error while getting controller data."
+        )
+
+    @property
+    def too_many_controllers_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Not all controllers for this site could be fetched. Please upgrade the Inamata Flasher.",
+        )
+
+    @property
+    def getting_default_partition_table_error(self):
+        return QCoreApplication.translate(
+            "server", "Error while getting default partition table data."
+        )
+
+    @property
+    def default_partition_table_not_found_error(self):
+        return QCoreApplication.translate(
+            "server", "Could not find default partition table"
+        )
+
+    @property
+    def getting_partition_table_error(self):
+        return QCoreApplication.translate(
+            "server", "Error while getting partition table data."
+        )
+
+    @property
+    def partition_table_not_found_error(self):
+        return QCoreApplication.translate(
+            "server", "Could not find partition table on server."
+        )
+
+    @property
+    def controller_not_found_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Could not find the controller. Please reload the controller data.",
+        )
+
+    @property
+    def deleting_controller_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Failed deleting controller. Check your permissions or contact your administrator.",
+        )
+
+    @property
+    def auth_server_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Failed connecting to the authentication server. Check your internet connection or contact Inamata.",
+        )
+
+    @property
+    def downloading_firmware_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Error downloading firmware. Not all required metadata found:",
+        )
+
+    @property
+    def downloading_bootloader_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Error downloading bootloader. Not all required metadata found:",
+        )
+
+    @property
+    def download_failed_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Failed downloading the file. Try refreshing, check your internet connection or contact support.",
+        )
+
+    @property
+    def checksum_failed_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "Checksum of downloaded file did not match. Please try another version or contact support.",
+        )
+
+    @property
+    def refreshing_firmware_url_failed_error(self):
+        return QCoreApplication.translate(
+            "server", "Error while refreshing the firmware URL. Please reload data."
+        )
+
+    @property
+    def refreshing_bootloader_url_failed_error(self):
+        return QCoreApplication.translate(
+            "server", "Error while refreshing the bootloader URL. Please reload data."
+        )
+
+    @property
+    def access_expired_error(self):
+        return QCoreApplication.translate(
+            "server", "Access has expired. Please log in again."
+        )
+
+    @property
+    def server_request_error(self):
+        return QCoreApplication.translate(
+            "server",
+            "An error occured while requesting data from the server API."
+            " Check that you're using an up-to-date version of the Inamata Flasher.",
         )

@@ -81,7 +81,7 @@ QLabel {
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>7</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -257,9 +257,15 @@ QLabel {
          <layout class="QHBoxLayout" name="horizontalLayout_10">
           <item>
            <widget class="QPushButton" name="loginSystemIconButton">
+            <property name="minimumSize">
+             <size>
+              <width>96</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="maximumSize">
              <size>
-              <width>48</width>
+              <width>96</width>
               <height>16777215</height>
              </size>
             </property>
@@ -267,8 +273,7 @@ QLabel {
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="preferences-system">
-              <normaloff>.</normaloff>.</iconset>
+             <iconset theme="preferences-system"/>
             </property>
             <property name="iconSize">
              <size>
@@ -349,10 +354,10 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="loginHelpIconButton">
+           <widget class="QPushButton" name="loginLocaleIconButton">
             <property name="maximumSize">
              <size>
-              <width>56</width>
+              <width>48</width>
               <height>16777215</height>
              </size>
             </property>
@@ -360,8 +365,32 @@ QLabel {
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="system-help">
-              <normaloff>.</normaloff>.</iconset>
+             <iconset theme="accessories-character-map"/>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>32</width>
+              <height>32</height>
+             </size>
+            </property>
+            <property name="flat">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="loginHelpIconButton">
+            <property name="maximumSize">
+             <size>
+              <width>48</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset theme="system-help"/>
             </property>
             <property name="iconSize">
              <size>
@@ -604,14 +633,28 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QLabel" name="welcomeUsername">
-            <property name="text">
-             <string>hello@inamata.co</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-            </property>
-           </widget>
+           <layout class="QVBoxLayout" name="verticalLayout_15">
+            <item>
+             <widget class="QLabel" name="welcomeUsername">
+              <property name="text">
+               <string>hello@inamata.co</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="welcomeVersion">
+              <property name="text">
+               <string>0.2.1</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <spacer name="horizontalSpacer_8">
@@ -627,12 +670,21 @@ QLabel {
            </spacer>
           </item>
           <item>
-           <widget class="QLabel" name="welcomeVersion">
+           <widget class="QPushButton" name="welcomeLocaleIconButton">
             <property name="text">
-             <string>0.2.1</string>
+             <string/>
             </property>
-            <property name="alignment">
-             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+            <property name="icon">
+             <iconset theme="accessories-character-map"/>
+            </property>
+            <property name="iconSize">
+             <size>
+              <width>24</width>
+              <height>24</height>
+             </size>
+            </property>
+            <property name="flat">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -645,8 +697,7 @@ QLabel {
              <string/>
             </property>
             <property name="icon">
-             <iconset theme="system-help">
-              <normaloff>.</normaloff>.</iconset>
+             <iconset theme="system-help"/>
             </property>
             <property name="iconSize">
              <size>

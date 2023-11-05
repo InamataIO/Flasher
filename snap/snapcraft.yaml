@@ -17,7 +17,7 @@ description: |
   Optional:
     sudo snap connect inamata-flasher:password-manager-service
 license: Apache-2.0
-version: 1.0.0
+version: 1.1.0
 grade: stable
 confinement: strict
 base: core22
@@ -28,7 +28,7 @@ compression: lzo
 contact: moritz@silentwind.eu
 issues: https://github.com/InamataCo/Flasher/issues
 source-code: https://github.com/InamataCo/Flasher/
-website: https://www.inamata.co/
+website: https://inamata.co/
 
 apps:
   inamata-flasher:

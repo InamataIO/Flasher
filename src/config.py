@@ -35,7 +35,7 @@ class Config:
     app_author = "inamata"
     dirs = AppDirs(app_name, app_author)
 
-    def __init__(self):
+    def __init__(self, app_version):
         """Load the config from file in the platform-specific config folder."""
         Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
         self._config_path = os.path.join(self.dirs.user_config_dir, "config.json")
@@ -48,6 +48,7 @@ class Config:
         self.fonts_folder = self.root_folder / "fonts"
         self.images_folder = self.root_folder / "images"
         self.littlefs_folder = self.root_folder / "littlefs_partition"
+        self.app_version = app_version
 
         self.is_snap = bool(os.getenv("SNAP"))
 
@@ -105,6 +106,7 @@ class Config:
         """Overwrites the config file."""
         Path(self.dirs.user_config_dir).mkdir(parents=True, exist_ok=True)
         with open(self._config_path, "w") as file:
+            self.config["versions"] = {"app": self.app_version, "syntax": 1}
             json.dump(self.config, file)
 
     def clear_stored_data(self) -> None:

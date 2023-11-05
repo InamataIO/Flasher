@@ -26,11 +26,12 @@ from PySide6.QtWidgets import QApplication
 from config import Config
 from controller import Controller
 from flash_model import FlashModel
+from locale_model import LocaleModel
 from main_view import MainView
 from server_model import ServerModel
 from wifi_model import WiFiModel
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 
 def main():
@@ -56,10 +57,11 @@ def main():
         debugpy.listen(5678)
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
-    inamata_flasher = QApplication(sys.argv)
-
-    config = Config()
-    view = MainView(version=__version__, config=config)
+    app = QApplication(sys.argv)
+    config = Config(app_version=__version__)
+    locale = LocaleModel(config)
+    locale.translate_app(app)
+    view = MainView(config=config)
     server_model = ServerModel(config=config)
     flash_model = FlashModel(server_model=server_model, config=config)
     wifi_model = WiFiModel(config=config)
@@ -67,12 +69,13 @@ def main():
         server_model=server_model,
         flash_model=flash_model,
         wifi_model=wifi_model,
+        locale_model=locale,
         view=view,
         config=config,
-        app=inamata_flasher,
+        app=app,
     )
     view.show()
-    sys.exit(inamata_flasher.exec())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

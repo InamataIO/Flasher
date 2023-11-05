@@ -1,4 +1,3 @@
-import platform
 import sys
 from enum import Enum
 from typing import Callable, List, Union
@@ -28,7 +27,7 @@ class MainView(QMainWindow):
 
     close_callback: Callable[[QCloseEvent], None] = None
 
-    def __init__(self, version: str, config: Config):
+    def __init__(self, config: Config):
         super().__init__()
 
         self._config = config
@@ -39,8 +38,8 @@ class MainView(QMainWindow):
             sys.exit(-1)
         self.ui = QUiLoader().load(ui_file)
         ui_file.close()
-        self.ui.welcomeVersion.setText(version)
-        self.ui.loginVersion.setText(version)
+        self.ui.welcomeVersion.setText(config.app_version)
+        self.ui.loginVersion.setText(config.app_version)
         self.setCentralWidget(self.ui)
         self.setWindowTitle("Inamata Flasher")
         self._set_font()
@@ -82,7 +81,7 @@ class MainView(QMainWindow):
 
     def _set_font(self):
         """Set the font used by the UI."""
-        font_file = self._config.fonts_folder / "Roboto-Regular.ttf"
+        font_file = self._config.fonts_folder / "Roboto_Regular.ttf"
         font_id = QFontDatabase.addApplicationFont(str(font_file))
         _fontstr = QFontDatabase.applicationFontFamilies(font_id)[0]
         _font = QFont(_fontstr, 16)
@@ -120,11 +119,14 @@ class MainView(QMainWindow):
         self.ui.loginLogo.setPixmap(pixmap)
 
         folder = self._config.images_folder
-        settings_icon = QPixmap(str(folder / "setting-line-icon.png"))
+        settings_icon = QPixmap(str(folder / "setting_line_icon.png"))
         self.ui.loginSystemIconButton.setIcon(settings_icon)
-        help_icon = QPixmap(str(folder / "question-mark-line-icon.png"))
+        help_icon = QPixmap(str(folder / "question_mark_line_icon.png"))
         self.ui.loginHelpIconButton.setIcon(help_icon)
         self.ui.welcomeHelpIconButton.setIcon(help_icon)
+        locale_icon = QPixmap(str(folder / "locale_icon.png"))
+        self.ui.loginLocaleIconButton.setIcon(locale_icon)
+        self.ui.welcomeLocaleIconButton.setIcon(locale_icon)
 
     def eventFilter(self, watched, event):
         """Catch the close event to save settings."""

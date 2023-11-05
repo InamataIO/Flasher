@@ -16,6 +16,6 @@
 #define VER_ORIGINALFILENAME_STR    "inamata_flasher.exe"
 #define VER_PRODUCTNAME_STR         "Inamata Flasher"
 
-#define VER_COMPANYDOMAIN_STR       "www.inamata.co"
+#define VER_COMPANYDOMAIN_STR       "inamata.co"
 
 #endif // VERSION_H

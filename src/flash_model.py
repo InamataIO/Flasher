@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import platform
+import subprocess
 import sys
 from contextlib import redirect_stderr
 from distutils.dir_util import copy_tree
@@ -13,6 +14,7 @@ from typing import List
 import esptool
 import serial.tools.list_ports as list_ports
 from littlefs import LittleFS, LittleFSError
+from PySide6.QtCore import QCoreApplication
 from serial.tools.list_ports_common import ListPortInfo
 
 from config import Config, ControllerModel
@@ -23,36 +25,6 @@ from worker import WorkerError, WorkerSignals, WorkerWarning
 
 if platform.system() == "Linux":
     import grp
-
-SNAP_FLASHING_FAILED_ERROR = """Flashing failed
-1. Check that the microcontroller is plugged in
-2. For Snaps (Ubuntu Store) enable serial port access
- - Run in a terminal: snap connect inamata-flasher:raw-usb
- - Restart the app
-3. Open a bug report or ask for support in the forum.
-
-https://github.com/InamataCo/Flasher
-https://www.inamata.co"""
-
-FLASHING_FAILED_ERROR = """Flashing failed
-1. Check that the microcontroller is plugged in
-2. Open a bug report or ask for support in the forum.
-
-https://github.com/InamataCo/Flasher
-https://www.inamata.co"""
-
-LINUX_DIALOUT_GROUP_ERROR = """User is missing permissions
-1. Add the user to the dialout group (access serial ports)
-  - Run in a terminal: sudo usermod -a -G dialout $USER
-2. Log out and back in again"""
-
-
-SNAP_LISTING_COM_PORTS_FAILED = """Listing COM / serial ports failed
-For Snap installations:
- - Run in a terminal: snap connect inamata-flasher:raw-usb
- - Restart the app"""
-
-LISTING_COM_PORTS_FAILED = """Error when listing COM ports:"""
 
 
 class EsptoolOutputHandler:
@@ -143,11 +115,11 @@ class FlashModel:
             return list_ports.comports()
         except TypeError as err:
             if self._config.is_snap:
-                logging.warning(f"{SNAP_LISTING_COM_PORTS_FAILED}\n\n{err}")
+                logging.warning(f"{self.snap_listing_com_port_failed_error}\n\n{err}")
             else:
-                logging.warning(f"{LISTING_COM_PORTS_FAILED}\n\n{err}")
+                logging.warning(f"{self.listing_com_port_failed_error}\n\n{err}")
         except Exception as err:
-            logging.warning(f"{LISTING_COM_PORTS_FAILED}\n\n{err}")
+            logging.warning(f"{self.listing_com_port_failed_error}\n\n{err}")
         return []
 
     def check_permissions(self, **kwargs) -> str:
@@ -155,7 +127,11 @@ class FlashModel:
         if platform.system() == "Linux":
             groups = [grp.getgrgid(g).gr_name for g in os.getgroups()]
             if "dialout" not in groups:
-                return LINUX_DIALOUT_GROUP_ERROR
+                return self.linux_dialout_group_error
+        if self._config.is_snap:
+            result = subprocess.run(["snapctl", "is-connected", "raw-usb"])
+            if result.returncode == 1:
+                return self.snap_listing_com_port_failed_error
         return ""
 
     def flash_controller(
@@ -217,7 +193,7 @@ class FlashModel:
                 gen_esp32part.main()
         except SystemExit:
             logging.error(stderr)
-            raise WorkerWarning("Error while generating the partitions image.")
+            raise WorkerWarning(self.partition_gen_error)
         finally:
             # Restore the original cmdline arguments
             sys.argv = original_argv
@@ -251,7 +227,7 @@ class FlashModel:
                 # Ensure that the image size is a multiple of the block size
                 if image_size % self._littlefs_block_size:
                     raise WorkerError(
-                        f"Image size ({image_size} bytes) is not a multiple of the block size ({self._littlefs_block_size})"
+                        self.image_size_error(image_size, self._littlefs_block_size)
                     )
                 block_count = int(image_size / self._littlefs_block_size)
                 fs = LittleFS(
@@ -283,9 +259,7 @@ class FlashModel:
             with open(self._littlefs_image_path, "wb") as f:
                 f.write(fs.context.buffer)
         except (LittleFSError, OSError, ValueError) as err:
-            raise WorkerError(
-                f"Error while generating LittleFS image: {type(err)}: {err}"
-            ) from err
+            raise WorkerError(f"{self.littlefs_gen_error} {type(err)}: {err}") from err
         finally:
             # Try to delete the created secret file
             try:
@@ -304,18 +278,14 @@ class FlashModel:
         firmware_image_path = self._server_model.get_image_path(firmware)
         if not os.path.isfile(firmware_image_path):
             logging.error(f"Could not find firmware image at: {firmware_image_path}")
-            raise WorkerError(
-                "Firmware image could not be found. Please refresh the cached files."
-            )
+            raise WorkerError(self.firmware_not_found_error)
         if bootloader:
             bootloader_image_path = self._server_model.get_image_path(bootloader)
             if not os.path.isfile(bootloader_image_path):
                 logging.error(
                     f"Could not find bootloader image at: {bootloader_image_path}"
                 )
-                raise WorkerError(
-                    "Bootloader image could not be found. Please refresh the cached files."
-                )
+                raise WorkerError(self.bootloader_not_found_error)
             firmware_partition = next(
                 i
                 for i in partitions
@@ -381,5 +351,91 @@ class FlashModel:
 
     def _get_flash_error_msg(self, err: Exception) -> str:
         if self._config.is_snap:
-            return SNAP_FLASHING_FAILED_ERROR + "\n\n" + str(err)
-        return FLASHING_FAILED_ERROR + "\n\n" + str(err)
+            return f"{self.snap_flashing_failed_error}\n\n{err}"
+        return f"{self.flashing_failed_error}\n\n{err}"
+
+    @property
+    def partition_gen_error(self):
+        return QCoreApplication.translate(
+            "flash", "Error while generating the partitions image."
+        )
+
+    def image_size_error(self, image_size, block_size):
+        return QCoreApplication.translate(
+            "flash",
+            "Image size (%n bytes) is not a multiple of the block size (%n bytes)",
+            "",
+            image_size,
+            block_size,
+        )
+
+    @property
+    def littlefs_gen_error(self):
+        return QCoreApplication.translate(
+            "flash", "Error while generating LittleFS image:"
+        )
+
+    @property
+    def firmware_not_found_error(self):
+        return QCoreApplication.translate(
+            "flash",
+            "Firmware image could not be found. Please refresh the cached files.",
+        )
+
+    @property
+    def bootloader_not_found_error(self):
+        return QCoreApplication.translate(
+            "flash",
+            "Bootloader image could not be found. Please refresh the cached files.",
+        )
+
+    @property
+    def snap_flashing_failed_error(self):
+        return QCoreApplication.translate(
+            "flash",
+            """Flashing failed
+1. Check that the microcontroller is plugged in
+2. For Snaps (Ubuntu Store) enable serial port access
+ - Run in a terminal: snap connect inamata-flasher:raw-usb
+ - Restart the app
+3. Open a bug report or ask for support in the forum.
+
+https://github.com/InamataCo/Flasher
+https://inamata.co/forum/""",
+        )
+
+    @property
+    def flashing_failed_error(self):
+        return QCoreApplication.translate(
+            "flash",
+            """Flashing failed
+1. Check that the microcontroller is plugged in
+2. Open a bug report or ask for support in the forum.
+
+https://github.com/InamataCo/Flasher
+https://inamata.co/forum/""",
+        )
+
+    @property
+    def linux_dialout_group_error(self):
+        return QCoreApplication.translate(
+            "flash",
+            """User is missing permissions
+1. Add the user to the dialout group (access serial ports)
+  - Run in a terminal: sudo usermod -a -G dialout $USER
+2. Log out and back in again""",
+        )
+
+    @property
+    def snap_listing_com_port_failed_error(self):
+        return QCoreApplication.translate(
+            "flash",
+            """Listing COM / serial ports failed
+For Snap installations:
+ - Run in a terminal: snap connect inamata-flasher:raw-usb
+ - Restart the app""",
+        )
+
+    @property
+    def listing_com_port_failed_error(self):
+        return QCoreApplication.translate("flash", "Error when listing COM ports:")
