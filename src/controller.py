@@ -1168,7 +1168,7 @@ class Controller:
     @property
     def clear_local_data_message(self) -> str:
         return QCoreApplication.translate(
-            "Cleared secrets, configurations and cached data."
+            "main", "Cleared secrets, configurations and cached data."
         )
 
     @property

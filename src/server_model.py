@@ -1058,6 +1058,6 @@ class ServerModel:
     def server_request_error(self):
         return QCoreApplication.translate(
             "server",
-            "An error occured while requesting data from the server API."
+            "An error occurred while requesting data from the server API."
             " Check that you're using an up-to-date version of the Inamata Flasher.",
         )
