@@ -8,7 +8,7 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from appdirs import AppDirs
+from platformdirs import PlatformDirs
 
 
 @dataclass
@@ -33,7 +33,7 @@ class Config:
 
     app_name = "inamata-flasher"
     app_author = "inamata"
-    dirs = AppDirs(app_name, app_author)
+    dirs = PlatformDirs(app_name, app_author)
 
     def __init__(self, app_version):
         """Load the config from file in the platform-specific config folder."""

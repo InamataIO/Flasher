@@ -22,10 +22,10 @@ readme = "README.md"
 version = "1.1.4"
 
 [tool.poetry.dependencies]
-PySide6 = "~=6.5.2"
-appdirs = "~=1.4.4"
+PySide6 = "~=6.6.0"
+platformdirs = "~=4.0.0"
 esptool = "~=4.6.2"
-keyring = "~=24.2.0"
+keyring = "~=24.3.0"
 littlefs-python = "~=0.4.0"
 pyjwt = {version = "~=2.8.0", extras = ["crypto"]}
 pyserial = "~=3.5"
@@ -38,9 +38,9 @@ black = "~=23.3"
 debugpy = "~=1.6"
 ipdb = "0.13.13"
 pip-check = "~=2.8"
-pyinstaller = "~=5.12"
+pyinstaller = "~=6.2"
 # Used for linting tests
-ruff = "~=0.0.287"
+ruff = "~=0.1.6"
 
 [tool.poetry.scripts]
 inamata-flasher = "main:main"

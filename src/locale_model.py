@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from pathlib import Path
 
 from PySide6.QtCore import QCoreApplication, QLibraryInfo, QLocale, QTranslator
 from PySide6.QtWidgets import QApplication
@@ -24,7 +23,7 @@ class LocaleModel:
             self.label = label
 
         @classmethod
-        def from_code(cls, code) -> Locale | None:
+        def from_code(cls, code) -> "Locale" | None:
             """Match the complete locale, then try only language."""
             for locale in cls:
                 if locale.code == code:
