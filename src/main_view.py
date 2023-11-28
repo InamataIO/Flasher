@@ -68,9 +68,14 @@ class MainView(QMainWindow):
 
     def current_page(self) -> Pages | None:
         """Return the current page."""
-        next(
-            i for i in self.Pages if self.ui.stackedWidget.currentIndex() == i.value[1]
-        )
+        try:
+            return next(
+                i
+                for i in self.Pages
+                if self.ui.stackedWidget.currentIndex() == i.value[1]
+            )
+        except StopIteration:
+            return None
 
     def _set_page_indexes(self):
         """Find the indexes for the named pages in the stacked widget."""

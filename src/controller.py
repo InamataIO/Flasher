@@ -1,3 +1,4 @@
+import logging
 import platform
 from typing import List
 
@@ -345,10 +346,29 @@ class Controller:
         """Add the WiFi AP according to the user input (SSID, password)."""
         ssid = self._view.ui.addWiFiSSIDLineEdit.text()
         password = self._view.ui.addWiFiPasswordLineEdit.text()
+        if self._is_wifi_ssid_invalid(ssid):
+            return
         self._wifi_model.add_ap(ssid, password)
         self._view.change_page(self._page_after_add_wifi)
         self._view.ui.addWiFiSSIDLineEdit.clear()
         self._view.ui.addWiFiPasswordLineEdit.clear()
+
+    def _is_wifi_ssid_invalid(self, ssid: str) -> bool:
+        if not ssid:
+            self._view.notify(
+                self.blank_wifi_ssid_message,
+                self.invalid_wifi_ssid_title,
+                "information",
+            )
+            return True
+        if len(ssid) > 32:
+            self._view.notify(
+                self.too_long_wifi_ssid_message,
+                self.invalid_wifi_ssid_title,
+                "information",
+            )
+            return True
+        return False
 
     def back_from_add_wifi(self):
         """Go to the previous page"""
@@ -356,6 +376,7 @@ class Controller:
             self._view.change_page(self._page_before_add_wifi)
             self._page_before_add_wifi = None
         else:
+            logging.warning("_page_before_add_wifi was not set")
             self._view.change_page(self._view.Pages.WELCOME)
 
     ################################
@@ -399,7 +420,10 @@ class Controller:
 
     def update_wifi_ap_details(self):
         """Update the AP details and go back to the manage page."""
-        self._update_wifi_selected_ap.ssid = self._view.ui.updateWiFiSSIDLineEdit.text()
+        ssid = self._view.ui.updateWiFiSSIDLineEdit.text()
+        if self._is_wifi_ssid_invalid(ssid):
+            return
+        self._update_wifi_selected_ap.ssid = ssid
         self._update_wifi_selected_ap.password = (
             self._view.ui.updateWiFiPasswordLineEdit.text()
         )
@@ -445,9 +469,26 @@ class Controller:
         # Update the firmware combo box and retain the currently selected item
         current_firmware = self._view.ui.addControllerFirmwaresComboBox.currentData()
         self._view.ui.addControllerFirmwaresComboBox.clear()
-        for i in self._config.config.get("firmwareImages", []):
+        firmware_images = self._config.config.get("firmwareImages", [])
+        # Add a latest firmware entry and all other ones
+        if firmware_images:
+            # Firmware images are sorted by version number
+            latest = firmware_images[0]
             self._view.ui.addControllerFirmwaresComboBox.addItem(
-                f"{i['name']} {i['version']}", userData=i["id"]
+                f"{self.latest_label} ({latest['name']})", userData=latest["id"]
+            )
+            for i in firmware_images:
+                self._view.ui.addControllerFirmwaresComboBox.addItem(
+                    f"{i['name']} {i['version']}", userData=i["id"]
+                )
+        else:
+            self._view.notify(
+                self.no_firmware_images_found_message,
+                self.no_firmware_images_found_title,
+                "warning",
+            )
+            self._view.ui.addControllerFirmwaresComboBox.addItem(
+                self.no_firmware_images_found_label
             )
         if current_firmware:
             index = self._view.ui.addControllerFirmwaresComboBox.findData(
@@ -688,9 +729,26 @@ class Controller:
             self._view.ui.replaceControllerFirmwaresComboBox.currentData()
         )
         self._view.ui.replaceControllerFirmwaresComboBox.clear()
-        for i in self._config.config.get("firmwareImages", []):
+        firmware_images = self._config.config.get("firmwareImages", [])
+        # Add a latest firmware entry and all other ones
+        if firmware_images:
+            # Firmware images are sorted by version number
+            latest = firmware_images[0]
             self._view.ui.replaceControllerFirmwaresComboBox.addItem(
-                f"{i['name']} {i['version']}", userData=i["id"]
+                f"{self.latest_label} ({latest['name']})", userData=latest["id"]
+            )
+            for i in firmware_images:
+                self._view.ui.replaceControllerFirmwaresComboBox.addItem(
+                    f"{i['name']} {i['version']}", userData=i["id"]
+                )
+        else:
+            self._view.notify(
+                self.no_firmware_images_found_message,
+                self.no_firmware_images_found_title,
+                "warning",
+            )
+            self._view.ui.replaceControllerFirmwaresComboBox.addItem(
+                self.no_firmware_images_found_label
             )
         if current_firmware:
             index = self._view.ui.replaceControllerFirmwaresComboBox.findData(
@@ -989,6 +1047,7 @@ class Controller:
             self._view.change_page(self._page_before_system_settings)
             self._page_before_system_settings = None
         else:
+            logging.warning("_page_before_system_settings was not set")
             self._view.change_page(self._view.Pages.LOGIN)
 
     def system_settings_save(self):
@@ -1170,6 +1229,44 @@ class Controller:
         return QCoreApplication.translate(
             "main", "Cleared secrets, configurations and cached data."
         )
+
+    @property
+    def invalid_wifi_ssid_title(self) -> str:
+        return QCoreApplication.translate("main", "Invalid WiFi connection")
+
+    @property
+    def blank_wifi_ssid_message(self) -> str:
+        return QCoreApplication.translate(
+            "main", "The WiFi name (SSID) is blank. Please enter a WiFi name."
+        )
+
+    @property
+    def too_long_wifi_ssid_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "The WiFi name (SSID) is too long. Please enter a WiFi name with 32 characters or fewer.",
+        )
+
+    @property
+    def latest_label(self) -> str:
+        return QCoreApplication.translate(
+            "main", "Latest", "Label for latest firmware image"
+        )
+
+    @property
+    def no_firmware_images_found_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "No firmware images found on the server. Check that you have permissions to view firmware images or contact support.",
+        )
+
+    @property
+    def no_firmware_images_found_title(self) -> str:
+        return QCoreApplication.translate("main", "No firmware images found")
+
+    @property
+    def no_firmware_images_found_label(self) -> str:
+        return QCoreApplication.translate("main", "No firmware images found")
 
     @property
     def flash_mode_title(self) -> str:

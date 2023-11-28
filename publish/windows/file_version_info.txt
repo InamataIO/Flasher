@@ -6,8 +6,8 @@ VSVersionInfo(
   ffi=FixedFileInfo(
     # filevers and prodvers should be always a tuple with four items: (1, 2, 3, 4)
     # Set not needed items to zero 0.
-    filevers=(1, 1, 3, 0),
-    prodvers=(1, 1, 3, 0),
+    filevers=(1, 1, 4, 0),
+    prodvers=(1, 1, 4, 0),
     # Contains a bitmask that specifies the valid bits 'flags'r
     mask=0x0,
     # Contains a bitmask that specifies the Boolean attributes of the file.
@@ -34,8 +34,8 @@ VSVersionInfo(
         StringStruct('InternalName', 'inamata-flasher'),
         StringStruct('OriginalFilename', 'inamata_flasher.exe'),
         StringStruct('ProductName', 'Inamata Flasher'),
-        StringStruct('FileVersion', '1.1.3.windows'),
-        StringStruct('ProductVersion', '1.1.3.windows'),
+        StringStruct('FileVersion', '1.1.4.windows'),
+        StringStruct('ProductVersion', '1.1.4.windows'),
         StringStruct('LegalCopyright', 'Apache-2.0')])
       ]), 
     VarFileInfo([VarStruct('Translation', [1033, 1200, 1031, 1200, 1036, 1200])])

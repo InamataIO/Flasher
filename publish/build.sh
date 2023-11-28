@@ -28,6 +28,7 @@ package_linux() {
   # Copy PyInstaller binary with release name
   PYINSTALLER_TARGET_NAME="inamata_flasher-$GIT_VERSION-linux-x86_64"
   cp ../dist/inamata_flasher "../dist/$PYINSTALLER_TARGET_NAME"
+  cp ../dist/inamata_flasher "../dist/inamata_flasher-linux-x86_64"
   echo "../dist/$PYINSTALLER_TARGET_NAME"
 
   echo "Building the Snapcraft package"
@@ -44,6 +45,7 @@ package_windows() {
   # Copy PyInstaller binary with release name
   PYINSTALLER_TARGET_NAME="inamata_flasher-$GIT_VERSION-windows-x86_64"
   cp ../dist/inamata_flasher "../dist/$PYINSTALLER_TARGET_NAME"
+  cp ../dist/inamata_flasher "../dist/inamata_flasher-windows-x86_64"
   echo "../dist/$PYINSTALLER_TARGET_NAME"
 
   echo "Building the Inno Setup package"

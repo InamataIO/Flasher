@@ -72,14 +72,14 @@ To translate strings, the Qt Linguist software is required. It can be installed 
 
 The translations are saved in `ts` and `qm` files in the `translations` folder. The `ts` files act as the source files which the `qm` are the compiled versions loaded by the application itself. The strings are collected from the `uis/*.ui` and `src/*.py` files and stored in the `mainwindow_*.ts` and `main_*.ts` files respectively. Once collected, they can be translated with the QtLinguist application. Save the translated strings and then compile them to be used by the application itself. The workflow for German is given by the following commands. For the other languages, replace them with their language codes.
 
-    pyside6-lupdate src/*.py -ts translations/main_de_DE.ts
-    pyside6-lupdate uis/mainwindow.ui -ts uis/mainwindow_de_DE.ts
+    ./publish/update_translations.sh
     
     pyside6-linguist
-        Open the main_de_DE.ts and mainwindow_de_DE.ts files
+    # Open the main_de_DE.ts and mainwindow_de_DE.ts files
     
-    pyside6-lrelease translations/main_de_DE.ts -qm translations/main_de_DE.qm
-    pyside6-lrelease translations/mainwindow_de_DE.ts -qm translations/mainwindow_de_DE.qm
+    ./publish/compile_translations.sh
+
+To delete translations that have become obesolete (in ts files but not found in source), run `update_translations.sh` with `-n`. It is possible to open multiple translation files in parallel in PyLinguist. This allows the translation process to be streamlined. Simply shift select multiple files with the open file dialog.
 
 ## Debugging Crashes
 

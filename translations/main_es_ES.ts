@@ -90,7 +90,7 @@ Para instalaciones Snap:
 <context>
     <name>help</name>
     <message>
-        <location filename="../src/controller.py" line="1307"/>
+        <location filename="../src/controller.py" line="1401"/>
         <source>1. Enable serial port access (part 1)
   - Run in a terminal: sudo usermod -a -G dialout $USER
 
@@ -133,7 +133,7 @@ Para instalaciones Snap:
   - https://inamata.co/forum/</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1324"/>
+        <location filename="../src/controller.py" line="1418"/>
         <source>1. Enable serial port access
   - Run in a terminal: sudo usermod -a -G dialout $USER
 
@@ -158,7 +158,7 @@ Para instalaciones Snap:
   - https://inamata.co/forum/</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1336"/>
+        <location filename="../src/controller.py" line="1430"/>
         <source>1. Install the serial driver (CP210x)
   - https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
   - https://github.com/InamataCo/Flasher#driver-setup-instructions
@@ -179,147 +179,179 @@ Para instalaciones Snap:
     <name>main</name>
     <message>
         <location filename="../src/about_view.py" line="37"/>
-        <location filename="../src/controller.py" line="1154"/>
+        <location filename="../src/controller.py" line="1210"/>
         <source>About</source>
         <translation type="unfinished">Sobre</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="66"/>
+        <location filename="../src/controller.py" line="67"/>
         <source>Clear local data</source>
         <translation type="unfinished">Borrar datos locales</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="68"/>
+        <location filename="../src/controller.py" line="69"/>
         <source>Open system settings</source>
         <translation type="unfinished">Abrir la configuración del sistema</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1158"/>
+        <location filename="../src/controller.py" line="1214"/>
         <source>Setup</source>
         <translation type="unfinished">Configurar</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1164"/>
+        <location filename="../src/controller.py" line="1220"/>
         <source>Open the following web page if it does not automatically open.</source>
         <translation type="unfinished">Abra la siguiente página web si no se abre automáticamente.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1168"/>
+        <location filename="../src/controller.py" line="1224"/>
         <source>Cleared local data</source>
         <translation type="unfinished">Datos locales borrados</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1174"/>
+        <location filename="../src/controller.py" line="1230"/>
         <source>Cleared secrets, configurations and cached data.</source>
         <translation type="unfinished">Se borraron los secretos, las configuraciones y los datos almacenados en caché.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1178"/>
+        <location filename="../src/controller.py" line="1234"/>
+        <source>Invalid WiFi connection</source>
+        <translation type="unfinished">Conexión WiFi no válida</translation>
+    </message>
+    <message>
+        <location filename="../src/controller.py" line="1240"/>
+        <source>The WiFi name (SSID) is blank. Please enter a WiFi name.</source>
+        <translation type="unfinished">El nombre de WiFi (SSID) está en blanco. Por favor ingresa un nombre de WiFi.</translation>
+    </message>
+    <message>
+        <location filename="../src/controller.py" line="1247"/>
+        <source>The WiFi name (SSID) is too long. Please enter a WiFi name with 32 characters or fewer.</source>
+        <translation type="unfinished">El nombre de WiFi (SSID) es demasiado largo. Ingrese un nombre de WiFi con 32 caracteres o menos.</translation>
+    </message>
+    <message>
+        <location filename="../src/controller.py" line="1253"/>
+        <source>Latest</source>
+        <comment>Label for latest firmware image</comment>
+        <translation type="unfinished">El último</translation>
+    </message>
+    <message>
+        <location filename="../src/controller.py" line="1260"/>
+        <source>No firmware images found on the server. Check that you have permissions to view firmware images or contact support.</source>
+        <translation type="unfinished">No se encontraron imágenes de firmware en el servidor. Verifique que tenga permisos para ver imágenes de firmware o comuníquese con el soporte.</translation>
+    </message>
+    <message>
+        <location filename="../src/controller.py" line="1264"/>
+        <location filename="../src/controller.py" line="1268"/>
+        <source>No firmware images found</source>
+        <translation type="unfinished">No se encontraron imágenes de firmware</translation>
+    </message>
+    <message>
+        <location filename="../src/controller.py" line="1272"/>
         <source>Enable Flash Mode</source>
         <translation type="unfinished">Habilitar el modo flash</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1185"/>
+        <location filename="../src/controller.py" line="1279"/>
         <source>After closing this message, please press and hold the boot button on the ESP32 until the flash process starts.</source>
         <translation type="unfinished">Después de cerrar este mensaje, presione y mantenga presionado el botón de inicio en el ESP32 hasta que comience el proceso de actualización.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1189"/>
+        <location filename="../src/controller.py" line="1283"/>
         <source>Finished Flashing</source>
         <translation type="unfinished">Flasheo terminado</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1195"/>
+        <location filename="../src/controller.py" line="1289"/>
         <source>Successfully flashed the microcontroller</source>
         <translation type="unfinished">Flasheó exitosamente el microcontrolador</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1199"/>
+        <location filename="../src/controller.py" line="1293"/>
         <source>No Sites Found</source>
         <translation type="unfinished">No se encontraron lugares</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1205"/>
+        <location filename="../src/controller.py" line="1299"/>
         <source>No sites found. Use the web app to create new sites.</source>
         <translation type="unfinished">No se encontraron lugares. Utilice la aplicación web para crear nuevos lugares.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1209"/>
+        <location filename="../src/controller.py" line="1303"/>
         <source>No controllers found</source>
         <translation type="unfinished">No se encontraron controladores</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1213"/>
+        <location filename="../src/controller.py" line="1307"/>
         <source>Missing cached data</source>
         <translation type="unfinished">Faltan datos en caché</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1220"/>
+        <location filename="../src/controller.py" line="1314"/>
         <source>Controller not found in cache. Please clear cached data and try again.</source>
         <translation type="unfinished">Controlador no encontrado en la caché. Borre los datos almacenados en caché y vuelva a intentarlo.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1224"/>
+        <location filename="../src/controller.py" line="1318"/>
         <source>Get Firmware</source>
         <translation type="unfinished">Obtener firmware</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1228"/>
+        <location filename="../src/controller.py" line="1322"/>
         <source>Get Bootloader</source>
         <translation type="unfinished">Obtener gestor de arranque</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1232"/>
+        <location filename="../src/controller.py" line="1326"/>
         <source>Registering</source>
         <translation type="unfinished">Registrarse</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1236"/>
+        <location filename="../src/controller.py" line="1330"/>
         <source>Flashing</source>
         <translation type="unfinished">Flashear</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1240"/>
+        <location filename="../src/controller.py" line="1334"/>
         <source>Missing Input</source>
         <translation type="unfinished">Entrada faltante</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1248"/>
+        <location filename="../src/controller.py" line="1342"/>
         <source>Please select a site or reload if none are available. If the problem persists please update the Inamata Flasher or contact your administrator.</source>
         <translation type="unfinished">Seleccione un lugar o vuelva a cargarlo si no hay ninguno disponible. Si el problema persiste, actualice Inamata Flasher o comuníquese con su administrador.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1254"/>
+        <location filename="../src/controller.py" line="1348"/>
         <source>Please enter a name for the new controller.</source>
         <translation type="unfinished">Introduzca un nombre para el nuevo controlador.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1262"/>
+        <location filename="../src/controller.py" line="1356"/>
         <source>Please select one or more WiFi connections to be used by the controller. To add or change entries, go to the &apos;Manage WiFi&apos; page.</source>
         <translation type="unfinished">Seleccione una o más conexiones WiFi para que las utilice el controlador. Para agregar o cambiar entradas, vaya a la página &apos;Administrar WiFi&apos;.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1270"/>
+        <location filename="../src/controller.py" line="1364"/>
         <source>Please select a firmware version or reload if none are available. If the problem persists please update the Inamata Flasher or contact your administrator.</source>
         <translation type="unfinished">Seleccione una versión de firmware o vuelva a cargarla si no hay ninguna disponible. Si el problema persiste, actualice Inamata Flasher o comuníquese con su administrador.</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1274"/>
+        <location filename="../src/controller.py" line="1368"/>
         <source>Permission error</source>
         <translation type="unfinished">Error de permiso</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1277"/>
+        <location filename="../src/controller.py" line="1371"/>
         <source>No serial ports found</source>
         <translation type="unfinished">No se encontraron puertos serie</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1279"/>
+        <location filename="../src/controller.py" line="1373"/>
         <source>Found 1 serial port:</source>
         <translation type="unfinished">Encontrado 1 puerto serie:</translation>
     </message>
     <message>
-        <location filename="../src/controller.py" line="1281"/>
+        <location filename="../src/controller.py" line="1375"/>
         <source>Found %n serial ports:</source>
         <translation type="unfinished">Encontré %n puertos serie:</translation>
     </message>
