@@ -9,47 +9,10 @@
 
 Flash the firmware onto an ESP32 and register it with the server. Released for the [Inamata IoT platform][10].
 
-[Screenshots](#screenshots) | [Languages](#languages) | [Driver Setup](#driver-setup-instructions) | [Development](doc/development.md) | [Known Issues](doc/known_issues.md)
-
-## Download
+[Download](#download) | [Driver Setup](#driver-setup) | [Languages](#languages) | [Snap Setup](#optional-snap-setup) | [Development](doc/development.md) | [Known Issues](doc/known_issues.md)
 
 [![Git it for Windows 10](images/windows_download_badge.png)][11]
 [![Get it from the Snap Store](https://snapcraft.io/static/images/badges/en/snap-store-white.svg)](https://snapcraft.io/inamata-flasher)
-
-### Windows
-
-For Windows download the [latest setup installer][11].
-
-- Start (double-click) the downloaded file
-- Click `More info`
-- Click `Run anyway`
-
-Alternatively, download the [latest standalone executable][8] from GitHub releases.
-
-### Linux
-
-For Linux use the [Snap download][9] to receive automatic updates. After installing it, run the [snap setup instructions](#snap-setup-instructions).
-
-- In a terminal run
-  - sudo usermod -a -G dialout $USER
-  - sudo snap connect inamata-flasher:raw-usb
-  - sudo snap connect inamata-flasher:password-manager-service
-- Logout and back in again
-
-Alternatively, download the [latest standalone executable][8] from GitHub releases.
-
-- In a terminal run
-  - chmod +x <path-to-file>
-  - sudo usermod -a -G dialout $USER
-- Start (double-click) the downloaded file
-
-The app is available via the following packages:
-
-|              | GitHub Release | Snap Store | Installer  | Source |
-| ------------ | -------------- | ---------- | ---------- | ------ |
-| **Linux**    | Yes            | Yes        | No         | Yes    |
-| **Windows**  | Yes            | No         | Yes        | Yes    |
-| **Packager** | PyInstaller    | Snap       | Inno Setup | None   |
 
 ## Screenshots
 
@@ -58,41 +21,68 @@ The app is available via the following packages:
 | ![Windows Welcome](screenshots/windows_welcome.png) | ![Linux Welcome](screenshots/linux_add_controller.png) |
 | Welcome page for Windows 10 → [more pages][1]       | Add controller page for Ubuntu 22.04 → [more pages][2] |
 
+## Download
+
+### Windows
+
+For Windows download the [latest setup installer][11].
+
+### Linux
+
+For Linux use the [Snap download][9] to receive automatic updates.
+
+### Older and Standalone Versions
+
+Older and standalone versions are available on the [GitHub releases page][8]. The app is available via the following channels:
+
+|              | GitHub Release | Snap Store | Installer  | Source |
+| ------------ | -------------- | ---------- | ---------- | ------ |
+| **Linux**    | Yes            | Yes        | No         | Yes    |
+| **Windows**  | Yes            | No         | Yes        | Yes    |
+| **Packager** | PyInstaller    | Snap       | Inno Setup | None   |
+
+## Driver Setup
+
+### Windows
+
+Download and install the [CP210x USB to UART Bridge driver][4] from [silabs.com][3]. Additional information is provided by Espressif:
+
+- [Establish Serial Connection with ESP32][12]
+- [Flash Using UART][13]
+
+In rare cases you might require the [FTDI driver][14]. This is used on some developer boards.
+
+### Linux
+
+1. Add your Linux user to the dialout group to gain access to the serial USB port. Run the following command in a terminal:
+
+    `sudo usermod -a -G dialout $USER`
+
+2. Now logout and back in again. To verify the change run the following command:
+
+    `groups`
+
 ## Languages
 
-The application is available in English 🇺🇸, German 🇩🇪 and French 🇫🇷 with Spanish 🇪🇸 and Chinese 🇨🇳 in the pipeline.
+The application is available in
+- 🇬🇧 🇺🇸 English
+- 🇩🇪 German
+- 🇫🇷 French
+- 🇪🇸 Spanish
 
-The translations have been created with the help of translation software as well as a mixture of native and non-native speakers. If you find any translation errors, we'll gladly accept merge requests or an e-mail with the mistranslated strings. Instructions for translators are available in the [development doc](doc/development.md#Internationalization).
+The translations have been created with the help of translation software as well as a mixture of native and non-native speakers. If you find any translation errors, we'll gladly accept merge requests or an e-mail (info@inamata.co) with the mistranslated strings. Instructions for translators are available in the [development doc](doc/development.md#Internationalization).
 
 | German                                                                  | French                                                                  |
 | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | ![Linux Welcome Dark German](screenshots/linux_welcome_dark_german.png) | ![Linux Welcome Dark French](screenshots/linux_welcome_dark_french.png) |
 
-## Snap Setup Instructions
+## Optional Snap Setup
 
-Snap isolates apps so it requires explicit permission to access USB devices to flash microcontrollers as well as optionally saving the authentication token. Run the following commands in a terminal:
-
-```
-snap connect inamata-flasher:raw-usb
-```
-
-Optionally, to enable saving the authentication token between restarts:
+To enable saving the authentication token between restarts run the following command in a terminal:
 
 ```
 snap connect inamata-flasher:password-manager-service
 ```
-
-## Driver Setup Instructions
-
-### Windows
-
-Download and install the [CP210x USB to UART Bridge driver][4] for [silabs.com][3].
-
-### Linux
-
-Open a terminal, run the following code, **logout** and then back in again for the changes to take effect.
-
-    sudo usermod -a -G dialout $USER
 
 ## Future Features
 
@@ -108,10 +98,12 @@ This is a list of features that would be useful and show the tool's current limi
 [1]: screenshots/windows.md
 [2]: screenshots/linux.md
 [3]: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
-[4]: https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
+[4]: https://www.silabs.com/documents/public/software/CP210x_Universal_Windows_Driver.zip
 [6]: https://github.com/espressif/arduino-esp32/blob/master/libraries/LittleFS/library.properties
-[7]: https://pypi.org/project/littlefs-python/
 [8]: https://github.com/InamataCo/Flasher/releases/latest
 [9]: https://snapcraft.io/inamata-flasher
 [10]: https://inamata.co
 [11]: https://github.com/InamataCo/Flasher/releases/latest/download/inamata_flasher_setup.exe
+[12]: https://docs.espressif.com/projects/esp-idf/en/v4.3-beta2/esp32/get-started/establish-serial-connection.html
+[13]: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/establish-serial-connection.html
+[14]: https://ftdichip.com/drivers/vcp-drivers/
