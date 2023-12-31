@@ -14,23 +14,21 @@ Push the final version (with updated version numbers), create a new release on G
 
 ### Bump Version Numbers
 
-Bump the version number in the following files
+When building the release artefacts, pass `-P bump=<major/minor/patch>` to the build command. For example to increment the minor version run:
 
-- [snap/snapcraft.yaml](../snap/snapcraft.yaml)
-- [src/main.py](../src/main.py)
-- [pyproject.toml](../pyproject.toml)
-- [publish/main.iss](../publish/main.iss)
-- [file_version_info.txt](../publish/windows/file_version_info.txt)
-
-Tag the commit with
-
-```bash
-git tag v<version number>
-git push
-git push --tags
+```sh
+./build.sh -P bump=minor
 ```
 
-The `version.h` and `version.rc` files are currently not used. They were used to sign binaries but this has currently been discontinued.
+If bump is not passed, a development release is generated. The `version.h` and `version.rc` files are currently not used. They were used to sign binaries but now `file_version_info.txt` is used.
+
+### Release Text
+
+To generate a summary of the build, run the following command:
+
+```sh
+./build.sh text
+```
 
 ### Windows
 
@@ -53,7 +51,7 @@ For instructions to set up the code signing, check the [setup instructions](http
 
 ### Linux
 
-The `publish/build.sh` script will build a standalone PyInstaller as well as a Snap package. Attach the PyInstaller image to the GitHub release. For the Snap package, promote it on snapcraft.io to the release channel. After pushing to the candidate channel, start the Ubuntu 22.04, 20.04 and Kubuntu 22.04 VMs and start the app. Then logout and switch to the X or Wayland session. This should cover most distro dependent differences.
+The `build.sh` script will build a standalone PyInstaller as well as a Snap package. Attach the PyInstaller image to the GitHub release. For the Snap package, promote it on snapcraft.io to the release channel. After pushing to the candidate channel, start the Ubuntu 22.04, 20.04 and Kubuntu 22.04 VMs and start the app. Then logout and switch to the X or Wayland session. This should cover most distro dependent differences.
 
 To manually create a PyInstaller distributable, run the following commands:
 
@@ -78,14 +76,22 @@ To translate strings, the Qt Linguist software is required. It can be installed 
 
 The translations are saved in `ts` and `qm` files in the `translations` folder. The `ts` files act as the source files which the `qm` are the compiled versions loaded by the application itself. The strings are collected from the `uis/*.ui` and `src/*.py` files and stored in the `mainwindow_*.ts` and `main_*.ts` files respectively. Once collected, they can be translated with the QtLinguist application. Save the translated strings and then compile them to be used by the application itself. The workflow for German is given by the following commands. For the other languages, replace them with their language codes.
 
-    ./publish/update_translations.sh
+    ./build.sh i18n_u
     
     pyside6-linguist
     # Open the main_de_DE.ts and mainwindow_de_DE.ts files
     
-    ./publish/compile_translations.sh
+    ./build.sh i18n_c
 
-To delete translations that have become obesolete (in ts files but not found in source), run `update_translations.sh` with `-n`. It is possible to open multiple translation files in parallel in PyLinguist. This allows the translation process to be streamlined. Simply shift select multiple files with the open file dialog.
+To delete translations that have become obesolete (in ts files but not found in source), run `./build.sh i18n` with `-P no_obsolete`. It is possible to open multiple translation files in parallel in PyLinguist. This allows the translation process to be streamlined. Simply shift select multiple files with the open file dialog.
+
+## Build Options
+
+While debugging the build process, it can be useful to only run build type, you can add the following options to `build.sh` to skip the respective build type.
+
+- PyInstaller: `-P no_pyinstaller=1`
+- Snap: `-P no_snap=1`
+- Inno: `-P no_inno=1`
 
 ## Debugging Crashes
 

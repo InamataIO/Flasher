@@ -41,6 +41,8 @@ pip-check = "~=2.8"
 pyinstaller = "~=6.2"
 # Used for linting tests
 ruff = "~=0.1.6"
+# Automate build process
+pybuilder = "^0.13.10"
 
 [tool.poetry.scripts]
 inamata-flasher = "main:main"
