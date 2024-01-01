@@ -85,7 +85,9 @@ class InnoFile(VersionFile):
     @property
     def patterns(self) -> list[Pattern]:
         return [
-            Pattern(r=r"^#define MyAppVersion .*$", f="#define MyAppVersion {version}")
+            Pattern(
+                r=r"^#define MyAppVersion .*$", f='#define MyAppVersion "{version}"'
+            )
         ]
 
 

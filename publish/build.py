@@ -262,7 +262,7 @@ def update_version_files(project: Project, logger: Logger):
     root_dir = project.get_mandatory_property("root_dir")
     for file in version_files:
         logger.info(f"Updating version in: {file.path.relative_to(root_dir)}")
-        file.update_version()
+        file.update_version(project.get_mandatory_property("next_version"))
 
 
 @task(description="Build binaries for current platform.")
@@ -298,10 +298,10 @@ def build(project: Project, logger: Logger):
             build_inno(project, logger)
 
     if bump_and_commit:
-        logger.info("Creating git release commit")
+        subprocess.run("git add .".split())
         commit_title = f"Release {next_version}"
-        subprocess.run([f"git commit -m '{commit_title}'".split()])
-        subprocess.run([f"git tag v{next_version}".split()])
+        subprocess.run(["git", "commit", "-m", f"{commit_title}"])
+        logger.info(f"Release tag : v{next_version}")
 
 
 @task(description="Sync Poetry and delete build / dist files.")
