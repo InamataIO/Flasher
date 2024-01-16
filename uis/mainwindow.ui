@@ -42,6 +42,7 @@ QLabel {
   font-size: 16px;
   color: white;
 }
+QListView::item{height: 32px}
 
 #loginForm_2 QPushButton {
   font-size: 24px;
@@ -796,8 +797,7 @@ QLabel {
               </size>
              </property>
              <property name="toolTip">
-              <string>Use Ctrl / Shift for
-multi-selection</string>
+              <string>Checked WiFi connections are saved to the controller</string>
              </property>
              <property name="selectionMode">
               <enum>QAbstractItemView::ExtendedSelection</enum>
@@ -1017,11 +1017,7 @@ multi-selection</string>
               </size>
              </property>
              <property name="toolTip">
-              <string>Use Ctrl / Shift for
-multi-selection</string>
-             </property>
-             <property name="selectionMode">
-              <enum>QAbstractItemView::ExtendedSelection</enum>
+              <string>Checked WiFi connections are saved to the controller</string>
              </property>
             </widget>
            </item>

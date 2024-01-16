@@ -2,7 +2,7 @@ import logging
 import platform
 from typing import List
 
-from PySide6.QtCore import QCoreApplication, QThreadPool, QUrl, Slot
+from PySide6.QtCore import QCoreApplication, QModelIndex, QThreadPool, QUrl, Slot
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import QMenu
 
@@ -46,7 +46,7 @@ class Controller:
         self._connect_shortcuts()
         self._page_after_add_wifi = None
         self._page_before_add_wifi = None
-        self._update_wifi_selected_ap = None
+        self._update_wifi_checked_ap = None
         view.change_page(view.Pages.LOGIN)
         # Call login page handler if change_page does not result in a page change
         self.handle_login_page()
@@ -110,6 +110,7 @@ class Controller:
         )
         self._view.ui.addControllerBackButton.clicked.connect(self.to_welcome_page)
         self._view.ui.addControllerDriverButton.clicked.connect(self.to_driver_install)
+        self._view.ui.addControllerAPListView.clicked.connect(self.ap_list_clicked)
 
         # Replace Controller Page
         self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.connect(
@@ -125,6 +126,7 @@ class Controller:
         self._view.ui.replaceControllerDriverButton.clicked.connect(
             self.to_driver_install
         )
+        self._view.ui.replaceControllerAPListView.clicked.connect(self.ap_list_clicked)
 
         # Add WiFi Page
         self._view.ui.addWiFiSubmitPushButton.clicked.connect(self.add_wifi_ap)
@@ -145,9 +147,8 @@ class Controller:
         self._view.ui.manageWiFiEditButton.clicked.connect(
             self.manage_wifi_to_update_wifi
         )
-        self._view.ui.apListView.selectionModel().selectionChanged.connect(
-            self.manage_wifi_ap_selected
-        )
+        self._wifi_model.dataChanged.connect(self.manage_wifi_ap_checked)
+        self._view.ui.apListView.clicked.connect(self.ap_list_clicked)
 
         # System Settings Page
         self._view.ui.systemSettingsCancelButton.clicked.connect(
@@ -348,7 +349,7 @@ class Controller:
         password = self._view.ui.addWiFiPasswordLineEdit.text()
         if self._is_wifi_ssid_invalid(ssid):
             return
-        self._wifi_model.add_ap(ssid, password)
+        self._wifi_model.add_ap(ssid, password, True)
         self._view.change_page(self._page_after_add_wifi)
         self._view.ui.addWiFiSSIDLineEdit.clear()
         self._view.ui.addWiFiPasswordLineEdit.clear()
@@ -384,14 +385,15 @@ class Controller:
 
     def handle_manage_wifi_page(self):
         """Disable edit button until entry selected."""
-        indexes = self._view.ui.apListView.selectedIndexes()
-        self._view.ui.manageWiFiEditButton.setEnabled(bool(indexes))
-        self._view.ui.manageWiFiRemoveButton.setEnabled(bool(indexes))
+        self.manage_wifi_ap_checked()
 
-    def manage_wifi_ap_selected(self, *_):
+    def manage_wifi_ap_checked(self, *_):
         """Handle selection changed."""
-        self._view.ui.manageWiFiEditButton.setEnabled(True)
-        self._view.ui.manageWiFiRemoveButton.setEnabled(True)
+        checked_aps = self._wifi_model.get_checked_aps()
+        enable_edit = len(checked_aps) == 1
+        self._view.ui.manageWiFiEditButton.setEnabled(enable_edit)
+        enable_delete = len(checked_aps) > 0
+        self._view.ui.manageWiFiRemoveButton.setEnabled(enable_delete)
 
     def manage_wifi_to_add_wifi(self):
         self._page_before_add_wifi = self._view.Pages.MANAGE_WIFI
@@ -399,23 +401,22 @@ class Controller:
         self._view.change_page(self._view.Pages.ADD_WIFI)
 
     def manage_wifi_to_update_wifi(self):
-        index = self._view.ui.apListView.selectedIndexes()[0]
-        self._update_wifi_selected_ap = self._wifi_model.get_ap(index)
+        checked_aps = self._wifi_model.get_checked_aps()
+        self._update_wifi_checked_ap = checked_aps[0]
         self._view.change_page(self._view.Pages.UPDATE_WIFI)
 
     def remove_wifi_ap(self):
         """Remove the currently selected WiFi AP."""
-        if indexes := self._view.ui.apListView.selectedIndexes():
-            self._wifi_model.remove_ap(indexes[0].row())
+        self._wifi_model.remove_checked_aps()
 
     ######################################
     # Update WiFi controller functionality
 
     def handle_update_wifi_page(self):
         """Populate the line edit fields for the current AP."""
-        self._view.ui.updateWiFiSSIDLineEdit.setText(self._update_wifi_selected_ap.ssid)
+        self._view.ui.updateWiFiSSIDLineEdit.setText(self._update_wifi_checked_ap.ssid)
         self._view.ui.updateWiFiPasswordLineEdit.setText(
-            self._update_wifi_selected_ap.password
+            self._update_wifi_checked_ap.password
         )
 
     def update_wifi_ap_details(self):
@@ -423,16 +424,16 @@ class Controller:
         ssid = self._view.ui.updateWiFiSSIDLineEdit.text()
         if self._is_wifi_ssid_invalid(ssid):
             return
-        self._update_wifi_selected_ap.ssid = ssid
-        self._update_wifi_selected_ap.password = (
+        self._update_wifi_checked_ap.ssid = ssid
+        self._update_wifi_checked_ap.password = (
             self._view.ui.updateWiFiPasswordLineEdit.text()
         )
-        self._update_wifi_selected_ap = None
+        self._update_wifi_checked_ap = None
         self._view.change_page(self._view.Pages.MANAGE_WIFI)
 
     def back_from_update_wifi(self):
         """Go back to manage wifi page."""
-        self._update_wifi_selected_ap = None
+        self._update_wifi_checked_ap = None
         self._view.change_page(self._view.Pages.MANAGE_WIFI)
 
     ##############################
@@ -540,7 +541,7 @@ class Controller:
         if not self._view.ui.addControllerNameLineEdit.text():
             self._view.notify(self.missing_name_message, self.missing_input_title)
             return False
-        if not self._view.ui.addControllerAPListView.selectedIndexes():
+        if not self._wifi_model.get_checked_aps():
             self._view.notify(self.missing_wifi_message, self.missing_input_title)
             return False
         if not self._view.ui.addControllerFirmwaresComboBox.currentData():
@@ -614,14 +615,11 @@ class Controller:
         self._view.ui.addControllerProgressText.setText(f"{self.flashing_label} (4/4)")
         self.add_controller_set_progress_bar(50)
 
-        # Get the WiFi APs selected in the QListView
-        indexes = self._view.ui.addControllerAPListView.selectedIndexes()
-        wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
-
         if platform.system() == "Windows":
             self._view.notify(self.flash_mode_message, self.flash_mode_title)
 
         # Start a task to flash the controller
+        wifi_aps = self._wifi_model.get_checked_aps()
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
         worker.signals.progress.connect(self.add_controller_flash_progress)
         worker.signals.result.connect(self.add_controller_flash_result)
@@ -866,7 +864,7 @@ class Controller:
         if not self._view.ui.replaceControllerControllersComboBox.currentData():
             self._view.notify(self.missing_controller_message, self.missing_input_title)
             return False
-        if not self._view.ui.replaceControllerAPListView.selectedIndexes():
+        if not self._wifi_model.get_checked_aps():
             self._view.notify(self.missing_wifi_message, self.missing_input_title)
             return False
         if not self._view.ui.replaceControllerFirmwaresComboBox.currentData():
@@ -976,15 +974,12 @@ class Controller:
         )
         self._view.ui.replaceControllerProgressBar.setValue(50)
 
-        # Get the WiFi APs selected in the QListView
-        indexes = self._view.ui.replaceControllerAPListView.selectedIndexes()
-        wifi_aps = [self._wifi_model.get_ap(i) for i in indexes]
-
         # Notify the user to hold the flash (boot) button
         if platform.system() == "Windows":
             self._view.notify(self.flash_mode_message, self.flash_mode_title)
 
         # Start a task to flash the controller
+        wifi_aps = self._wifi_model.get_checked_aps()
         worker = Worker(self._flash_model.flash_controller, controller, wifi_aps)
         worker.signals.progress.connect(self.replace_controller_flash_progress)
         worker.signals.result.connect(self.replace_controller_flash_result)
@@ -1202,6 +1197,9 @@ class Controller:
             text = text + "\n" if text else text
             text = text + port.device
         return text
+
+    def ap_list_clicked(self, index: QModelIndex):
+        self._wifi_model.toggle_checked(index)
 
     ##############################
     # Translated text

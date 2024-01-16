@@ -51,10 +51,13 @@ inamata-flasher = "main:main"
 src = ["src"]
 # Flake8 F, pycodestyle E and W, mccabe complexity C90, isort I
 select = ["F", "E", "W", "C90", "I"]
-# E501: line too long, E999: Syntax error (no match-case support)
-ignore = ["E501", "E999"]
-
-exclude = []
+# E501: line too long
+ignore = ["E501"]
+# Package files, system libs
+extend-exclude = [
+  ".cache/pypoetry/virtualenvs/",
+  "/usr/lib/",
+]
 
 # Assume Python 3.10.
 target-version = "py310"
