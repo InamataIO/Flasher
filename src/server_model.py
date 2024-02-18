@@ -56,6 +56,13 @@ class ServerModel:
     _access_token_audience = ["core-service", "account"]
     _keyring_disabled = False
 
+    _github_latest_url = (
+        "https://api.github.com/repos/inamataio/flasher/releases/latest"
+    )
+    github_linux_download_url = "https://github.com/InamataIO/Flasher/releases/latest/download/inamata_flasher-linux-x86_64"
+    github_windows_download_url = "https://github.com/InamataIO/Flasher/releases/latest/download/inamata_flasher_setup.exe"
+    github_latest_release_url = "https://github.com/InamataIO/Flasher/releases/latest"
+
     @property
     def _refresh_token_audience(self) -> str:
         return f"{self.server_urls.oauth_base_url}/realms/{self._oauth_realm}"
@@ -65,14 +72,14 @@ class ServerModel:
 
     _known_servers = {
         "staging": ServerUrls(
-            core_base_url="https://core.staging.inamata.co",
-            oauth_base_url="https://auth.staging.inamata.co",
-            web_app_base_url="https://app.staging.inamata.co",
+            core_base_url="https://core.staging.inamata.io",
+            oauth_base_url="https://auth.staging.inamata.io",
+            web_app_base_url="https://app.staging.inamata.io",
         ),
         "production": ServerUrls(
-            core_base_url="https://core.inamata.co",
-            oauth_base_url="https://auth.inamata.co",
-            web_app_base_url="https://app.inamata.co",
+            core_base_url="https://core.inamata.io",
+            oauth_base_url="https://auth.inamata.io",
+            web_app_base_url="https://app.inamata.io",
         ),
     }
 
@@ -92,6 +99,7 @@ class ServerModel:
         self._oauth_refresh_token_data_cache: Dict = {}
         self._server_name: str = self.default_server
         self._load_server_config()
+        self._github_latest_version = ""
 
     @property
     def default_server(self) -> str:
@@ -147,24 +155,22 @@ class ServerModel:
             f"&redirect_uri={self.server_urls.web_app_base_url}"
         )
 
+    @property
+    def github_latest_version(self) -> str:
+        return self._github_latest_version
+
     def restore_dev_server_urls(self) -> None:
         self._known_servers["dev"] = self.default_dev_server_urls
 
     def save_to_config(self) -> None:
         """Save server URLs to config if not the default."""
-        if (
-            self._known_servers["dev"] == self.default_dev_server_urls
-            and self.server_name == self.default_server
-        ):
-            return
-        server_config = {
-            "dev_urls": {
+        server_config = {"server_name": self.server_name}
+        if self._known_servers["dev"] != self.default_dev_server_urls:
+            server_config["dev_urls"] = {
                 "core_base_url": self._known_servers["dev"].core_base_url,
                 "oauth_base_url": self._known_servers["dev"].oauth_base_url,
                 "web_app_base_url": self._known_servers["dev"].web_app_base_url,
-            },
-            "server_name": self.server_name,
-        }
+            }
         self._config.config["server"] = server_config
 
     def _load_server_config(self) -> None:
@@ -564,6 +570,19 @@ class ServerModel:
         parse_result = urlparse(image["file"])
         filename = os.path.basename(parse_result.path)
         return os.path.join(self._config.dirs.user_cache_dir, filename)
+
+    def update_newest_version(self, **kwargs) -> str:
+        """Returns the version of the newest release."""
+        response = requests.get(self._github_latest_url)
+        if response.status_code >= 400:
+            return ""
+        release_data = response.json()
+        version_tag = release_data.get("tag_name", "")
+        if not version_tag:
+            return ""
+        version = version_tag[1:] if version_tag[0] == "v" else version_tag
+        self._github_latest_version = version
+        return version
 
     def _download_image(
         self,

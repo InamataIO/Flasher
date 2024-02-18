@@ -31,13 +31,13 @@ from main_view import MainView
 from server_model import ServerModel
 from wifi_model import WiFiModel
 
-__version__ = "1.1.5"
+__version__ = "1.2.0"
 
 
 def main():
     # Required on Windows to use own app icon
     if platform.system() == "Windows":
-        myappid = f"inamata.co.flasher.{__version__}"
+        myappid = f"inamata.io.flasher.{__version__}"
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
     parser = argparse.ArgumentParser()

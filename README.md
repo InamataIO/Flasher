@@ -1,5 +1,5 @@
-![Apache2.0](https://img.shields.io/github/license/InamataCo/Flasher)
-![GitHub tag (with filter)](https://img.shields.io/github/v/tag/InamataCo/Flasher)
+![Apache2.0](https://img.shields.io/github/license/InamataIO/Flasher)
+![GitHub tag (with filter)](https://img.shields.io/github/v/tag/InamataIO/Flasher)
 ![Linux Support](https://img.shields.io/badge/OS-Linux-dark_green)
 ![Windows Support](https://img.shields.io/badge/OS-Windows-dark_green)
 
@@ -70,7 +70,7 @@ The application is available in
 - 🇫🇷 French
 - 🇪🇸 Spanish
 
-The translations have been created with the help of translation software as well as a mixture of native and non-native speakers. If you find any translation errors, we'll gladly accept merge requests or an e-mail (info@inamata.co) with the mistranslated strings. Instructions for translators are available in the [development doc](doc/development.md#Internationalization).
+The translations have been created with the help of translation software as well as a mixture of native and non-native speakers. If you find any translation errors, we'll gladly accept merge requests or an e-mail (info@inamata.io) with the mistranslated strings. Instructions for translators are available in the [development doc](doc/development.md#Internationalization).
 
 | German                                                                  | French                                                                  |
 | ----------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -100,10 +100,10 @@ This is a list of features that would be useful and show the tool's current limi
 [3]: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
 [4]: https://www.silabs.com/documents/public/software/CP210x_Universal_Windows_Driver.zip
 [6]: https://github.com/espressif/arduino-esp32/blob/master/libraries/LittleFS/library.properties
-[8]: https://github.com/InamataCo/Flasher/releases/latest
+[8]: https://github.com/InamataIO/Flasher/releases/latest
 [9]: https://snapcraft.io/inamata-flasher
-[10]: https://inamata.co
-[11]: https://github.com/InamataCo/Flasher/releases/latest/download/inamata_flasher_setup.exe
+[10]: https://www.inamata.io
+[11]: https://github.com/InamataIO/Flasher/releases/latest/download/inamata_flasher_setup.exe
 [12]: https://docs.espressif.com/projects/esp-idf/en/v4.3-beta2/esp32/get-started/establish-serial-connection.html
 [13]: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/establish-serial-connection.html
 [14]: https://ftdichip.com/drivers/vcp-drivers/

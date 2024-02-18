@@ -17,7 +17,7 @@ description: |
   Optional:
     sudo snap connect inamata-flasher:password-manager-service
 license: Apache-2.0
-version: 1.1.5
+version: 1.2.0
 grade: stable
 confinement: strict
 base: core22
@@ -26,9 +26,9 @@ architectures:
   - build-on: amd64
 compression: lzo
 contact: moritz@silentwind.eu
-issues: https://github.com/InamataCo/Flasher/issues
-source-code: https://github.com/InamataCo/Flasher/
-website: https://inamata.co/
+issues: https://github.com/InamataIO/Flasher/issues
+source-code: https://github.com/InamataIO/Flasher/
+website: https://www.inamata.io/
 
 apps:
   inamata-flasher:
@@ -50,7 +50,7 @@ parts:
   inamata-flasher:
     plugin: python
     source: .
-    #    source: https://github.com/InamataCo/Flasher.git
+    #    source: https://github.com/InamataIO/Flasher.git
     stage-packages:
       - libcairo2
       - libcairo-gobject2

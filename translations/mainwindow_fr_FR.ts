@@ -9,95 +9,92 @@
         <translation type="unfinished">Inamata Flasher</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="197"/>
+        <location filename="../uis/mainwindow.ui" line="203"/>
         <source>Login</source>
         <translation type="unfinished">Connectez</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="226"/>
+        <location filename="../uis/mainwindow.ui" line="232"/>
         <source>Sign up</source>
         <translation type="unfinished">Inscription</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="233"/>
+        <location filename="../uis/mainwindow.ui" line="239"/>
         <source>A web page should automatically open.</source>
         <translation type="unfinished">Une page web devrait s&apos;ouvrir automatiquement.</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="305"/>
+        <location filename="../uis/mainwindow.ui" line="311"/>
         <source>Logging in</source>
         <translation type="unfinished">Se connecter...</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="324"/>
         <source>Version</source>
-        <translation type="unfinished">Version</translation>
+        <translation type="obsolete">Version</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="334"/>
+        <location filename="../uis/mainwindow.ui" line="330"/>
         <source>Selected Server</source>
         <translation type="unfinished">Serveur choisi</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="434"/>
+        <location filename="../uis/mainwindow.ui" line="437"/>
         <source>Welcome</source>
         <translation type="unfinished">Bienvenue</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="450"/>
+        <location filename="../uis/mainwindow.ui" line="453"/>
         <source>Select action to continue</source>
         <translation type="unfinished">Sélectionnez une action à poursuivre</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="489"/>
-        <location filename="../uis/mainwindow.ui" line="962"/>
+        <location filename="../uis/mainwindow.ui" line="492"/>
+        <location filename="../uis/mainwindow.ui" line="961"/>
         <source>Add Controller</source>
         <translation type="unfinished">Ajouter un contrôleur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="502"/>
+        <location filename="../uis/mainwindow.ui" line="505"/>
         <source>Register a new controller on the server</source>
         <translation type="unfinished">Enregistrer un nouveau contrôleur sur le serveur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="531"/>
+        <location filename="../uis/mainwindow.ui" line="534"/>
         <location filename="../uis/mainwindow.ui" line="741"/>
         <source>Replace Controller</source>
         <translation type="unfinished">Remplacer un contrôleur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="544"/>
+        <location filename="../uis/mainwindow.ui" line="547"/>
         <source>Replace an already registered controller</source>
         <translation type="unfinished">Remplace un contrôleur déjà enregistré</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="573"/>
+        <location filename="../uis/mainwindow.ui" line="576"/>
         <source>Manage WiFi</source>
         <translation type="unfinished">Gérer le WiFi</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="586"/>
+        <location filename="../uis/mainwindow.ui" line="589"/>
         <source>Add WiFi for the controller to connect to</source>
         <translation type="unfinished">Ajouter une connexion WiFi pour le contrôleur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="618"/>
+        <location filename="../uis/mainwindow.ui" line="621"/>
         <source>Log out</source>
         <translation type="unfinished">Déconnectez</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="640"/>
-        <source>hello@inamata.co</source>
-        <translation type="unfinished">hello@inamata.co</translation>
+        <source>hello@inamata.io</source>
+        <translation type="obsolete">hello@inamata.io</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="650"/>
         <source>0.2.1</source>
-        <translation type="unfinished">0.2.1</translation>
+        <translation type="obsolete">0.2.1</translation>
     </message>
     <message>
         <location filename="../uis/mainwindow.ui" line="773"/>
-        <location filename="../uis/mainwindow.ui" line="994"/>
+        <location filename="../uis/mainwindow.ui" line="993"/>
         <source>Select site</source>
         <translation type="unfinished">Sélectionner le lieu</translation>
     </message>
@@ -107,159 +104,173 @@
         <translation type="unfinished">Sélectionner le contrôleur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="799"/>
-        <location filename="../uis/mainwindow.ui" line="1020"/>
         <source>Use Ctrl / Shift for
 multi-selection</source>
-        <translation type="unfinished">Utiliser Ctrl / Maj. pour la multi-sélection</translation>
+        <translation type="obsolete">Utiliser Ctrl / Maj. pour la multi-sélection</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="810"/>
-        <location filename="../uis/mainwindow.ui" line="1031"/>
+        <location filename="../uis/mainwindow.ui" line="643"/>
+        <source>info@inamata.io</source>
+        <translation type="unfinished">info@inamata.io</translation>
+    </message>
+    <message>
+        <location filename="../uis/mainwindow.ui" line="653"/>
+        <source>0.2.1 (0.3.0 available)</source>
+        <translation type="unfinished">0.2.1 (0.3.0 available)</translation>
+    </message>
+    <message>
+        <location filename="../uis/mainwindow.ui" line="799"/>
+        <location filename="../uis/mainwindow.ui" line="1019"/>
+        <source>Checked WiFi connections are saved to the controller</source>
+        <translation type="unfinished">Les connexions WiFi sélectionnées sont enregistrées sur le contrôleur</translation>
+    </message>
+    <message>
+        <location filename="../uis/mainwindow.ui" line="809"/>
+        <location filename="../uis/mainwindow.ui" line="1026"/>
         <source>Select firmware</source>
         <translation type="unfinished">Sélectionner le firmware</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="820"/>
-        <location filename="../uis/mainwindow.ui" line="1055"/>
+        <location filename="../uis/mainwindow.ui" line="819"/>
+        <location filename="../uis/mainwindow.ui" line="1050"/>
         <source>Download &amp;&amp; Flash</source>
         <translation type="unfinished">Télécharger et flasher</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="827"/>
-        <location filename="../uis/mainwindow.ui" line="1048"/>
+        <location filename="../uis/mainwindow.ui" line="826"/>
+        <location filename="../uis/mainwindow.ui" line="1043"/>
         <source>Current task</source>
         <translation type="unfinished">Tâche en cours</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="841"/>
-        <location filename="../uis/mainwindow.ui" line="1062"/>
+        <location filename="../uis/mainwindow.ui" line="840"/>
+        <location filename="../uis/mainwindow.ui" line="1057"/>
         <source>Select access points</source>
         <translation type="unfinished">Sélectionner la connexion WiFi</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="866"/>
-        <location filename="../uis/mainwindow.ui" line="1090"/>
+        <location filename="../uis/mainwindow.ui" line="865"/>
+        <location filename="../uis/mainwindow.ui" line="1085"/>
         <source>Install Driver</source>
         <translation type="unfinished">Installer le pilote</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="886"/>
-        <location filename="../uis/mainwindow.ui" line="1110"/>
+        <location filename="../uis/mainwindow.ui" line="885"/>
+        <location filename="../uis/mainwindow.ui" line="1105"/>
         <source>Fetching data</source>
         <translation type="unfinished">Recherche de données</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="903"/>
-        <location filename="../uis/mainwindow.ui" line="1127"/>
+        <location filename="../uis/mainwindow.ui" line="902"/>
+        <location filename="../uis/mainwindow.ui" line="1122"/>
         <source>Serial ports</source>
         <translation type="unfinished">Interfaces sérielles</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="923"/>
-        <location filename="../uis/mainwindow.ui" line="1147"/>
+        <location filename="../uis/mainwindow.ui" line="922"/>
+        <location filename="../uis/mainwindow.ui" line="1142"/>
         <source>Reload</source>
         <translation type="unfinished">Recharge</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="930"/>
-        <location filename="../uis/mainwindow.ui" line="1154"/>
-        <location filename="../uis/mainwindow.ui" line="1276"/>
-        <location filename="../uis/mainwindow.ui" line="1384"/>
-        <location filename="../uis/mainwindow.ui" line="1505"/>
+        <location filename="../uis/mainwindow.ui" line="929"/>
+        <location filename="../uis/mainwindow.ui" line="1149"/>
+        <location filename="../uis/mainwindow.ui" line="1271"/>
+        <location filename="../uis/mainwindow.ui" line="1379"/>
+        <location filename="../uis/mainwindow.ui" line="1500"/>
         <source>Back</source>
         <translation type="unfinished">Retour</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1004"/>
+        <location filename="../uis/mainwindow.ui" line="1003"/>
         <source>Name controller</source>
         <translation type="unfinished">Nommer le contrôleur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1186"/>
+        <location filename="../uis/mainwindow.ui" line="1181"/>
         <source>Add WiFi Connection</source>
         <translation type="unfinished">Ajouter une connexion WiFi</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1218"/>
-        <location filename="../uis/mainwindow.ui" line="1327"/>
+        <location filename="../uis/mainwindow.ui" line="1213"/>
+        <location filename="../uis/mainwindow.ui" line="1322"/>
         <source>Name (SSID)</source>
         <translation type="unfinished">Nom (SSID)</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1228"/>
-        <location filename="../uis/mainwindow.ui" line="1337"/>
+        <location filename="../uis/mainwindow.ui" line="1223"/>
+        <location filename="../uis/mainwindow.ui" line="1332"/>
         <source>Password</source>
         <translation type="unfinished">Mot de passe</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1238"/>
+        <location filename="../uis/mainwindow.ui" line="1233"/>
         <source>Add WiFi connection</source>
         <translation type="unfinished">Ajouter une connexion WiFi</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1302"/>
-        <location filename="../uis/mainwindow.ui" line="1347"/>
+        <location filename="../uis/mainwindow.ui" line="1297"/>
+        <location filename="../uis/mainwindow.ui" line="1342"/>
         <source>Update WiFi Connection</source>
         <translation type="unfinished">Mise à jour de la connexion WiFi</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1416"/>
+        <location filename="../uis/mainwindow.ui" line="1411"/>
         <source>Manage WiFi Connections</source>
         <translation type="unfinished">Gérer les connexions WiFi</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1452"/>
+        <location filename="../uis/mainwindow.ui" line="1447"/>
         <source>Add</source>
         <translation type="unfinished">Ajouter</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1459"/>
+        <location filename="../uis/mainwindow.ui" line="1454"/>
         <source>Edit</source>
         <translation type="unfinished">Edit</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1466"/>
+        <location filename="../uis/mainwindow.ui" line="1461"/>
         <source>Remove</source>
         <translation type="unfinished">Supprimer</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1518"/>
+        <location filename="../uis/mainwindow.ui" line="1513"/>
         <source>System Settings</source>
         <translation type="unfinished">Paramètres du système</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1530"/>
+        <location filename="../uis/mainwindow.ui" line="1525"/>
         <source>Server set</source>
         <translation type="unfinished">Groupe de serveurs</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1550"/>
+        <location filename="../uis/mainwindow.ui" line="1545"/>
         <source>Core server</source>
         <translation type="unfinished">Core serveur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1557"/>
+        <location filename="../uis/mainwindow.ui" line="1552"/>
         <source>Auth server</source>
         <translation type="unfinished">Auth serveur</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1564"/>
+        <location filename="../uis/mainwindow.ui" line="1559"/>
         <source>Web app URL</source>
         <translation type="unfinished">URL de l&apos;appli web</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1578"/>
+        <location filename="../uis/mainwindow.ui" line="1573"/>
         <source>Restore defaults</source>
         <translation type="unfinished">Restaurer les valeurs par défaut</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1598"/>
+        <location filename="../uis/mainwindow.ui" line="1593"/>
         <source>Save</source>
         <translation type="unfinished">Save</translation>
     </message>
     <message>
-        <location filename="../uis/mainwindow.ui" line="1605"/>
+        <location filename="../uis/mainwindow.ui" line="1600"/>
         <source>Cancel</source>
         <translation type="unfinished">Annuler</translation>
     </message>

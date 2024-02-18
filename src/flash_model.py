@@ -400,8 +400,8 @@ class FlashModel:
  - Restart the app
 3. Open a bug report or ask for support in the forum.
 
-https://github.com/InamataCo/Flasher
-https://inamata.co/forum/""",
+https://github.com/InamataIO/Flasher
+https://www.inamata.io/forum/""",
         )
 
     @property
@@ -412,8 +412,8 @@ https://inamata.co/forum/""",
 1. Check that the microcontroller is plugged in
 2. Open a bug report or ask for support in the forum.
 
-https://github.com/InamataCo/Flasher
-https://inamata.co/forum/""",
+https://github.com/InamataIO/Flasher
+https://www.inamata.io/forum/""",
         )
 
     @property

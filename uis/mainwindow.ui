@@ -66,9 +66,14 @@ QListView::item{height: 32px}
   margin-top: 8px;
 }
 
-#welcomeUsername, #welcomeVersion, #loginVersion, #loginSelectedServerText,
+#welcomeUsername, #loginSelectedServerText,
 #replaceControllerSerialPortsText, #addControllerSerialPortsText {
   color: #ccc;
+}
+
+#welcomeVersionButton, #loginVersionButton {
+  padding-top: 0;
+  padding-bottom: 0;
 }</string>
   </property>
   <widget class="QWidget" name="centralWidget">
@@ -82,7 +87,7 @@ QListView::item{height: 32px}
     <item>
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="loginPage">
        <layout class="QVBoxLayout" name="verticalLayout">
@@ -320,9 +325,9 @@ QListView::item{height: 32px}
           <item>
            <layout class="QVBoxLayout" name="verticalLayout_12">
             <item>
-             <widget class="QLabel" name="loginVersion">
+             <widget class="QLabel" name="loginSelectedServerText">
               <property name="text">
-               <string>Version</string>
+               <string>Selected Server</string>
               </property>
               <property name="alignment">
                <set>Qt::AlignCenter</set>
@@ -330,12 +335,9 @@ QListView::item{height: 32px}
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="loginSelectedServerText">
+             <widget class="QPushButton" name="loginVersionButton">
               <property name="text">
-               <string>Selected Server</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string notr="true">0.2.1 (0.3.0 available)</string>
               </property>
              </widget>
             </item>
@@ -638,20 +640,17 @@ QListView::item{height: 32px}
             <item>
              <widget class="QLabel" name="welcomeUsername">
               <property name="text">
-               <string>hello@inamata.co</string>
+               <string>info@inamata.io</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="welcomeVersion">
+             <widget class="QPushButton" name="welcomeVersionButton">
               <property name="text">
-               <string>0.2.1</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string>0.2.1 (0.3.0 available)</string>
               </property>
              </widget>
             </item>

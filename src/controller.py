@@ -4,7 +4,7 @@ from typing import List
 
 from PySide6.QtCore import QCoreApplication, QModelIndex, QThreadPool, QUrl, Slot
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QKeySequence, QShortcut
-from PySide6.QtWidgets import QMenu
+from PySide6.QtWidgets import QMenu, QMessageBox
 
 from about_view import AboutView
 from config import Config, ControllerModel
@@ -51,9 +51,13 @@ class Controller:
         # Call login page handler if change_page does not result in a page change
         self.handle_login_page()
         self.auto_log_in()
+        self.update_latest_version()
 
     def _connect_signals(self):
         """Connect widget signals to the appropriate function."""
+        self._view.ui.welcomeVersionButton.clicked.connect(self.show_update_modal)
+        self._view.ui.loginVersionButton.clicked.connect(self.show_update_modal)
+
         # Main Application
         self._view.close_callback = self.handle_close
         self._view.ui.stackedWidget.currentChanged.connect(self.page_changed)
@@ -187,7 +191,7 @@ class Controller:
     def to_driver_install(self):
         """Open the driver installation web page."""
         QDesktopServices.openUrl(
-            QUrl("https://github.com/InamataCo/Flasher#driver-setup-instructions")
+            QUrl("https://github.com/InamataIO/Flasher#driver-setup-instructions")
         )
 
     ##########################
@@ -285,6 +289,27 @@ class Controller:
     def auto_log_in_error(self, error):
         """Error handler for the auto login thread."""
         self.handle_error(error)
+
+    def update_latest_version(self):
+        worker = Worker(self._server_model.update_newest_version)
+        worker.signals.result.connect(self.update_latest_version_result)
+        self.threadpool.start(worker)
+
+    def update_latest_version_result(self, version: str):
+        """Show the latest available version."""
+        if not version:
+            logging.warning("Failed fetching latest version tag from GitHub")
+            return
+        if version == self._config.app_version:
+            version_text = (
+                version_text
+            ) = f"{self._config.app_version} ({self.up_to_date_label})"
+        else:
+            version_text = (
+                f"{self._config.app_version} ({version} {self.available_label})"
+            )
+        self._view.ui.welcomeVersionButton.setText(version_text)
+        self._view.ui.loginVersionButton.setText(version_text)
 
     def to_system_settings(self):
         """Open select server dialog."""
@@ -1176,6 +1201,51 @@ class Controller:
         about_view = AboutView(self._view, self._config)
         about_view.show()
 
+    def show_update_modal(self) -> None:
+        """Show the update modal window."""
+        latest_version = self._server_model.github_latest_version
+        if not latest_version:
+            self._view.notify(
+                self.update_modal_error_message,
+                self.update_modal_error_title,
+                "warning",
+            )
+            return
+        if latest_version == self._config.app_version:
+            self._view.notify(
+                self.update_modal_up_to_date_message,
+                self.update_modal_up_to_date_title,
+                "information",
+            )
+            return
+        if self._config.is_snap:
+            self._view.notify(
+                self.update_modal_snap_message,
+                self.update_modal_snap_title,
+                "information",
+            )
+            return
+        msg_box = QMessageBox(self._view.ui)
+        msg_box.setWindowTitle(self.update_modal_available_title)
+        msg_box.setText(self.update_modal_available_message)
+        download_button = msg_box.addButton(
+            self.update_modal_download_label, QMessageBox.ButtonRole.ActionRole
+        )
+        show_release_button = msg_box.addButton(
+            self.update_modal_show_release_label, QMessageBox.ButtonRole.HelpRole
+        )
+        msg_box.addButton(QMessageBox.StandardButton.Close)
+        msg_box.exec()
+
+        if msg_box.clickedButton() == download_button:
+            if platform.system() == "Linux":
+                url = self._server_model.github_linux_download_url
+            else:
+                url = self._server_model.github_windows_download_url
+            QDesktopServices.openUrl(QUrl(url))
+        elif msg_box.clickedButton() == show_release_button:
+            QDesktopServices.openUrl(QUrl(self._server_model.github_latest_release_url))
+
     def _check_permissions(self) -> None:
         """Run the permission checks."""
         if self._checked_permissions:
@@ -1374,6 +1444,65 @@ class Controller:
         return QCoreApplication.translate("main", "Found %n serial ports:", "", n)
 
     @property
+    def available_label(self) -> str:
+        return QCoreApplication.translate("main", "available")
+
+    @property
+    def up_to_date_label(self) -> str:
+        return QCoreApplication.translate("main", "up to date")
+
+    @property
+    def update_modal_available_title(self) -> str:
+        return QCoreApplication.translate("main", "New version avaiable")
+
+    @property
+    def update_modal_available_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "A newer version of the Flasher is available. Update to avoid inconsistent behavior and receive bug fixes. Download the installer directly or view the release notes first.",
+        )
+
+    @property
+    def update_modal_up_to_date_title(self) -> str:
+        return QCoreApplication.translate("main", "Flasher is up-to-date")
+
+    @property
+    def update_modal_up_to_date_message(self) -> str:
+        return QCoreApplication.translate(
+            "main", "You already have the latest version of the Flasher."
+        )
+
+    @property
+    def update_modal_error_title(self) -> str:
+        return QCoreApplication.translate("main", "Fetching newest version failed")
+
+    @property
+    def update_modal_error_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "There was a connection error trying to fetch the latest version details.",
+        )
+
+    @property
+    def update_modal_download_label(self) -> str:
+        return QCoreApplication.translate("main", "Download")
+
+    @property
+    def update_modal_show_release_label(self) -> str:
+        return QCoreApplication.translate("main", "Show release")
+
+    @property
+    def update_modal_snap_title(self) -> str:
+        return QCoreApplication.translate("main", "Automatic updates")
+
+    @property
+    def update_modal_snap_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "The Flasher is installed as a Snap and will automatically be updated in a few days.",
+        )
+
+    @property
     def snap_help(self) -> str:
         return QCoreApplication.translate(
             "help",
@@ -1395,8 +1524,8 @@ class Controller:
  - Run in a terminal: groups
 
 6. Additional information and support
- - https://github.com/InamataCo/Flasher
- - https://inamata.co/forum/""",
+ - https://github.com/InamataIO/Flasher
+ - https://www.inamata.io/forum/""",
         )
 
     @property
@@ -1412,8 +1541,8 @@ class Controller:
  - Run in a terminal: groups
 
 4. Additional information and support
- - https://github.com/InamataCo/Flasher
- - https://inamata.co/forum/""",
+ - https://github.com/InamataIO/Flasher
+ - https://www.inamata.io/forum/""",
         )
 
     @property
@@ -1422,9 +1551,9 @@ class Controller:
             "help",
             """1. Install the serial driver (CP210x)
   - https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
-  - https://github.com/InamataCo/Flasher#driver-setup-instructions
+  - https://github.com/InamataIO/Flasher#driver-setup-instructions
 
 2. Additional information and support
- - https://github.com/InamataCo/Flasher
- - https://inamata.co/forum/""",
+ - https://github.com/InamataIO/Flasher
+ - https://www.inamata.io/forum/""",
         )
