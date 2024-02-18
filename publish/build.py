@@ -38,7 +38,10 @@ def a_set_paths(project: Project):
     project.set_property("work_dirs", work_dirs)
 
     # Dist files
-    pyinstaller_target = dist_dir / "inamata_flasher"
+    if os.name == "posix":
+        pyinstaller_target = dist_dir / "inamata_flasher"
+    else:
+        pyinstaller_target = dist_dir / "inamata_flasher.exe"
     project.set_property("pyinstaller_target", pyinstaller_target)
     snap_files = [root_dir / i for i in glob.glob("inamata-flasher_*.snap")]
     project.set_property("snap_files", snap_files)
@@ -50,9 +53,9 @@ def a_set_paths(project: Project):
     project.set_property("pyinstaller_one_dir", pyinstaller_one_dir)
 
     # Inno Setup files
-    iss_file = root_dir / "publish/main.iss"
+    iss_file = root_dir / "publish" / "main.iss"
     project.set_property("iss_file", iss_file)
-    iscc_file = os.getenv("ISCC_PATH", "/c/Program Files (x86)/Inno Setup 6/ISCC.exe")
+    iscc_file = Path(os.getenv("ISCC_PATH", "/Program Files (x86)/Inno Setup 6/ISCC.exe"))
     project.set_property("iscc_file", iscc_file)
 
     # Version files
@@ -158,7 +161,10 @@ def compile_translations(project: Project, logger: Logger):
     logger.info("Compiling translations")
     root_dir: Path = project.get_mandatory_property("root_dir")
     compile_sh = root_dir / "publish" / "compile_translations.sh"
-    subprocess.run([str(compile_sh.absolute())])
+    if os.name == "posix":
+        subprocess.run([str(compile_sh.absolute())])
+    else:
+        subprocess.run(["bash", str(compile_sh.absolute())])
 
 
 def update_translations(project: Project, logger: Logger):
@@ -168,7 +174,10 @@ def update_translations(project: Project, logger: Logger):
     command = [str(update_sh.absolute())]
     if project.has_property("no_obsolete"):
         command.append("-no-obsolete")
-    subprocess.run(command)
+    if os.name == "posix":
+        subprocess.run(command)
+    else:
+        subprocess.run(["bash", *command])
 
 
 def build_linux_pyinstaller(project: Project, logger: Logger):
@@ -200,19 +209,19 @@ def build_windows_pyinstaller(project: Project, logger: Logger):
     pyinstaller_one_file = project.get_mandatory_property("pyinstaller_one_file")
     subprocess.run([*base_params, str(pyinstaller_one_file)])
 
-    versioned_name = f"inamata_flasher-{next_version}-windows-x86_64"
-    linux_name = "inamata_flasher-windows-x86_64"
+    versioned_name = f"inamata_flasher-{next_version}-windows-x86_64.exe"
+    windows_name = "inamata_flasher-windows-x86_64.exe"
     root_dir = project.get_mandatory_property("root_dir")
     pyinstaller_target: Path = project.get_mandatory_property("pyinstaller_target")
     dist_dir: Path = project.get_mandatory_property("dist_dir")
     versioned_path = dist_dir / versioned_name
-    linux_path = dist_dir / linux_name
+    windows_path = dist_dir / windows_name
     shutil.copyfile(pyinstaller_target, dist_dir / versioned_name)
-    shutil.copyfile(pyinstaller_target, dist_dir / linux_name)
+    shutil.copyfile(pyinstaller_target, dist_dir / windows_name)
 
     logger.info(f"PyInstaller dist file: {pyinstaller_target.relative_to(root_dir)}")
     logger.info(f"PyInstaller dist file: {versioned_path.relative_to(root_dir)}")
-    logger.info(f"PyInstaller dist file: {linux_path.relative_to(root_dir)}")
+    logger.info(f"PyInstaller dist file: {windows_path.relative_to(root_dir)}")
 
 
 def build_snap(project: Project, logger: Logger):
@@ -250,11 +259,8 @@ def build_inno(project: Project, logger: Logger):
     subprocess.run([*base_params, str(pyinstaller_one_dir)])
 
     iss_file: Path = project.get_mandatory_property("iss_file")
-    windows_iss_path = subprocess.run(
-        ["cygpath", "-w", iss_file.absolute()], capture_output=True
-    ).stdout.decode()
-    iscc_file = project.get_mandatory_property("iscc_file")
-    subprocess.run([str(iscc_file), windows_iss_path])
+    iscc_file: Path = project.get_mandatory_property("iscc_file")
+    subprocess.run([str(iscc_file.absolute()), str(iss_file.absolute())])
 
 
 def update_version_files(project: Project, logger: Logger):

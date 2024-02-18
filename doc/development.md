@@ -32,7 +32,7 @@ To generate a summary of the build, run the following command:
 
 ### Windows
 
-After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing certificate, run the following commands:
+After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing certificate and installing the [Windows sign tool](https://stackoverflow.com/a/65339931), run the following commands:
 
     poetry install
     poetry shell
@@ -40,12 +40,12 @@ After [obtaining](https://comodosslstore.com/codesigning.aspx) a code signing ce
 
 Open a command prompt terminal to sign the executables
 
-    cd C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool
+    cd C:\Program Files (x86)\Windows Kits\10\bin\x64\
     signtool.exe sign /sha1 "dfeb0472436c54494de4f3641d2a1d17acc8ead2" /tr http://time.certum.pl/ /td sha256 /fd sha256 /v <path-to-exe>
 
     OR
 
-    "C:\Program Files (x86)\Microsoft SDKs\ClickOnce\SignTool\signtool.exe" sign /sha1 "dfeb0472436c54494de4f3641d2a1d17acc8ead2" /tr http://time.certum.pl/ /td sha256 /fd sha256 /v <path-to-exe>
+    "c:\Program Files (x86)\Windows Kits\10\bin\x64\signtool.exe" sign /sha1 "dfeb0472436c54494de4f3641d2a1d17acc8ead2" /tr http://time.certum.pl/ /td sha256 /fd sha256 /v <path-to-exe>
 
 For instructions to set up the code signing, check the [setup instructions](https://www.files.certum.eu/documents/manual_en/Signing_with_the_use_of_jarsigner_tool_and_signtool.pdf).
 
