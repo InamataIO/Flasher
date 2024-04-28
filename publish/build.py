@@ -96,6 +96,8 @@ def a_set_versions(project: Project):
                 next_version = current_version.next_minor()
             case "patch" | "pa":
                 next_version = current_version.next_patch()
+            case "stay":
+                next_version = current_version
             case _ as bump:
                 raise PyBuilderException(
                     f"Invalid bump version: {bump}. Use major/minor/patch"
@@ -276,13 +278,14 @@ def update_version_files(project: Project, logger: Logger):
 @task(description="Build binaries for current platform.")
 def build(project: Project, logger: Logger):
     # Print build info
+    current_version: Version = project.get_mandatory_property("current_version")
     next_version: Version = project.get_mandatory_property("next_version")
     logger.info(f"Next version: {next_version}")
     logger.info(f"Target OS: {os.name}")
 
     clean_python_env(logger)
 
-    bump_and_commit = not next_version.prerelease
+    bump_and_commit = (not next_version.prerelease and current_version != next_version)
     if bump_and_commit:
         update_version_files(project, logger)
     else:

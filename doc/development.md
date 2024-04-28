@@ -20,7 +20,7 @@ When building the release artefacts, pass `-P bump=<major/minor/patch>` to the b
 ./build.sh -P bump=minor
 ```
 
-If bump is not passed, a development release is generated. The `version.h` and `version.rc` files are currently not used. They were used to sign binaries but now `file_version_info.txt` is used.
+Alternatively, to build the current tag, pass `-P bump=stay`. If bump is not passed, a development release is generated. The `version.h` and `version.rc` files are currently not used. They were used to sign binaries but now `file_version_info.txt` is used.
 
 ### Release Text
 
