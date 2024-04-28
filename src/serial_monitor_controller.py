@@ -2,6 +2,7 @@ import logging
 
 import serial
 from PySide6.QtCore import QCoreApplication, QObject, QThread, Signal, Slot
+from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import QScrollBar
 from serial.serialutil import SerialException
 
@@ -131,7 +132,9 @@ class SerialMonitorController:
         """Write read data to text edit and scroll to bottom if already there."""
         scrollbar: QScrollBar = self._view.ui.monitorTextEdit.verticalScrollBar()
         at_bottom = scrollbar.value() == scrollbar.maximum()
-        self._view.ui.monitorTextEdit.insertPlainText(data)
+        cursor: QTextCursor = self._view.ui.monitorTextEdit.textCursor()
+        cursor.movePosition(QTextCursor.MoveOperation.End)
+        cursor.insertText(data)
         if at_bottom:
             scrollbar.setValue(scrollbar.maximum())
 
