@@ -83,7 +83,7 @@ The translations are saved in `ts` and `qm` files in the `translations` folder. 
     
     ./build.sh i18n_c
 
-To delete translations that have become obesolete (in ts files but not found in source), run `./build.sh i18n` with `-P no_obsolete`. It is possible to open multiple translation files in parallel in PyLinguist. This allows the translation process to be streamlined. Simply shift select multiple files with the open file dialog.
+To delete translations that have become obesolete (in ts files but not found in source), run `./build.sh i18n` with `-P no_obsolete=1`. It is possible to open multiple translation files in parallel in PyLinguist. This allows the translation process to be streamlined. Simply shift select multiple files with the open file dialog.
 
 ## Build Options
 

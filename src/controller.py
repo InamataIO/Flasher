@@ -2,7 +2,14 @@ import logging
 import platform
 from typing import List
 
-from PySide6.QtCore import QCoreApplication, QModelIndex, QThreadPool, QUrl, Slot
+from PySide6.QtCore import (
+    QCoreApplication,
+    QLocale,
+    QModelIndex,
+    QThreadPool,
+    QUrl,
+    Slot,
+)
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import QMenu, QMessageBox
 
@@ -11,6 +18,8 @@ from config import Config, ControllerModel
 from flash_model import FlashModel
 from locale_model import LocaleModel
 from main_view import MainView
+from serial_monitor_controller import SerialMonitorController
+from serial_monitor_view import SerialMonitorView
 from server_model import ServerModel
 from wifi_model import WiFiModel
 from worker import Worker, WorkerError, WorkerInformation, WorkerWarning
@@ -37,6 +46,10 @@ class Controller:
         self._view = view
         self._config = config
         self._app = app
+        # Child objects
+        self._about_view: AboutView | None = None
+        self._serial_monitor_view: SerialMonitorView | None = None
+        self._serial_monitor_controller: SerialMonitorController | None = None
         # Check the user's local permissions once on startup
         self._checked_permissions = False
 
@@ -91,6 +104,8 @@ class Controller:
         self._view.ui.welcomeManageWiFiButton.clicked.connect(self.to_manage_wifi)
         self._view.ui.welcomeLogOutPushButton.clicked.connect(self.log_out)
         self.set_welcome_username(self._config.users_name)
+        self._view.ui.welcomeOpenWebAppButton.clicked.connect(self.open_web_app)
+        self._view.ui.welcomeViewSerialButton.clicked.connect(self.show_serial_window)
         #   Welcome menus
         self.welcome_locale_menu = QMenu()
         for locale in LocaleModel.Locale:
@@ -364,6 +379,28 @@ class Controller:
         else:
             text = username
         self._view.ui.welcomeUsername.setText(text)
+
+    def open_web_app(self) -> None:
+        """Open the browser with the web-app."""
+        url = self._server_model.server_urls.web_app_base_url
+        if self._locale_model.locale == QLocale.Language.German:
+            url = f"{url}/de/"
+        QDesktopServices.openUrl(QUrl(url))
+
+    def show_serial_window(self) -> None:
+        """Show the serial monitor window."""
+        self._serial_monitor_view = SerialMonitorView(self._view, self._config)
+        self._serial_monitor_controller = SerialMonitorController(
+            self._serial_monitor_view, self._config
+        )
+        self._serial_monitor_view.close_callback = self.clear_serial_monitor
+        self._serial_monitor_view.show()
+
+    def clear_serial_monitor(self, event: QCloseEvent) -> None:
+        self._serial_monitor_view = None
+        self._serial_monitor_controller.close()
+        self._serial_monitor_controller = None
+        event.accept()
 
     #############################
     # Add WiFi Page Functionality
@@ -1198,8 +1235,13 @@ class Controller:
 
     def show_about_window(self) -> None:
         """Show the about window."""
-        about_view = AboutView(self._view, self._config)
-        about_view.show()
+        self._about_view = AboutView(self._view, self._config)
+        self._about_view.close_callback = self.clear_about_window
+        self._about_view.show()
+
+    def clear_about_window(self, event: QCloseEvent) -> None:
+        self._about_view = None
+        event.accept()
 
     def show_update_modal(self) -> None:
         """Show the update modal window."""

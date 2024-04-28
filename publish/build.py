@@ -55,7 +55,9 @@ def a_set_paths(project: Project):
     # Inno Setup files
     iss_file = root_dir / "publish" / "main.iss"
     project.set_property("iss_file", iss_file)
-    iscc_file = Path(os.getenv("ISCC_PATH", "/Program Files (x86)/Inno Setup 6/ISCC.exe"))
+    iscc_file = Path(
+        os.getenv("ISCC_PATH", "/Program Files (x86)/Inno Setup 6/ISCC.exe")
+    )
     project.set_property("iscc_file", iscc_file)
 
     # Version files
@@ -173,7 +175,7 @@ def update_translations(project: Project, logger: Logger):
     update_sh = root_dir / "publish" / "update_translations.sh"
     command = [str(update_sh.absolute())]
     if project.has_property("no_obsolete"):
-        command.append("-no-obsolete")
+        command.append("--no-obsolete")
     if os.name == "posix":
         subprocess.run(command)
     else:
