@@ -27,10 +27,37 @@ except ImportError:
         pass
 
 
-from config import Config, ControllerModel, SiteModel
+from config import (
+    BootloaderImageModel,
+    Config,
+    ControllerModel,
+    ControllerTypeModel,
+    FirmwareImageModel,
+    FirmwareVariantEdge,
+    FirmwareVariantModel,
+    SiteModel,
+)
 from worker import WorkerError, WorkerInformation, WorkerWarning
 
 SNAP_PASSWORD_MANAGER_SERVICE_ERROR = "Snap not connected to password-manager-service. Run: snap connect inamata-flasher:password-manager-service"
+
+
+class WebAppPaths:
+    """Collection of web-app paths"""
+
+    devices_peripherals = "devices/peripherals"
+    devices_controllers = "devices/controllers"
+    devices_data_points = "devices/data-points"
+
+    tasks_overview = "tasks/overview"
+    tasks_logging = "tasks/logging"
+
+    cp_overview = "plans/overview"
+    cp_editor = "plans/editor"
+    cp_monitor = "plans/monitor"
+
+    dashboards_overview = "dashboards/overview"
+    dashboards_graphs = "dashboards/graphs"
 
 
 class ServerModel:
@@ -240,33 +267,58 @@ class ServerModel:
         self._clear_credentials()
         self._clear_token_profile()
 
-    def get_site_and_firmware_data(self, **kwargs) -> None:
-        """Get the available sites and firmware images."""
+    def get_static_data(self, controller_type_names: list[str], **kwargs) -> None:
+        """Get the available sites, controller types and bootload images."""
         data = {
             "query": """
-            {
-                allFirmwareImages {
-                    edges { node {
-                        id, name, version, bootloader { id }, file, hashSha3_512
-                    } }
-                }
-                allBootloaderImages {
-                    edges { node {
-                        id, name, version, file, hashSha3_512
-                    } }
-                }
+            query staticData($controllerTypes: [String!]) {
                 allSites {
                     edges { node {
                         id, name
                     } }
                 }
-                allControllerTypes(filters: {isGlobal: true, name: {exact: "ESP32"}}) {
+                allControllerTypes(filters: {isGlobal: true, name: {inList: $controllerTypes}}) {
                     edges { node {
-                        id, name, isGlobal
+                        id, name, firmwareVariantEdges { edges { node {
+                            priority, firmwareVariant { id, name }
+                        } } }
+                    } }
+                }
+                allBootloaderImages {
+                    edges { node {
+                        id, name, version, hashSha3_512
                     } }
                 }
             }""",
-            "variables": None,
+            "variables": {"controllerTypes": controller_type_names},
+        }
+        output = self._auth_server_request(self._graphql_url, data).json()
+        if errors := output.get("errors"):
+            logging.warning(errors)
+            raise WorkerWarning(self.getting_site_controller_type_error)
+
+        # Cache sites, controller types, firmware variants and bootloaders
+        sites = self.parse_sites(output)
+        self._config.cache_sites(sites)
+        controller_types, firmware_variants = self.parse_controller_type_data(output)
+        self._config.cache_controller_types(controller_types)
+        self._config.cache_firmware_variants(firmware_variants)
+        bootloader_images = self.parse_bootloader_images(output)
+        self._config.cache_bootloader_images(bootloader_images)
+
+    def get_firmware_data(self, firmware_variant_id: str, **kwargs) -> None:
+        """Get the available firmware images for a controller type."""
+        data = {
+            "query": """
+            query firmwareData($firmwareVariantId: GlobalID!) {
+                allFirmwareImages(
+                    filters: {firmwareVariant: {id: $firmwareVariantId} }
+                    order: {createdAt: DESC}
+                ) { edges { node {
+                    id, name, version, bootloaderId, hashSha3_512
+                } } }
+            }""",
+            "variables": {"firmwareVariantId": firmware_variant_id},
         }
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
@@ -274,44 +326,28 @@ class ServerModel:
             raise WorkerWarning(self.getting_site_firmware_error)
 
         # Store firmware image metadata. Sort them by their semantic version
-        firmware_images = [
-            i["node"] for i in output["data"]["allFirmwareImages"]["edges"]
-        ]
-        firmware_images = [i for i in firmware_images if i["version"] != "-1"]
-        firmware_images.sort(key=lambda x: Version(x["version"]), reverse=True)
-        self._config.config["firmwareImages"] = firmware_images
-
-        # Store bootload image metadata. Sort them by their semantic version
-        bootloader_images = [
-            i["node"] for i in output["data"]["allBootloaderImages"]["edges"]
-        ]
-        bootloader_images.sort(key=lambda x: Version(x["version"]), reverse=True)
-        self._config.config["bootloaderImages"] = bootloader_images
-
-        # Store sites and controller types
-        sites = self.parse_sites(output["data"]["allSites"]["edges"])
-        self._config.cache_sites(sites)
-
-        controller_types = [
-            i["node"] for i in output["data"]["allControllerTypes"]["edges"]
-        ]
-        self._config.config["controllerTypes"] = controller_types
+        firmware_images = self.parse_firmware_images(output, firmware_variant_id)
+        self._config.cache_firmware_images(firmware_images)
+        self._config.cache_firmware_images_in_variant(
+            firmware_variant_id, firmware_images.keys()
+        )
 
     def get_controller_data(self, site_id: str, **kwargs) -> List[ControllerModel]:
         """Get the available controllers for a given site."""
         data = {
-            "query": f"""
-            {{
-                allControllers(filters: {{site: {{id: "{site_id}"}} }}) {{
-                    pageInfo {{ hasNextPage }}
-                    edges {{ node {{
-                        id, name, controllerTypeId
-                        partitionTableId, firmwareImageId, siteId
-                    }} }}
-                }}
-            }}
-            """,
-            "variables": None,
+            "query": """
+            query controllerData($siteId: GlobalID!) {
+                allControllers(filters: {site: {id: $siteId } }) {
+                    pageInfo { hasNextPage }
+                    edges { node {
+                        id, name, controllerTypeId, partitionTableId, siteId
+                        firmwareImage {
+                            id, name, version, hashSha3_512, bootloaderId, firmwareVariantId
+                        }
+                    } }
+                }
+            }""",
+            "variables": {"siteId": site_id},
         }
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
@@ -324,6 +360,8 @@ class ServerModel:
             return []
         controllers = self.parse_controllers(results["edges"])
         self._config.cache_controllers(controllers)
+        firmware_images = self.parse_controllers_firmware_image(results["edges"])
+        self._config.cache_firmware_images(firmware_images)
         return controllers
 
     def get_default_partition_table(self) -> dict:
@@ -428,7 +466,7 @@ class ServerModel:
             raise WorkerWarning(errors[0]["message"])
         controller_data = output["data"]["createController"]
         controller = self.parse_controller(controller_data)
-        self._config.cache_controllers([controller])
+        self._config.cache_controllers({controller.id: controller})
         return controller
 
     def update_controller(
@@ -455,7 +493,7 @@ class ServerModel:
         if errors := output.get("errors"):
             logging.warning(errors[0]["message"])
             raise WorkerWarning(errors[0]["message"])
-        self._config.cache_controllers([controller])
+        self._config.cache_controllers({controller.id: controller})
         return controller
 
     def cycle_controller_auth_token(
@@ -481,7 +519,7 @@ class ServerModel:
             raise WorkerInformation(self.controller_not_found_error)
         key = output["data"]["cycleControllerAuthToken"]["key"]
         controller.auth_token = key
-        self._config.cache_controllers([controller])
+        self._config.cache_controllers({controller.id: controller})
         return controller
 
     def delete_controller(self, controller_id: str, **kwargs) -> None:
@@ -521,8 +559,7 @@ class ServerModel:
     def download_firmware_image(self, firmware_id: str, **kwargs) -> dict:
         """Download the selected firmware if it is not cached locally."""
         try:
-            firmwares = self._config.config["firmwareImages"]
-            firmware = next(i for i in firmwares if i["id"] == firmware_id)
+            firmware = self._config.get_firmware_image(firmware_id)
             firmware = self._download_image(
                 firmware,
                 self._refresh_firmware_image_url,
@@ -533,20 +570,10 @@ class ServerModel:
             raise WorkerWarning(message)
         return firmware
 
-    def get_firmware_image(self, firmware_image_id: str) -> dict:
-        """Returns the firmware image for a given ID."""
-        firmware_image = next(
-            i
-            for i in self._config.config.get("firmwareImages")
-            if i["id"] == firmware_image_id
-        )
-        return firmware_image
-
     def download_bootloader_image(self, bootloader_id: str, **kwargs) -> dict:
         """Download the selected bootloader if it is not cached locally."""
         try:
-            bootloaders = self._config.config["bootloaderImages"]
-            bootloader = next(i for i in bootloaders if i["id"] == bootloader_id)
+            bootloader = self._config.get_bootloader_image(bootloader_id)
             bootloader = self._download_image(
                 bootloader,
                 self._refresh_bootloader_image_url,
@@ -556,18 +583,11 @@ class ServerModel:
             raise WorkerWarning(f"{self.downloading_bootloader_error} {err}")
         return bootloader
 
-    def get_bootloader_image(self, bootloader_image_id: str) -> dict:
-        """Returns the bootloader image for a given ID."""
-        bootloader_image = next(
-            i
-            for i in self._config.config.get("bootloaderImages")
-            if i["id"] == bootloader_image_id
-        )
-        return bootloader_image
-
-    def get_image_path(self, image: dict) -> str:
+    def get_image_path(self, image: FirmwareImageModel) -> str:
         """Returns the absolute path to the image."""
-        parse_result = urlparse(image["file"])
+        if not image.file:
+            return ""
+        parse_result = urlparse(image.file)
         filename = os.path.basename(parse_result.path)
         return os.path.join(self._config.dirs.user_cache_dir, filename)
 
@@ -586,45 +606,45 @@ class ServerModel:
 
     def _download_image(
         self,
-        image: dict,
+        image: FirmwareImageModel,
         refresh_url: Callable[[dict], None],
         progress_callback: Optional[Callable[[int], None]],
     ) -> dict:
         """Download the selected image if it is not locally cached."""
+        if not image.file:
+            refresh_url(image)
         path = self.get_image_path(image)
         # If the file has been downloaded to the cache and has the same hash, return
-        if self._is_file_valid(path, image["hashSha3_512"]):
+        if self._is_file_valid(path, image.hash_sha3_512):
             return image
         # Download the file and notify of progress
         os.makedirs(self._config.dirs.user_cache_dir, exist_ok=True)
-        with open(path, "wb+") as f:
-            # If the download link has expired, request a new one and retry
-            response = requests.get(image["file"], stream=True)
+        # If the download link has expired, request a new one and retry
+        response = requests.get(image.file, stream=True)
+        if response.status_code >= 400:
+            refresh_url(image)
+            response = requests.get(image.file, stream=True)
             if response.status_code >= 400:
-                refresh_url(image)
-                response = requests.get(image["file"], stream=True)
-                if response.status_code >= 400:
-                    logging.error(
-                        f"Failed to download file (Error {response.status_code})"
-                    )
-                    raise WorkerWarning(self.download_failed_error)
-            total_length = response.headers.get("content-length")
-            # If the total length is unknown, skip notifying progress
+                logging.error(f"Failed to download file (Error {response.status_code})")
+                raise WorkerWarning(self.download_failed_error)
+        total_length = response.headers.get("content-length")
+        # If the total length is unknown, skip notifying progress
+        with open(path, "wb+") as file:
             if total_length is None:
                 if progress_callback:
                     progress_callback(-1)
-                f.write(response.content)
+                file.write(response.content)
             else:
                 received_bytes = 0
                 total_length = int(total_length)
                 for data in response.iter_content(chunk_size=64 * 1024):
-                    f.write(data)
+                    file.write(data)
                     received_bytes += len(data)
                     percentage_done = int(100 * received_bytes / total_length)
                     if progress_callback:
                         progress_callback.emit(percentage_done)
         # Check the file hash. Delete and inform the user if it fails
-        if not self._is_file_valid(path, image["hashSha3_512"]):
+        if not self._is_file_valid(path, image.hash_sha3_512):
             os.remove(path)
             raise WorkerWarning(self.checksum_failed_error)
         return image
@@ -642,7 +662,7 @@ class ServerModel:
     def _get_cached_partition_table(self, partition_table_id: str) -> dict:
         """Try to get the cached partition table. Empty dict on cache miss."""
         try:
-            partition_table = self._config.config["partitionTables"][partition_table_id]
+            partition_table = self._config._cache["partitionTables"][partition_table_id]
             return partition_table
         except KeyError:
             return {}
@@ -650,17 +670,17 @@ class ServerModel:
     def _cache_partition_table(self, partition_table_id, partition_table) -> None:
         """Store the partition table in the cache."""
         try:
-            partition_tables = self._config.config["partitionTables"]
+            partition_tables = self._config._cache["partitionTables"]
         except KeyError:
             partition_tables = {}
         partition_tables.update({partition_table_id: partition_table})
 
-    def _refresh_firmware_image_url(self, firmware_image: dict):
+    def _refresh_firmware_image_url(self, firmware_image: FirmwareImageModel):
         """Refresh the (expired) URL of a firmware image."""
         data = {
             "query": f"""
             {{
-                firmwareImage(id: "{firmware_image['id']}") {{ file }}
+                firmwareImage(id: "{firmware_image.id}") {{ file }}
             }}""",
             "variables": None,
         }
@@ -668,21 +688,21 @@ class ServerModel:
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning(self.refreshing_firmware_url_failed_error)
-        firmware_image["file"] = output["data"]["firmwareImage"]["file"]
+        firmware_image.file = output["data"]["firmwareImage"]["file"]
 
-    def _refresh_bootloader_image_url(self, bootloader_image):
+    def _refresh_bootloader_image_url(self, bootloader_image: BootloaderImageModel):
         """Refresh the (expired) URL of a bootloader image."""
         data = {
             "query": f"""
             {{
-                bootloaderImage(id: "{bootloader_image['id']}") {{ file }}
+                bootloaderImage(id: "{bootloader_image.id}") {{ file }}
             }}"""
         }
         output = self._auth_server_request(self._graphql_url, data).json()
         if errors := output.get("errors"):
             logging.warning(errors)
             raise WorkerWarning(self.refreshing_bootloader_url_failed_error)
-        bootloader_image["file"] = output["data"]["bootloaderImage"]["file"]
+        bootloader_image.file = output["data"]["bootloaderImage"]["file"]
 
     def _save_credentials(self, access_token: str, refresh_token: str) -> None:
         """Save the auth token in a keychain."""
@@ -941,27 +961,135 @@ class ServerModel:
         return {"Host": parsed_core_url.netloc}
 
     @staticmethod
-    def parse_sites(data: List) -> List[SiteModel]:
-        """Expects data as [{"node: {...}, ...]"""
-        return [SiteModel(id=i["node"]["id"], name=i["node"]["name"]) for i in data]
+    def parse_sites(data: dict) -> List[SiteModel]:
+        """Extracts sites from full GQL query."""
+        return [
+            SiteModel(id=i["node"]["id"], name=i["node"]["name"])
+            for i in data["data"]["allSites"]["edges"]
+        ]
 
     @classmethod
-    def parse_controllers(cls, data: List) -> List[ControllerModel]:
-        """Expects data as [{"node": {...}}, ...]}"""
-        return [cls.parse_controller(i["node"]) for i in data]
+    def parse_controller_type_data(
+        cls, data: dict
+    ) -> tuple[dict[str, ControllerTypeModel], dict[str, FirmwareVariantModel]]:
+        """Extracts controller type and firmware variants from GQL data."""
+        ct_list = data["data"]["allControllerTypes"]["edges"]
+        controller_types = {
+            i["node"]["id"]: ControllerTypeModel(
+                id=i["node"]["id"],
+                name=i["node"]["name"],
+                firmware_variants=cls.parse_firmware_variant_edges(
+                    i["node"]["firmwareVariantEdges"]["edges"]
+                ),
+            )
+            for i in ct_list
+        }
+        firmware_variants = {}
+        for ct_data in ct_list:
+            for fv_data in ct_data["node"]["firmwareVariantEdges"]["edges"]:
+                fv_id: str = fv_data["node"]["firmwareVariant"]["id"]
+                if fv_id in firmware_variants:
+                    continue
+                firmware_variant = FirmwareVariantModel(
+                    id=fv_id, name=fv_data["node"]["firmwareVariant"]["name"]
+                )
+                firmware_variants[fv_id] = firmware_variant
+        return (controller_types, firmware_variants)
 
     @staticmethod
-    def parse_controller(data: Dict) -> ControllerModel:
+    def parse_firmware_variant_edges(data: list) -> list[FirmwareVariantEdge]:
+        """Expects data as [{"node: {...}, ...]"""
+        return [
+            FirmwareVariantEdge(
+                firmware_variant_id=i["node"]["firmwareVariant"]["id"],
+                priority=i["node"]["priority"],
+            )
+            for i in data
+        ]
+
+    @staticmethod
+    def parse_bootloader_images(data: dict) -> dict[str, BootloaderImageModel]:
+        """Extract bootloader images from GQL data."""
+        return {
+            i["node"]["id"]: BootloaderImageModel(
+                id=i["node"]["id"],
+                name=i["node"]["name"],
+                version=Version(i["node"]["version"]),
+                hash_sha3_512=i["node"]["hashSha3_512"],
+                file="",
+            )
+            for i in data["data"]["allBootloaderImages"]["edges"]
+        }
+
+    @staticmethod
+    def parse_firmware_images(
+        data: dict, firmware_variant_id: str
+    ) -> dict[str, FirmwareImageModel]:
+        """Extract firmware images from GQL data."""
+        return {
+            i["node"]["id"]: FirmwareImageModel(
+                id=i["node"]["id"],
+                name=i["node"]["name"],
+                version=Version(i["node"]["version"]),
+                firmware_variant_id=firmware_variant_id,
+                bootloader_image_id=i["node"]["bootloaderId"],
+                hash_sha3_512=i["node"]["hashSha3_512"],
+                file="",
+            )
+            for i in data["data"]["allFirmwareImages"]["edges"]
+        }
+
+    @classmethod
+    def parse_controllers(cls, data: list) -> dict[str, ControllerModel]:
+        """Expects data as [{"node": {...}}, ...]}"""
+        return {i["node"]["id"]: cls.parse_controller(i["node"]) for i in data}
+
+    @staticmethod
+    def parse_controller(data: dict) -> ControllerModel:
         """Expects data as {"id: ..., "name": ...}"""
+        if "firmwareImageId" in data:
+            firmware_image_id = data["firmwareImageId"]
+        else:
+            if firmware_image := data.get("firmwareImage"):
+                firmware_image_id = firmware_image["id"]
+            else:
+                firmware_image_id = None
         return ControllerModel(
             id=data["id"],
             name=data["name"],
             site_id=data["siteId"],
             controller_type_id=data["controllerTypeId"],
-            firmware_image_id=data["firmwareImageId"],
+            firmware_image_id=firmware_image_id,
             partition_table_id=data["partitionTableId"],
             auth_token=data["authToken"]["key"] if data.get("authToken") else None,
         )
+
+    @staticmethod
+    def parse_controllers_firmware_image(data: list) -> dict[str, FirmwareImageModel]:
+        """Expects data as [{"node": {...}}, ...]}"""
+        firmware_images = {}
+        for controller in data:
+            firmware_image_data = controller["node"]["firmwareImage"]
+            if not firmware_image_data:
+                continue
+            firmware_image_id = firmware_image_data["id"]
+            if firmware_image_id in firmware_images:
+                continue
+            try:
+                version = Version(firmware_image_data["version"])
+            except ValueError:
+                version = None
+            firmware_image = FirmwareImageModel(
+                id=firmware_image_id,
+                name=firmware_image_data["name"],
+                version=version,
+                hash_sha3_512=firmware_image_data["hashSha3_512"],
+                bootloader_image_id=firmware_image_data["bootloaderId"],
+                firmware_variant_id=firmware_image_data["firmwareVariantId"],
+                file="",
+            )
+            firmware_images.update({firmware_image_id: firmware_image})
+        return firmware_images
 
     @property
     def getting_site_firmware_error(self):

@@ -154,12 +154,10 @@ class FlashModel:
         self._create_partition_image(partitions)
         self._create_littlefs_image(littlefs_size, wifi_aps, controller)
 
-        firmware_image = self._server_model.get_firmware_image(
-            controller.firmware_image_id
-        )
+        firmware_image = self._config.get_firmware_image(controller.firmware_image_id)
         bootloader_image: dict | None = None
-        if bootloader := firmware_image.get("bootloader"):
-            bootloader_image = self._server_model.get_bootloader_image(bootloader["id"])
+        if bootloader_id := firmware_image.bootloader_image_id:
+            bootloader_image = self._config.get_bootloader_image(bootloader_id)
         self._flash_controller(
             partitions, firmware_image, bootloader_image, progress_callback
         )

@@ -4,7 +4,7 @@
 
 ## Start
 
-1. Do the [driver setup](#driver-setup-instructions)
+1. Do the [driver setup](../README.md#driver-setup)
 2. In a terminal run `poetry install`
 3. Run `./start.sh` or `poetry run python src/main.py`
 

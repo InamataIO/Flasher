@@ -1,26 +1,27 @@
 import logging
 import platform
-from typing import List
+from typing import Any
 
 from PySide6.QtCore import (
     QCoreApplication,
     QLocale,
     QModelIndex,
+    Qt,
     QThreadPool,
     QUrl,
     Slot,
 )
 from PySide6.QtGui import QCloseEvent, QDesktopServices, QKeySequence, QShortcut
-from PySide6.QtWidgets import QMenu, QMessageBox
+from PySide6.QtWidgets import QComboBox, QMenu, QMessageBox
 
 from about_view import AboutView
-from config import Config, ControllerModel
+from config import BootloaderImageModel, Config, ControllerModel, FirmwareImageModel
 from flash_model import FlashModel
 from locale_model import LocaleModel
 from main_view import MainView
 from serial_monitor_controller import SerialMonitorController
 from serial_monitor_view import SerialMonitorView
-from server_model import ServerModel
+from server_model import ServerModel, WebAppPaths
 from wifi_model import WiFiModel
 from worker import Worker, WorkerError, WorkerInformation, WorkerWarning
 
@@ -121,6 +122,12 @@ class Controller:
         self._view.ui.welcomeHelpIconButton.setMenu(self.welcome_help_menu)
 
         # Add Controller Page
+        self._view.ui.addControllerControllerTypesComboBox.currentIndexChanged.connect(
+            self.add_controller_controller_type_selected
+        )
+        self._view.ui.addControllerFirmwareVariantsComboBox.currentIndexChanged.connect(
+            self.add_controller_firmware_variant_selected
+        )
         self._view.ui.addControllerFlashButton.clicked.connect(
             self.add_controller_download_and_flash
         )
@@ -130,10 +137,19 @@ class Controller:
         self._view.ui.addControllerBackButton.clicked.connect(self.to_welcome_page)
         self._view.ui.addControllerDriverButton.clicked.connect(self.to_driver_install)
         self._view.ui.addControllerAPListView.clicked.connect(self.ap_list_clicked)
+        self._view.ui.addControllerShowAdvancedButton.stateChanged.connect(
+            self.add_controller_show_advanced
+        )
 
         # Replace Controller Page
         self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.connect(
             self.replace_controller_site_selected
+        )
+        self._view.ui.replaceControllerControllersComboBox.currentIndexChanged.connect(
+            self.replace_controller_controller_selected
+        )
+        self._view.ui.replaceControllerFirmwareVariantsComboBox.currentIndexChanged.connect(
+            self.replace_controller_firmware_variant_selected
         )
         self._view.ui.replaceControllerFlashButton.clicked.connect(
             self.replace_controller_download_and_flash
@@ -146,6 +162,9 @@ class Controller:
             self.to_driver_install
         )
         self._view.ui.replaceControllerAPListView.clicked.connect(self.ap_list_clicked)
+        self._view.ui.replaceControllerShowAdvancedButton.stateChanged.connect(
+            self.replace_controller_show_advanced
+        )
 
         # Add WiFi Page
         self._view.ui.addWiFiSubmitPushButton.clicked.connect(self.add_wifi_ap)
@@ -206,7 +225,7 @@ class Controller:
     def to_driver_install(self):
         """Open the driver installation web page."""
         QDesktopServices.openUrl(
-            QUrl("https://github.com/InamataIO/Flasher#driver-setup-instructions")
+            QUrl("https://github.com/InamataIO/Flasher#driver-setup")
         )
 
     ##########################
@@ -380,12 +399,16 @@ class Controller:
             text = username
         self._view.ui.welcomeUsername.setText(text)
 
-    def open_web_app(self) -> None:
+    def open_web_app(self, path: Any = "") -> None:
         """Open the browser with the web-app."""
+        if not isinstance(path, str):
+            path = ""
         url = self._server_model.server_urls.web_app_base_url
         if self._locale_model.locale == QLocale.Language.German:
             url = f"{url}/de/"
-        QDesktopServices.openUrl(QUrl(url))
+        else:
+            url = f"{url}/en/"
+        QDesktopServices.openUrl(QUrl(url + path))
 
     def show_serial_window(self) -> None:
         """Show the serial monitor window."""
@@ -503,13 +526,19 @@ class Controller:
 
     def handle_add_controller_page(self):
         """Get data and populate the combo boxes on the add controller page."""
+        self.add_controller_show_advanced(
+            self._view.ui.addControllerShowAdvancedButton.checkState().value
+        )
         if self._config.has_cached_sites():
             self.handle_add_controller_page_result(None)
         else:
             self._view.ui.addControllerSerialPortsText.hide()
             self._view.ui.addControllerLoadingText.show()
             self._view.ui.addControllerLoadingBar.show()
-            worker = Worker(self._server_model.get_site_and_firmware_data)
+            worker = Worker(
+                self._server_model.get_static_data,
+                controller_type_names=self._config.supported_controller_types,
+            )
             worker.signals.result.connect(self.handle_add_controller_page_result)
             worker.signals.error.connect(self.handle_add_controller_page_error)
             worker.signals.finished.connect(self.handle_add_controller_page_finished)
@@ -517,52 +546,19 @@ class Controller:
 
     def handle_add_controller_page_result(self, _):
         """Populate the combo boxes with the fetched data for add controller page."""
-        # Update the site combo box and retain the currently selected item
-        current_site = self._view.ui.addControllerSitesComboBox.currentData()
-        self._view.ui.addControllerSitesComboBox.clear()
-        for i in self._config.get_sites():
-            self._view.ui.addControllerSitesComboBox.addItem(i.name, userData=i.id)
-        if current_site:
-            index = self._view.ui.addControllerSitesComboBox.findData(current_site)
-            if index:
-                self._view.ui.addControllerSitesComboBox.setCurrentIndex(index)
-        if not self._view.ui.addControllerSitesComboBox.count():
-            self._view.notify(self.no_sites_found_message, self.no_sites_found_title)
-
-        # Update the firmware combo box and retain the currently selected item
-        current_firmware = self._view.ui.addControllerFirmwaresComboBox.currentData()
-        self._view.ui.addControllerFirmwaresComboBox.clear()
-        firmware_images = self._config.config.get("firmwareImages", [])
-        # Add a latest firmware entry and all other ones
-        if firmware_images:
-            # Firmware images are sorted by version number
-            latest = firmware_images[0]
-            self._view.ui.addControllerFirmwaresComboBox.addItem(
-                f"{self.latest_label} ({latest['name']})", userData=latest["id"]
-            )
-            for i in firmware_images:
-                self._view.ui.addControllerFirmwaresComboBox.addItem(
-                    f"{i['name']} {i['version']}", userData=i["id"]
-                )
-        else:
-            self._view.notify(
-                self.no_firmware_images_found_message,
-                self.no_firmware_images_found_title,
-                "warning",
-            )
-            self._view.ui.addControllerFirmwaresComboBox.addItem(
-                self.no_firmware_images_found_label
-            )
-        if current_firmware:
-            index = self._view.ui.addControllerFirmwaresComboBox.findData(
-                current_firmware
-            )
-            if index:
-                self._view.ui.addControllerFirmwaresComboBox.setCurrentIndex(index)
-
         # Update the found serial ports
         text = self.get_found_serial_ports_text()
         self._view.ui.addControllerSerialPortsText.setText(text)
+
+        # Update the sites and controller types combo box
+        success = self.update_sites_combo_box(self._view.ui.addControllerSitesComboBox)
+        if not success:
+            return
+        success = self.update_controller_types_combo_box(
+            self._view.ui.addControllerControllerTypesComboBox
+        )
+        if not success:
+            return
 
     def handle_add_controller_page_error(self, error):
         """Error handler for the add controller data fetch thread."""
@@ -573,6 +569,73 @@ class Controller:
         self._view.ui.addControllerLoadingText.hide()
         self._view.ui.addControllerLoadingBar.hide()
         self._view.ui.addControllerSerialPortsText.show()
+
+    def add_controller_controller_type_selected(self, index):
+        self.add_controller_update_firmware_variants_field()
+
+    def add_controller_firmware_variant_selected(self, index):
+        self.add_controller_update_firmware_version_field()
+
+    def add_controller_update_firmware_variants_field(self):
+        current_controller_type: str = (
+            self._view.ui.addControllerControllerTypesComboBox.currentData()
+        )
+        if not current_controller_type:
+            return
+        firmware_variants_combo: QComboBox = (
+            self._view.ui.addControllerFirmwareVariantsComboBox
+        )
+        firmware_variants_combo.clear()
+        for i in self._config.get_firmware_variants_for_controller_type(
+            current_controller_type
+        ):
+            firmware_variants_combo.addItem(i.name, userData=i.id)
+        if not firmware_variants_combo.count():
+            self._view.notify(
+                self.no_firmware_variants_found_message,
+                self.no_firmware_variants_found_title,
+            )
+
+    def add_controller_update_firmware_version_field(self):
+        """Query server for firmware for the selected controller type."""
+        firmware_variant_id: str | None = (
+            self._view.ui.addControllerFirmwareVariantsComboBox.currentData()
+        )
+        if not firmware_variant_id:
+            return
+        firmware_variant = self._config.get_firmware_variant(firmware_variant_id)
+        if firmware_variant and not firmware_variant.firmware_image_ids:
+            worker = Worker(
+                self._server_model.get_firmware_data,
+                firmware_variant_id=firmware_variant_id,
+            )
+            worker.signals.result.connect(
+                self.add_controller_update_firmware_version_field_result
+            )
+            worker.signals.error.connect(
+                self.add_controller_update_firmware_version_field_error
+            )
+            worker.signals.finished.connect(self.handle_add_controller_page_finished)
+            self.threadpool.start(worker)
+            return
+        self.add_controller_update_firmware_version_field_result()
+
+    def add_controller_update_firmware_version_field_result(self):
+        firmware_variant_id = (
+            self._view.ui.addControllerFirmwareVariantsComboBox.currentData()
+        )
+        firmware_versions_combo: QComboBox = (
+            self._view.ui.addControllerFirmwareVersionsComboBox
+        )
+        firmware_versions_combo.blockSignals(True)
+        firmware_versions_combo.clear()
+        for i in self._config.get_firmware_images_for_variant(firmware_variant_id):
+            firmware_versions_combo.addItem(str(i.version), userData=i.id)
+        firmware_versions_combo.blockSignals(False)
+        firmware_versions_combo.currentIndexChanged.emit(0)
+
+    def add_controller_update_firmware_version_field_error(self, error):
+        self.handle_error(error)
 
     def add_controller_reload(self):
         """Clear the cached data and repopulate the combo boxes."""
@@ -588,8 +651,10 @@ class Controller:
         )
         self.add_controller_set_widgets_for_flashing(True)
 
-        firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
-        worker = Worker(self._server_model.download_firmware_image, firmware_id)
+        firmware_image_id = (
+            self._view.ui.addControllerFirmwareVersionsComboBox.currentData()
+        )
+        worker = Worker(self._server_model.download_firmware_image, firmware_image_id)
         worker.signals.progress.connect(self.add_controller_download_firmware_progress)
         worker.signals.result.connect(self.add_controller_download_firmware_result)
         worker.signals.error.connect(self.add_controller_download_firmware_error)
@@ -606,7 +671,7 @@ class Controller:
         if not self._wifi_model.get_checked_aps():
             self._view.notify(self.missing_wifi_message, self.missing_input_title)
             return False
-        if not self._view.ui.addControllerFirmwaresComboBox.currentData():
+        if not self._view.ui.addControllerFirmwareVersionsComboBox.currentData():
             self._view.notify(self.missing_firmware_message, self.missing_input_title)
             return False
         return True
@@ -616,17 +681,17 @@ class Controller:
         mapped_progress = progress / 100 * 30
         self.add_controller_set_progress_bar(mapped_progress)
 
-    def add_controller_download_firmware_result(self, firmware: dict):
+    def add_controller_download_firmware_result(self, firmware: FirmwareImageModel):
         """After completing the download, flash the controller."""
         self._view.ui.addControllerProgressText.setText(
             f"{self.get_bootloader_label} (2/4)"
         )
         self.add_controller_set_progress_bar(30)
 
-        bootloader = firmware["bootloader"]
+        bootloader = self._config.get_bootloader_image(firmware.bootloader_image_id)
         if not bootloader:
-            return self.add_controller_download_bootloader_result({})
-        worker = Worker(self._server_model.download_bootloader_image, bootloader["id"])
+            return self.add_controller_download_bootloader_result(bootloader)
+        worker = Worker(self._server_model.download_bootloader_image, bootloader.id)
         worker.signals.progress.connect(
             self.add_controller_download_bootloader_progress
         )
@@ -644,7 +709,9 @@ class Controller:
         mapped_progress = (progress / 100 * 10) + 30
         self.add_controller_set_progress_bar(mapped_progress)
 
-    def add_controller_download_bootloader_result(self, bootloader: dict):
+    def add_controller_download_bootloader_result(
+        self, bootloader: BootloaderImageModel
+    ):
         """After completing the bootloader download, register the controller."""
         self._view.ui.addControllerProgressText.setText(
             f"{self.registering_label} (3/4)"
@@ -653,15 +720,19 @@ class Controller:
 
         name = self._view.ui.addControllerNameLineEdit.text()
         site_id = self._view.ui.addControllerSitesComboBox.currentData()
-        controller_type_id = self._config.config["controllerTypes"][0]["id"]
-        firmware_id = self._view.ui.addControllerFirmwaresComboBox.currentData()
+        controller_type_id = (
+            self._view.ui.addControllerControllerTypesComboBox.currentData()
+        )
+        firmware_image_id = (
+            self._view.ui.addControllerFirmwareVersionsComboBox.currentData()
+        )
 
         worker = Worker(
             self._server_model.register_controller,
             name,
             site_id,
             controller_type_id,
-            firmware_id,
+            firmware_image_id,
         )
         worker.signals.result.connect(self.add_controller_register_result)
         worker.signals.error.connect(self.add_controller_register_error)
@@ -702,9 +773,20 @@ class Controller:
         self.add_controller_set_progress_bar(mapped_progress)
 
     def add_controller_flash_result(self, _):
-        self._view.notify(
-            self.flash_succeeded_message, self.flash_succeeded_title, "information"
+        msg_box = QMessageBox(
+            QMessageBox.Icon.Information,
+            self.flash_succeeded_title,
+            self.flash_succeeded_message,
+            parent=self._view.ui,
         )
+        setup_button = msg_box.addButton(
+            self.setup_peripherals_label, QMessageBox.ButtonRole.HelpRole
+        )
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+
+        if msg_box.clickedButton() == setup_button:
+            self.open_web_app(WebAppPaths.devices_peripherals)
 
     def add_controller_flash_error(self, error, controller):
         """Handle errors while flashing the controller."""
@@ -731,7 +813,9 @@ class Controller:
         self._view.ui.addControllerSitesComboBox.setDisabled(is_flashing)
         self._view.ui.addControllerNameLineEdit.setDisabled(is_flashing)
         self._view.ui.addControllerAPListView.setDisabled(is_flashing)
-        self._view.ui.addControllerFirmwaresComboBox.setDisabled(is_flashing)
+        self._view.ui.addControllerControllerTypesComboBox.setDisabled(is_flashing)
+        self._view.ui.addControllerFirmwareVariantsComboBox.setDisabled(is_flashing)
+        self._view.ui.addControllerFirmwareVersionsComboBox.setDisabled(is_flashing)
         self._view.ui.addControllerFlashButton.setDisabled(is_flashing)
         self._view.ui.addControllerReloadButton.setDisabled(is_flashing)
         self._view.ui.addControllerBackButton.setDisabled(is_flashing)
@@ -746,18 +830,35 @@ class Controller:
             self._view.ui.addControllerProgressBar.setValue(limited_progress)
             self._view.ui.addControllerProgressBar.setRange(0, 100)
 
+    def add_controller_show_advanced(self, state: int):
+        """Callback when the show advanced checkbox is pressed."""
+        if state == Qt.CheckState.Checked.value:
+            self._view.ui.addControllerFirmwareLabel.show()
+            self._view.ui.addControllerFirmwareVariantsComboBox.show()
+            self._view.ui.addControllerFirmwareVersionsComboBox.show()
+        elif state == Qt.CheckState.Unchecked.value:
+            self._view.ui.addControllerFirmwareLabel.hide()
+            self._view.ui.addControllerFirmwareVariantsComboBox.hide()
+            self._view.ui.addControllerFirmwareVersionsComboBox.hide()
+
     #######################################
     # Replace Controller Page Functionality
 
     def handle_replace_controller_page(self):
         """Fetch data and populate the combo boxes for the replace controller page."""
+        self.replace_controller_show_advanced(
+            self._view.ui.replaceControllerShowAdvancedButton.checkState().value
+        )
         if self._config.has_cached_sites():
             self.handle_replace_controller_page_result(None)
         else:
             self._view.ui.replaceControllerSerialPortsText.hide()
             self._view.ui.replaceControllerLoadingText.show()
             self._view.ui.replaceControllerLoadingBar.show()
-            worker = Worker(self._server_model.get_site_and_firmware_data)
+            worker = Worker(
+                self._server_model.get_static_data,
+                controller_type_names=self._config.supported_controller_types,
+            )
             worker.signals.result.connect(self.handle_replace_controller_page_result)
             worker.signals.error.connect(self.handle_replace_controller_page_error)
             worker.signals.finished.connect(
@@ -767,58 +868,15 @@ class Controller:
 
     def handle_replace_controller_page_result(self, _):
         """Populate the combo boxes excl. controllers for the replace controller page."""
-        # Update the site combo box and retain the currently selected item
-        # Block signals until setting the current index. Otherwise the controller combo box is
-        # activated multiple times.
-        current_site = self._view.ui.replaceControllerSitesComboBox.currentData()
-        self._view.ui.replaceControllerSitesComboBox.clear()
-        self._view.ui.replaceControllerSitesComboBox.blockSignals(True)
-        for i in self._config.get_sites():
-            self._view.ui.replaceControllerSitesComboBox.addItem(i.name, userData=i.id)
-        self._view.ui.replaceControllerSitesComboBox.blockSignals(False)
-        index = self._view.ui.replaceControllerSitesComboBox.findData(current_site)
-        if index >= 0:
-            self._view.ui.replaceControllerSitesComboBox.setCurrentIndex(index)
-        else:
-            self._view.ui.replaceControllerSitesComboBox.currentIndexChanged.emit(0)
-        if not self._view.ui.replaceControllerSitesComboBox.count():
-            self._view.notify(self.no_sites_found_message, self.no_sites_found_title)
-
-        # Update the firmware combo box and retain the currently selected item
-        current_firmware = (
-            self._view.ui.replaceControllerFirmwaresComboBox.currentData()
-        )
-        self._view.ui.replaceControllerFirmwaresComboBox.clear()
-        firmware_images = self._config.config.get("firmwareImages", [])
-        # Add a latest firmware entry and all other ones
-        if firmware_images:
-            # Firmware images are sorted by version number
-            latest = firmware_images[0]
-            self._view.ui.replaceControllerFirmwaresComboBox.addItem(
-                f"{self.latest_label} ({latest['name']})", userData=latest["id"]
-            )
-            for i in firmware_images:
-                self._view.ui.replaceControllerFirmwaresComboBox.addItem(
-                    f"{i['name']} {i['version']}", userData=i["id"]
-                )
-        else:
-            self._view.notify(
-                self.no_firmware_images_found_message,
-                self.no_firmware_images_found_title,
-                "warning",
-            )
-            self._view.ui.replaceControllerFirmwaresComboBox.addItem(
-                self.no_firmware_images_found_label
-            )
-        if current_firmware:
-            index = self._view.ui.replaceControllerFirmwaresComboBox.findData(
-                current_firmware
-            )
-            if index >= 0:
-                self._view.ui.replaceControllerFirmwaresComboBox.setCurrentIndex(index)
-
+        # Update the found serial ports
         text = self.get_found_serial_ports_text()
         self._view.ui.replaceControllerSerialPortsText.setText(text)
+
+        # Update the site combo box and retain the currently selected item
+        sites_combo: QComboBox = self._view.ui.replaceControllerSitesComboBox
+        success = self.update_sites_combo_box(sites_combo)
+        if not success:
+            return
 
     def handle_replace_controller_page_error(self, error):
         """Error handler for the replace controller data fetch thread."""
@@ -833,16 +891,13 @@ class Controller:
     def replace_controller_reload(self):
         """Clear cached data and repopulate the combo boxes on the replace controller page."""
         self._config.clear_cached_data()
+        self.replace_controller_site_selected(0)
         self.handle_replace_controller_page()
 
     def replace_controller_site_selected(self, index):
         """Start the process to populate the controller combo box for the selected site."""
         if site_id := self._view.ui.replaceControllerSitesComboBox.itemData(index):
-            controllers = self._config.get_controllers_by_site(site_id)
-            if controllers:
-                self.populate_replace_controller_controllers(controllers)
-            else:
-                self.replace_controller_load_controllers(site_id)
+            self.replace_controller_load_controllers(site_id)
 
     def replace_controller_load_controllers(self, site_id):
         """Fetch available controllers for the selected site."""
@@ -858,10 +913,10 @@ class Controller:
         self.threadpool.start(worker)
 
     def replace_controller_load_controllers_result(
-        self, controllers: List[ControllerModel]
+        self, controllers: dict[str, ControllerModel]
     ):
         """Populate the controller combo box with the fetched data."""
-        self.populate_replace_controller_controllers(controllers)
+        self.populate_replace_controller_controllers(list(controllers.values()))
 
     def replace_controller_load_controllers_error(self, error):
         """Error handler for fetching the controllers thread."""
@@ -873,32 +928,115 @@ class Controller:
         self._view.ui.replaceControllerLoadingBar.hide()
         self._view.ui.replaceControllerSerialPortsText.show()
 
-    def populate_replace_controller_controllers(
-        self, controllers: List[ControllerModel]
-    ):
-        """Populate the controller combo box for the selected site."""
-        # Save the current item to restore the combo box selection later
-        current_controller = (
+    def replace_controller_controller_selected(self, index):
+        self.replace_controller_update_firmware_variants_field()
+
+    def replace_controller_firmware_variant_selected(self, index):
+        self.replace_controller_update_firmware_version_field()
+
+    def replace_controller_update_firmware_variants_field(self):
+        controller = self._config.get_controller(
             self._view.ui.replaceControllerControllersComboBox.currentData()
         )
-        self._view.ui.replaceControllerControllersComboBox.clear()
-        if not controllers:
-            self._view.ui.replaceControllerControllersComboBox.addItem(
-                self.no_controllers_found_label
-            )
+        if not controller:
+            return
+        firmware_image = self._config.get_firmware_image(controller.firmware_image_id)
+        if not firmware_image:
             return
 
-        controllers.sort(key=lambda c: c.name)
-        for i in controllers:
-            self._view.ui.replaceControllerControllersComboBox.addItem(
-                i.name, userData=i.id
-            )
-        # Try to set the combo box selection to the previously selected item
-        index = self._view.ui.replaceControllerControllersComboBox.findData(
-            current_controller
+        firmware_variants_combo: QComboBox = (
+            self._view.ui.replaceControllerFirmwareVariantsComboBox
         )
+        firmware_variants_combo.blockSignals(True)
+        firmware_variants_combo.clear()
+        for i in self._config.get_firmware_variants_for_controller_type(
+            controller.controller_type_id
+        ):
+            firmware_variants_combo.addItem(i.name, userData=i.id)
+        firmware_variants_combo.blockSignals(False)
+        if not firmware_variants_combo.count():
+            self._view.notify(
+                self.no_firmware_variants_found_message,
+                self.no_firmware_variants_found_title,
+            )
+
+        # Set the variant to that currently on the controller
+        index = firmware_variants_combo.findData(firmware_image.firmware_variant_id)
         if index >= 0:
-            self._view.ui.replaceControllerControllersComboBox.setCurrentIndex(index)
+            firmware_variants_combo.setCurrentIndex(index)
+        else:
+            firmware_variants_combo.currentIndexChanged.emit(0)
+
+    def populate_replace_controller_controllers(
+        self, controllers: list[ControllerModel]
+    ) -> None:
+        """Populate the controller combo box for the selected site."""
+        controllers_combo: QComboBox = (
+            self._view.ui.replaceControllerControllersComboBox
+        )
+        current_controller = controllers_combo.currentData()
+        controllers.sort(key=lambda c: c.name)
+
+        # Block signals until setting the current index. Otherwise the controller
+        # combo box is activated multiple times.
+        controllers_combo.blockSignals(True)
+        controllers_combo.clear()
+        for i in controllers:
+            controllers_combo.addItem(i.name, userData=i.id)
+        controllers_combo.blockSignals(False)
+        if not controllers:
+            controllers_combo.addItem(self.no_controllers_found_label)
+            return
+
+        # Retain the currently selected item
+        index = controllers_combo.findData(current_controller)
+        if index >= 0:
+            controllers_combo.setCurrentIndex(index)
+        else:
+            controllers_combo.currentIndexChanged.emit(0)
+
+    def replace_controller_update_firmware_version_field(self):
+        """Query server for firmware for the selected controller type."""
+        firmware_variant_id: str | None = (
+            self._view.ui.replaceControllerFirmwareVariantsComboBox.currentData()
+        )
+        if not firmware_variant_id:
+            return
+        firmware_variant = self._config.get_firmware_variant(firmware_variant_id)
+        if firmware_variant and not firmware_variant.firmware_image_ids:
+            worker = Worker(
+                self._server_model.get_firmware_data,
+                firmware_variant_id=firmware_variant_id,
+            )
+            worker.signals.result.connect(
+                self.replace_controller_update_firmware_version_field_result
+            )
+            worker.signals.error.connect(
+                self.replace_controller_update_firmware_version_field_error
+            )
+            worker.signals.finished.connect(
+                self.handle_replace_controller_page_finished
+            )
+            self.threadpool.start(worker)
+            return
+        self.replace_controller_update_firmware_version_field_result()
+
+    def replace_controller_update_firmware_version_field_result(self):
+        firmware_variant_id = (
+            self._view.ui.replaceControllerFirmwareVariantsComboBox.currentData()
+        )
+        firmware_images_combo: QComboBox = (
+            self._view.ui.replaceControllerFirmwareVersionsComboBox
+        )
+        firmware_images_combo.blockSignals(True)
+        firmware_images_combo.clear()
+        for i in self._config.get_firmware_images_for_variant(firmware_variant_id):
+            firmware_images_combo.addItem(str(i.version), userData=i.id)
+        firmware_images_combo.blockSignals(False)
+        firmware_images_combo.currentIndexChanged.emit(0)
+
+    def replace_controller_update_firmware_version_field_error(self, error):
+        self.handle_error(error)
 
     def replace_controller_download_and_flash(self):
         """Download the selected firmware image and flash it to the ESP."""
@@ -909,8 +1047,10 @@ class Controller:
         )
         self.replace_controller_set_widgets_for_flashing(True)
 
-        firmware_id = self._view.ui.replaceControllerFirmwaresComboBox.currentData()
-        worker = Worker(self._server_model.download_firmware_image, firmware_id)
+        firmware_image_id = (
+            self._view.ui.replaceControllerFirmwareVersionsComboBox.currentData()
+        )
+        worker = Worker(self._server_model.download_firmware_image, firmware_image_id)
         worker.signals.progress.connect(
             self.replace_controller_download_firmware_progress
         )
@@ -929,7 +1069,7 @@ class Controller:
         if not self._wifi_model.get_checked_aps():
             self._view.notify(self.missing_wifi_message, self.missing_input_title)
             return False
-        if not self._view.ui.replaceControllerFirmwaresComboBox.currentData():
+        if not self._view.ui.replaceControllerFirmwareVersionsComboBox.currentData():
             self._view.notify(self.missing_firmware_message, self.missing_input_title)
             return False
         return True
@@ -948,7 +1088,8 @@ class Controller:
         self._view.ui.replaceControllerSitesComboBox.setDisabled(is_flashing)
         self._view.ui.replaceControllerControllersComboBox.setDisabled(is_flashing)
         self._view.ui.replaceControllerAPListView.setDisabled(is_flashing)
-        self._view.ui.replaceControllerFirmwaresComboBox.setDisabled(is_flashing)
+        self._view.ui.replaceControllerFirmwareVariantsComboBox.setDisabled(is_flashing)
+        self._view.ui.replaceControllerFirmwareVersionsComboBox.setDisabled(is_flashing)
         self._view.ui.replaceControllerFlashButton.setDisabled(is_flashing)
         self._view.ui.replaceControllerReloadButton.setDisabled(is_flashing)
         self._view.ui.replaceControllerBackButton.setDisabled(is_flashing)
@@ -958,17 +1099,17 @@ class Controller:
         mapped_progress = progress / 100 * 30
         self.replace_controller_set_progress_bar(mapped_progress)
 
-    def replace_controller_download_firmware_result(self, firmware: dict):
+    def replace_controller_download_firmware_result(self, firmware: FirmwareImageModel):
         """After completing the download, flash the controller."""
         self._view.ui.replaceControllerProgressText.setText(
             f"{self.get_bootloader_label} (2/4)"
         )
         self.replace_controller_set_progress_bar(30)
 
-        bootloader = firmware["bootloader"]
+        bootloader = self._config.get_bootloader_image(firmware.bootloader_image_id)
         if not bootloader:
             return self.replace_controller_download_bootloader_result({})
-        worker = Worker(self._server_model.download_bootloader_image, bootloader["id"])
+        worker = Worker(self._server_model.download_bootloader_image, bootloader.id)
         worker.signals.progress.connect(
             self.replace_controller_download_bootloader_progress
         )
@@ -988,7 +1129,9 @@ class Controller:
         mapped_progress = (progress / 100 * 10) + 30
         self.replace_controller_set_progress_bar(mapped_progress)
 
-    def replace_controller_download_bootloader_result(self, bootloader_image: dict):
+    def replace_controller_download_bootloader_result(
+        self, bootloader_image: BootloaderImageModel
+    ):
         """After completing the download, flash the controller."""
         self._view.ui.replaceControllerProgressText.setText(
             f"{self.registering_label} (3/4)"
@@ -1003,7 +1146,7 @@ class Controller:
             )
             return
         controller.firmware_image_id = (
-            self._view.ui.replaceControllerFirmwaresComboBox.currentData()
+            self._view.ui.replaceControllerFirmwareVersionsComboBox.currentData()
         )
         worker = Worker(self._server_model.update_controller, controller)
         worker.signals.result.connect(self.replace_controller_update_result)
@@ -1061,9 +1204,20 @@ class Controller:
 
     def replace_controller_flash_result(self, _) -> None:
         """Displays that flashing has succeeded."""
-        self._view.notify(
-            self.flash_succeeded_message, self.flash_succeeded_title, "information"
+        msg_box = QMessageBox(
+            QMessageBox.Icon.Information,
+            self.flash_succeeded_title,
+            self.flash_succeeded_message,
+            parent=self._view.ui,
         )
+        setup_button = msg_box.addButton(
+            self.setup_peripherals_label, QMessageBox.ButtonRole.HelpRole
+        )
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+
+        if msg_box.clickedButton() == setup_button:
+            self.open_web_app(WebAppPaths.devices_peripherals)
 
     def replace_controller_flash_error(self, error: WorkerError) -> None:
         """Handle an error when flashing."""
@@ -1083,6 +1237,17 @@ class Controller:
             limited_progress = min(progress, 100)
             self._view.ui.replaceControllerProgressBar.setValue(limited_progress)
             self._view.ui.replaceControllerProgressBar.setRange(0, 100)
+
+    def replace_controller_show_advanced(self, state: int):
+        """Callback when the show advanced checkbox is pressed."""
+        if state == Qt.CheckState.Checked.value:
+            self._view.ui.replaceControllerFirmwareLabel.show()
+            self._view.ui.replaceControllerFirmwareVariantsComboBox.show()
+            self._view.ui.replaceControllerFirmwareVersionsComboBox.show()
+        elif state == Qt.CheckState.Unchecked.value:
+            self._view.ui.replaceControllerFirmwareLabel.hide()
+            self._view.ui.replaceControllerFirmwareVariantsComboBox.hide()
+            self._view.ui.replaceControllerFirmwareVersionsComboBox.hide()
 
     ##############################
     # System Settings Page functionality
@@ -1313,6 +1478,59 @@ class Controller:
     def ap_list_clicked(self, index: QModelIndex):
         self._wifi_model.toggle_checked(index)
 
+    def update_sites_combo_box(self, sites_combo: QComboBox) -> bool:
+        """Updates the sites combo box, returns true if one was set."""
+        current_site = sites_combo.currentData()
+
+        # Block signals until setting the current index. Otherwise the controller
+        # combo box is activated multiple times.
+        sites_combo.blockSignals(True)
+        sites_combo.clear()
+        for i in self._config.get_sites():
+            sites_combo.addItem(i.name, userData=i.id)
+        sites_combo.blockSignals(False)
+        if not sites_combo.count():
+            sites_combo.addItem(self.no_sites_found_title)
+            self._view.notify(self.no_sites_found_message, self.no_sites_found_title)
+            return False
+
+        # Retain the currently selected item
+        index = sites_combo.findData(current_site)
+        if index >= 0:
+            sites_combo.setCurrentIndex(index)
+        else:
+            sites_combo.currentIndexChanged.emit(0)
+        return True
+
+    def update_controller_types_combo_box(
+        self, controller_types_combo: QComboBox
+    ) -> bool:
+        """Updates the controller types combo box, returns true if one was set."""
+        current_controller_type: str = controller_types_combo.currentData()
+
+        # Block signals until setting the current index. Otherwise the controller
+        # combo box is activated multiple times.
+        controller_types_combo.blockSignals(True)
+        controller_types_combo.clear()
+        for i in self._config.get_controller_types():
+            controller_types_combo.addItem(i.name, userData=i.id)
+        controller_types_combo.blockSignals(False)
+        if not controller_types_combo.count():
+            controller_types_combo.addItem(self.no_controller_types_found_title)
+            self._view.notify(
+                self.no_controller_types_found_message,
+                self.no_controller_types_found_title,
+            )
+            return False
+
+        # Retain the currently selected item
+        index = controller_types_combo.findData(current_controller_type)
+        if index >= 0:
+            controller_types_combo.setCurrentIndex(index)
+        else:
+            controller_types_combo.currentIndexChanged.emit(0)
+        return True
+
     ##############################
     # Translated text
 
@@ -1400,6 +1618,10 @@ class Controller:
         )
 
     @property
+    def setup_peripherals_label(self) -> str:
+        return QCoreApplication.translate("main", "Setup peripherals")
+
+    @property
     def no_sites_found_title(self) -> str:
         return QCoreApplication.translate("main", "No Sites Found")
 
@@ -1407,6 +1629,17 @@ class Controller:
     def no_sites_found_message(self) -> str:
         return QCoreApplication.translate(
             "main", "No sites found. Use the web app to create new sites."
+        )
+
+    @property
+    def no_controller_types_found_title(self) -> str:
+        return QCoreApplication.translate("main", "No controller types found")
+
+    @property
+    def no_controller_types_found_message(self) -> str:
+        return QCoreApplication.translate(
+            "main",
+            "No controller types found. Use the web app to create new controller types.",
         )
 
     @property
@@ -1593,7 +1826,7 @@ class Controller:
             "help",
             """1. Install the serial driver (CP210x)
   - https://www.silabs.com/documents/public/software/CP210x_Windows_Drivers.zip
-  - https://github.com/InamataIO/Flasher#driver-setup-instructions
+  - https://github.com/InamataIO/Flasher#driver-setup
 
 2. Additional information and support
  - https://github.com/InamataIO/Flasher
