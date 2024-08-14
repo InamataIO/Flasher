@@ -19,7 +19,7 @@ license = "Apache-2.0"
 name = "inamata_flasher"
 packages = [{include = "esp_idf/..", from = "src"}]
 readme = "README.md"
-version = "1.4.0"
+version = "1.4.1"
 
 [tool.poetry.dependencies]
 # Qt bindings
@@ -31,7 +31,7 @@ esptool = "~=4.7.0"
 # Save/load auth token
 keyring = "~=25.2.1"
 # Create filesystem image with secrets
-littlefs-python = "~=0.4.0"
+littlefs-python = "~=0.12.0"
 # Parse auth token
 pyjwt = {version = "~=2.8.0", extras = ["crypto"]}
 # Read controller serial communication

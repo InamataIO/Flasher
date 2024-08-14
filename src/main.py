@@ -31,7 +31,7 @@ from main_view import MainView
 from server_model import ServerModel
 from wifi_model import WiFiModel
 
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 
 def main():

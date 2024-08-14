@@ -229,11 +229,18 @@ class FlashModel:
                     )
                 block_count = int(image_size / self._littlefs_block_size)
                 fs = LittleFS(
-                    block_size=self._littlefs_block_size, block_count=block_count
+                    block_size=self._littlefs_block_size,
+                    block_count=block_count,
+                    disk_version=0x00020000,
                 )
             else:
                 # Create the file system for the ESP8266
-                fs = LittleFS(block_size=8192, block_count=125, name_max=32)
+                fs = LittleFS(
+                    block_size=8192,
+                    block_count=125,
+                    name_max=32,
+                    disk_version=0x00020000,
+                )
 
             # Copy all files from the littlefs folder to the LittleFS image
             pathlist = Path(self._littlefs_dir).glob("**/*")

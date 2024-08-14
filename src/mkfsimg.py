@@ -57,6 +57,7 @@ fs = LittleFS(
     name_max=name_max,
     file_max=file_max,
     attr_max=attr_max,
+    disk_version=0x00020000,
 )
 
 # Note: path component separator etc are assumed to be compatible
